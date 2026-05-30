@@ -65,6 +65,14 @@ function IconSpeaker() {
   );
 }
 
+function IconStop() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <rect x="3" y="3" width="8" height="8" rx="1" fill="currentColor" />
+    </svg>
+  );
+}
+
 function IconShare() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
@@ -99,10 +107,54 @@ function IconChevron({ open }: { open: boolean }) {
   );
 }
 
+const LANG_CODE: Record<string, string> = { es: 'es-ES', en: 'en-US' };
+
+function pickVoice(lang: string): SpeechSynthesisVoice | null {
+  const voices = window.speechSynthesis.getVoices();
+  const prefix = lang.split('-')[0];
+  return (
+    voices.find((v) => v.name.includes('Google') && v.lang.startsWith(prefix)) ??
+    voices.find((v) => v.lang.startsWith(prefix)) ??
+    null
+  );
+}
+
 export default function AnalysisResult({ record, onReset }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const { word, analysis } = record;
+
+  const speechSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+
+  function handleListen() {
+    if (!speechSupported) return;
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const lang = LANG_CODE[record.language] ?? 'en-US';
+
+    function speak() {
+      const utter = new SpeechSynthesisUtterance(record.word);
+      utter.lang = lang;
+      const voice = pickVoice(lang);
+      if (voice) utter.voice = voice;
+      utter.onstart = () => setIsSpeaking(true);
+      utter.onend = () => setIsSpeaking(false);
+      utter.onerror = () => setIsSpeaking(false);
+      window.speechSynthesis.speak(utter);
+    }
+
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.addEventListener('voiceschanged', speak, { once: true });
+    } else {
+      speak();
+    }
+  }
   const { essential, advanced } = analysis;
 
   return (
@@ -143,12 +195,13 @@ export default function AnalysisResult({ record, onReset }: Props) {
           {/* Action buttons */}
           <div className="flex items-center justify-center gap-5 mt-6">
             <button
-              className="flex items-center gap-1.5 text-xs text-ink-faint hover:text-accent transition-colors duration-150"
-              disabled
-              title="Coming soon"
+              className="flex items-center gap-1.5 text-xs text-ink-faint hover:text-accent transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+              onClick={handleListen}
+              disabled={!speechSupported}
+              title={speechSupported ? undefined : 'Not supported'}
             >
-              <IconSpeaker />
-              Listen
+              {isSpeaking ? <IconStop /> : <IconSpeaker />}
+              {isSpeaking ? 'Stop' : 'Listen'}
             </button>
             <button
               className="flex items-center gap-1.5 text-xs text-ink-faint hover:text-accent transition-colors duration-150"
