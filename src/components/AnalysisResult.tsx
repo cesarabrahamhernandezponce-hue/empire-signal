@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { Analysis } from '@/lib/ai/schemas/analysis';
 
 export type AnalyzeRecord = {
@@ -123,14 +123,17 @@ export default function AnalysisResult({ record, onReset }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { word, analysis } = record;
 
-  const speechSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  useEffect(() => {
+    setSpeechSupported('speechSynthesis' in window);
+  }, []);
 
   function speakFallback() {
     if (!speechSupported) { setIsSpeaking(false); return; }
-    const lang = LANG_CODE[record.language] ?? 'en-US';
+    const lang = LANG_CODE[record.language.toLowerCase()] ?? 'en-US';
     function doSpeak() {
       const utter = new SpeechSynthesisUtterance(record.word);
       utter.lang = lang;
@@ -158,7 +161,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
     setIsSpeaking(true);
 
-    if (record.language === 'en') {
+    if (record.language.toLowerCase() === 'en') {
       try {
         const res = await fetch(
           `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(record.word)}`
@@ -167,12 +170,14 @@ export default function AnalysisResult({ record, onReset }: Props) {
           const data: Array<{ phonetics: Array<{ audio?: string }> }> = await res.json();
           const audioUrl = data[0]?.phonetics?.find((p) => p.audio)?.audio;
           if (audioUrl) {
-            const audio = new Audio(audioUrl);
-            audioRef.current = audio;
-            audio.onended = () => { setIsSpeaking(false); audioRef.current = null; };
-            audio.onerror = () => { audioRef.current = null; speakFallback(); };
-            await audio.play();
-            return;
+            try {
+              const audio = new Audio(audioUrl);
+              audioRef.current = audio;
+              audio.onended = () => { setIsSpeaking(false); audioRef.current = null; };
+              audio.onerror = () => { setIsSpeaking(false); audioRef.current = null; };
+              await audio.play();
+              return;
+            } catch { /* play() rejected → fall through to speakFallback */ }
           }
         }
       } catch { /* fall through to Web Speech */ }
