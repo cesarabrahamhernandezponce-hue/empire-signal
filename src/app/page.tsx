@@ -309,10 +309,13 @@ export default function Home() {
 
         {/* Brand */}
         <div className="text-center mb-10">
-          <h1 className="text-[2.75rem] font-bold tracking-tight text-ink leading-none">
+          <h1
+            className="text-[2.75rem] tracking-tight text-ink leading-none"
+            style={{ fontFamily: 'var(--font-dm-serif)', fontStyle: 'italic' }}
+          >
             Empire
           </h1>
-          <p className="mt-2.5 text-sm text-ink-muted tracking-[0.06em]">
+          <p className="mt-2.5 text-sm font-medium" style={{ letterSpacing: '0.12em', color: '#3A3D8F' }}>
             Linguistic intelligence
           </p>
         </div>

@@ -26,11 +26,11 @@ const cardBase: React.CSSProperties = {
   boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
 };
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionLabel({ children, serif }: { children: React.ReactNode; serif?: boolean }) {
   return (
     <p
       className="mb-3 text-[0.75rem] font-semibold uppercase"
-      style={{ color: '#3A3D8F', letterSpacing: '0.05em' }}
+      style={{ color: '#3A3D8F', letterSpacing: '0.05em', fontFamily: serif ? 'var(--font-dm-serif)' : undefined }}
     >
       {children}
     </p>
@@ -41,7 +41,7 @@ function RegisterBadge({ label }: { label: string }) {
   return (
     <span
       className="shrink-0 text-[0.6rem] font-semibold uppercase rounded-[4px] px-1.5 py-0.5"
-      style={{ background: '#F0F0EE', color: '#1A1A1A', letterSpacing: '0.08em' }}
+      style={{ background: '#EEF0FF', color: '#3A3D8F', border: '1px solid #D0D3FF', letterSpacing: '0.08em' }}
     >
       {label}
     </span>
@@ -58,7 +58,7 @@ function IconBack() {
 
 function IconSpeaker() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden>
       <path d="M2 5H5L9 2V12L5 9H2V5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
       <path d="M11 4.5C11.9 5.4 12.5 6.1 12.5 7C12.5 7.9 11.9 8.6 11 9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
@@ -75,7 +75,7 @@ function IconStop() {
 
 function IconShare() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden>
       <path d="M6 2H3C2.4 2 2 2.4 2 3V11C2 11.6 2.4 12 3 12H11C11.6 12 12 11.6 12 11V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
       <path d="M9 2H12V5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M7 7L12 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
@@ -85,7 +85,7 @@ function IconShare() {
 
 function IconCopy() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden>
       <rect x="5" y="5" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.2" />
       <path d="M2 9V3C2 2.4 2.4 2 3 2H9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
@@ -210,7 +210,10 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
         {/* Word hero — untouched */}
         <div className="mb-12 text-center">
-          <h1 className="text-[3.25rem] sm:text-[3.75rem] font-bold tracking-tight text-ink leading-none mb-3">
+          <h1
+            className="text-[3.25rem] sm:text-[3.75rem] tracking-tight text-ink leading-none mb-3"
+            style={{ fontFamily: 'var(--font-dm-serif)' }}
+          >
             {word}
           </h1>
           {essential.pronunciation.phonetic && (
@@ -223,9 +226,9 @@ export default function AnalysisResult({ record, onReset }: Props) {
           )}
 
           {/* Action buttons */}
-          <div className="flex items-center justify-center gap-5 mt-6">
+          <div className="flex items-center justify-center gap-3 mt-6">
             <button
-              className="flex items-center gap-1.5 text-xs text-ink-faint hover:text-accent transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
               onClick={handleListen}
               disabled={!speechSupported}
               title={speechSupported ? undefined : 'Not supported'}
@@ -233,8 +236,9 @@ export default function AnalysisResult({ record, onReset }: Props) {
               {isSpeaking ? <IconStop /> : <IconSpeaker />}
               {isSpeaking ? 'Stop' : 'Listen'}
             </button>
+            <span className="text-ink-faint select-none">·</span>
             <button
-              className="flex items-center gap-1.5 text-xs text-ink-faint hover:text-accent transition-colors duration-150"
+              className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent transition-colors duration-150"
               onClick={() => {
                 const url = `${window.location.origin}/share/${record.shareId}`;
                 navigator.clipboard.writeText(url).then(() => {
@@ -246,8 +250,9 @@ export default function AnalysisResult({ record, onReset }: Props) {
               <IconShare />
               {shareCopied ? 'Copied!' : 'Share'}
             </button>
+            <span className="text-ink-faint select-none">·</span>
             <button
-              className="flex items-center gap-1.5 text-xs text-ink-faint hover:text-accent transition-colors duration-150"
+              className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent transition-colors duration-150"
               onClick={() => navigator.clipboard.writeText(word)}
             >
               <IconCopy />
@@ -260,8 +265,8 @@ export default function AnalysisResult({ record, onReset }: Props) {
         <div className="flex flex-col gap-4">
 
           {/* Meaning in context — accent left border */}
-          <section style={{ ...cardBase, borderLeft: '3px solid #3A3D8F' }}>
-            <SectionLabel>Meaning in context</SectionLabel>
+          <section style={{ ...cardBase, background: '#F8F8FF', borderLeft: '3px solid #3A3D8F' }}>
+            <SectionLabel serif>Meaning in context</SectionLabel>
             <p className="text-base leading-relaxed" style={{ color: '#1A1A1A' }}>
               {essential.meaningInContext}
             </p>
@@ -269,11 +274,11 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
           {/* Word type */}
           <section style={cardBase}>
-            <SectionLabel>Word type</SectionLabel>
+            <SectionLabel serif>Word type</SectionLabel>
             <div className="flex items-center gap-2 mb-2">
               <span
                 className="text-xs font-medium px-2 py-0.5 rounded-[4px]"
-                style={{ background: '#F0F0EE', color: '#1A1A1A', border: '1px solid #EAEAE6' }}
+                style={{ background: '#EEF0FF', color: '#3A3D8F', border: '1px solid #D0D3FF' }}
               >
                 {essential.wordType.category}
               </span>
@@ -285,7 +290,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
           {/* Pronunciation */}
           <section style={cardBase}>
-            <SectionLabel>Pronunciation</SectionLabel>
+            <SectionLabel serif>Pronunciation</SectionLabel>
             <p className="text-sm leading-relaxed" style={{ color: '#1A1A1A' }}>
               {essential.pronunciation.guide}
             </p>
@@ -293,7 +298,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
           {/* Usage examples */}
           <section style={cardBase}>
-            <SectionLabel>Usage examples</SectionLabel>
+            <SectionLabel serif>Usage examples</SectionLabel>
             <div className="space-y-4">
               {essential.usageExamples.map((ex, i) => (
                 <div key={i} className="flex items-start gap-3">
@@ -306,10 +311,14 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
           {/* Collocations */}
           <section style={cardBase}>
-            <SectionLabel>Collocations</SectionLabel>
-            <div className="space-y-3">
+            <SectionLabel serif>Collocations</SectionLabel>
+            <div>
               {essential.collocations.map((col, i) => (
-                <div key={i} className="flex gap-4">
+                <div
+                  key={i}
+                  className="flex gap-4"
+                  style={{ background: i % 2 !== 0 ? '#FAFAF8' : 'transparent', padding: '6px 4px', borderRadius: '4px' }}
+                >
                   <span className="shrink-0 text-sm font-medium w-40" style={{ color: '#1A1A1A' }}>
                     {col.phrase}
                   </span>
@@ -323,9 +332,11 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
           {/* Mnemonic — blue-tinted background */}
           <section style={{ ...cardBase, background: '#F5F5FB' }}>
-            <SectionLabel>Mnemonic</SectionLabel>
-            <p className="text-sm leading-relaxed italic" style={{ color: '#4A4A4A' }}>
+            <SectionLabel serif>Mnemonic</SectionLabel>
+            <p className="leading-relaxed italic" style={{ color: '#4A4A4A', fontSize: '1rem' }}>
+              <span style={{ fontFamily: 'var(--font-dm-serif)', fontSize: '2rem', lineHeight: 1, color: '#3A3D8F', verticalAlign: '-0.3em', marginRight: '0.15em' }}>{'“'}</span>
               {essential.mnemonic}
+              <span style={{ fontFamily: 'var(--font-dm-serif)', fontSize: '2rem', lineHeight: 1, color: '#3A3D8F', verticalAlign: '-0.3em', marginLeft: '0.15em' }}>{'”'}</span>
             </p>
           </section>
 
@@ -417,12 +428,12 @@ export default function AnalysisResult({ record, onReset }: Props) {
                   </p>
                 </section>
 
-                <section style={cardBase}>
+                <section style={{ ...cardBase, background: '#FFF8F8' }}>
                   <SectionLabel>Common errors</SectionLabel>
                   <div className="space-y-5">
                     {advanced.commonErrors.map((ce, i) => (
                       <div key={i}>
-                        <p className="text-sm line-through decoration-red-400 mb-1.5" style={{ color: '#1A1A1A' }}>
+                        <p className="text-sm mb-1.5" style={{ color: '#C0392B', textDecoration: 'line-through' }}>
                           {ce.error}
                         </p>
                         <p className="text-sm leading-relaxed" style={{ color: '#4A4A4A' }}>
