@@ -11,9 +11,34 @@
   --text-primary: #1A1A1A;
   --text-secondary: #6B6B6B;
   --text-subtle: #9B9B9B;
+  --text-body: #4A4A4A;
   --accent: #3A3D8F;
   --accent-hover: #2D2F70;
   --border: #EAEAE6;
+  --bg-translucent: rgba(250, 250, 248, 0.92);
+  --surface-blue: #F8F8FF;
+  --surface-muted: #F5F5FB;
+  --surface-error: #FFF8F8;
+  --badge-bg: #EEF0FF;
+  --badge-border: #D0D3FF;
+}
+
+[data-theme="dark"] {
+  --bg: #111111;
+  --surface: #1C1C1C;
+  --text-primary: #EEEEE9;
+  --text-secondary: #888884;
+  --text-subtle: #505050;
+  --text-body: #AAAAAA;
+  --accent: #7B7EC8;
+  --accent-hover: #6B6EBA;
+  --border: #2C2C2C;
+  --bg-translucent: rgba(17, 17, 17, 0.92);
+  --surface-blue: #1A1B2E;
+  --surface-muted: #181828;
+  --surface-error: #2A1818;
+  --badge-bg: #1E2048;
+  --badge-border: #3A3D80;
 }
 
 body {

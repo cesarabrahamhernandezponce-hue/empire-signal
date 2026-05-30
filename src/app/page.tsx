@@ -90,6 +90,10 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
     if (!settingsOpen) return;
     function handler(e: MouseEvent) {
       if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
@@ -228,7 +232,7 @@ export default function Home() {
               {(['en', 'es'] as const).map((lang) => (
                 <button
                   key={lang}
-                  onClick={() => setLanguage(lang)}
+                  onClick={() => { setLanguage(lang); setSettingsOpen(false); }}
                   className={`px-3 py-1 rounded-[6px] text-xs font-medium border transition-all duration-150 ${
                     language === lang
                       ? 'bg-accent text-white border-accent'

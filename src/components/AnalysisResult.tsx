@@ -19,9 +19,9 @@ interface Props {
 }
 
 const cardBase: React.CSSProperties = {
-  background: '#FFFFFF',
+  background: 'var(--surface)',
   borderRadius: '12px',
-  border: '1px solid #EAEAE6',
+  border: '1px solid var(--border)',
   padding: '24px',
   boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
 };
@@ -41,7 +41,7 @@ function RegisterBadge({ label }: { label: string }) {
   return (
     <span
       className="shrink-0 text-[0.6rem] font-semibold uppercase rounded-[4px] px-1.5 py-0.5"
-      style={{ background: '#EEF0FF', color: '#3A3D8F', border: '1px solid #D0D3FF', letterSpacing: '0.08em' }}
+      style={{ background: 'var(--badge-bg)', color: 'var(--accent)', border: '1px solid var(--badge-border)', letterSpacing: '0.08em' }}
     >
       {label}
     </span>
@@ -191,7 +191,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
     <div className="min-h-screen bg-bg">
 
       {/* Sticky top nav */}
-      <div className="sticky top-0 z-10 border-b border-line" style={{ backgroundColor: 'rgba(250,250,248,0.92)', backdropFilter: 'blur(8px)' }}>
+      <div className="sticky top-0 z-10 border-b border-line" style={{ backgroundColor: 'var(--bg-translucent)', backdropFilter: 'blur(8px)' }}>
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <button
             onClick={onReset}
@@ -265,9 +265,9 @@ export default function AnalysisResult({ record, onReset }: Props) {
         <div className="flex flex-col gap-4">
 
           {/* Meaning in context — accent left border */}
-          <section style={{ ...cardBase, background: '#F8F8FF', borderLeft: '3px solid #3A3D8F' }}>
+          <section style={{ ...cardBase, background: 'var(--surface-blue)', borderLeft: '3px solid var(--accent)' }}>
             <SectionLabel serif>Meaning in context</SectionLabel>
-            <p className="text-base leading-relaxed" style={{ color: '#1A1A1A' }}>
+            <p className="text-base leading-relaxed" style={{ color: 'var(--text-primary)' }}>
               {essential.meaningInContext}
             </p>
           </section>
@@ -278,12 +278,12 @@ export default function AnalysisResult({ record, onReset }: Props) {
             <div className="flex items-center gap-2 mb-2">
               <span
                 className="text-xs font-medium px-2 py-0.5 rounded-[4px]"
-                style={{ background: '#EEF0FF', color: '#3A3D8F', border: '1px solid #D0D3FF' }}
+                style={{ background: 'var(--badge-bg)', color: 'var(--accent)', border: '1px solid var(--badge-border)' }}
               >
                 {essential.wordType.category}
               </span>
             </div>
-            <p className="text-sm leading-relaxed" style={{ color: '#4A4A4A' }}>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
               {essential.wordType.explanation}
             </p>
           </section>
@@ -291,7 +291,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
           {/* Pronunciation */}
           <section style={cardBase}>
             <SectionLabel serif>Pronunciation</SectionLabel>
-            <p className="text-sm leading-relaxed" style={{ color: '#1A1A1A' }}>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
               {essential.pronunciation.guide}
             </p>
           </section>
@@ -303,7 +303,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
               {essential.usageExamples.map((ex, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <RegisterBadge label={ex.register} />
-                  <p className="text-sm leading-relaxed" style={{ color: '#1A1A1A' }}>{ex.example}</p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>{ex.example}</p>
                 </div>
               ))}
             </div>
@@ -317,12 +317,12 @@ export default function AnalysisResult({ record, onReset }: Props) {
                 <div
                   key={i}
                   className="flex gap-4"
-                  style={{ background: i % 2 !== 0 ? '#FAFAF8' : 'transparent', padding: '6px 4px', borderRadius: '4px' }}
+                  style={{ background: i % 2 !== 0 ? 'var(--bg)' : 'transparent', padding: '6px 4px', borderRadius: '4px' }}
                 >
-                  <span className="shrink-0 text-sm font-medium w-40" style={{ color: '#1A1A1A' }}>
+                  <span className="shrink-0 text-sm font-medium w-40" style={{ color: 'var(--text-primary)' }}>
                     {col.phrase}
                   </span>
-                  <span className="text-sm leading-relaxed" style={{ color: '#4A4A4A' }}>
+                  <span className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
                     {col.meaning}
                   </span>
                 </div>
@@ -331,7 +331,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
           </section>
 
           {/* Mnemonic — blue-tinted background */}
-          <section style={{ ...cardBase, background: '#F5F5FB' }}>
+          <section style={{ ...cardBase, background: 'var(--surface-muted)' }}>
             <SectionLabel serif>Mnemonic</SectionLabel>
             <p className="leading-relaxed italic" style={{ color: '#4A4A4A', fontSize: '1rem' }}>
               <span style={{ fontFamily: 'var(--font-dm-serif)', fontSize: '2rem', lineHeight: 1, color: '#3A3D8F', verticalAlign: '-0.3em', marginRight: '0.15em' }}>{'“'}</span>
@@ -364,7 +364,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
                 {advanced.etymology && (
                   <section style={cardBase}>
                     <SectionLabel>Etymology</SectionLabel>
-                    <p className="text-sm leading-relaxed" style={{ color: '#4A4A4A' }}>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
                       {advanced.etymology}
                     </p>
                   </section>
@@ -373,7 +373,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
                 {advanced.story && (
                   <section style={cardBase}>
                     <SectionLabel>The story behind</SectionLabel>
-                    <p className="text-sm leading-relaxed" style={{ color: '#4A4A4A' }}>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
                       {advanced.story}
                     </p>
                   </section>
@@ -384,10 +384,10 @@ export default function AnalysisResult({ record, onReset }: Props) {
                   <div className="space-y-3">
                     {advanced.synonyms.map((syn, i) => (
                       <div key={i} className="flex gap-4">
-                        <span className="shrink-0 text-sm font-medium w-28" style={{ color: '#1A1A1A' }}>
+                        <span className="shrink-0 text-sm font-medium w-28" style={{ color: 'var(--text-primary)' }}>
                           {syn.word}
                         </span>
-                        <span className="text-sm leading-relaxed" style={{ color: '#4A4A4A' }}>
+                        <span className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
                           {syn.nuance}
                         </span>
                       </div>
@@ -401,10 +401,10 @@ export default function AnalysisResult({ record, onReset }: Props) {
                     <div className="space-y-3">
                       {advanced.antonyms.map((ant, i) => (
                         <div key={i} className="flex gap-4">
-                          <span className="shrink-0 text-sm font-medium w-28" style={{ color: '#1A1A1A' }}>
+                          <span className="shrink-0 text-sm font-medium w-28" style={{ color: 'var(--text-primary)' }}>
                             {ant.word}
                           </span>
-                          <span className="text-sm leading-relaxed" style={{ color: '#4A4A4A' }}>
+                          <span className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
                             {ant.context}
                           </span>
                         </div>
@@ -423,12 +423,12 @@ export default function AnalysisResult({ record, onReset }: Props) {
                       {advanced.registerLevel.level}
                     </span>
                   </div>
-                  <p className="text-sm leading-relaxed" style={{ color: '#4A4A4A' }}>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
                     {advanced.registerLevel.guidance}
                   </p>
                 </section>
 
-                <section style={{ ...cardBase, background: '#FFF8F8' }}>
+                <section style={{ ...cardBase, background: 'var(--surface-error)' }}>
                   <SectionLabel>Common errors</SectionLabel>
                   <div className="space-y-5">
                     {advanced.commonErrors.map((ce, i) => (
@@ -436,7 +436,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
                         <p className="text-sm mb-1.5" style={{ color: '#C0392B', textDecoration: 'line-through' }}>
                           {ce.error}
                         </p>
-                        <p className="text-sm leading-relaxed" style={{ color: '#4A4A4A' }}>
+                        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
                           → {ce.correction}
                         </p>
                       </div>
@@ -449,10 +449,10 @@ export default function AnalysisResult({ record, onReset }: Props) {
                   <div className="space-y-3">
                     {advanced.wordFamily.map((wf, i) => (
                       <div key={i} className="flex gap-4">
-                        <span className="shrink-0 text-sm font-medium w-28" style={{ color: '#1A1A1A' }}>
+                        <span className="shrink-0 text-sm font-medium w-28" style={{ color: 'var(--text-primary)' }}>
                           {wf.word}
                         </span>
-                        <span className="text-sm leading-relaxed" style={{ color: '#4A4A4A' }}>
+                        <span className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
                           {wf.relation}
                         </span>
                       </div>
