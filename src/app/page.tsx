@@ -23,6 +23,21 @@ const TONES = [
   { id: 'infantil',  label: 'Simple' },
 ] as const;
 
+const TRANSLATE_LANGS = [
+  { id: 'es', label: 'Spanish'    },
+  { id: 'fr', label: 'French'     },
+  { id: 'de', label: 'German'     },
+  { id: 'zh', label: 'Chinese'    },
+] as const;
+
+type TranslateLang = (typeof TRANSLATE_LANGS)[number]['id'];
+
+type TranslationState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'result'; text: string; lang: TranslateLang }
+  | { status: 'error'; message: string };
+
 type Tone     = (typeof TONES)[number]['id'];
 type Language = 'en' | 'es';
 
@@ -31,6 +46,15 @@ type PageState =
   | { status: 'loading' }
   | { status: 'result'; record: AnalyzeRecord }
   | { status: 'error'; message: string };
+
+function IconCopy() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <rect x="5" y="5" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M2 9V3C2 2.4 2.4 2 3 2H9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 function IconGear() {
   return (
@@ -57,6 +81,8 @@ export default function Home() {
   const [curiosity, setCuriosity]               = useState('');
   const [curiosityVisible, setCuriosityVisible] = useState(true);
   const [pageState, setPageState]               = useState<PageState>({ status: 'idle' });
+  const [targetLang, setTargetLang]             = useState<TranslateLang>('es');
+  const [translationState, setTranslationState] = useState<TranslationState>({ status: 'idle' });
   const settingsRef                             = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -78,6 +104,34 @@ export default function Home() {
     const val = e.target.value;
     setWord(val);
     setCuriosityVisible(val.length === 0);
+    if (val.length === 0) setTranslationState({ status: 'idle' });
+  };
+
+  const handleTranslate = async () => {
+    const trimmed = word.trim();
+    if (!trimmed) return;
+    setTranslationState({ status: 'loading' });
+    try {
+      const res = await fetch('/api/signal/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word: trimmed, targetLanguages: [targetLang] }),
+      });
+      const data: unknown = await res.json();
+      if (!res.ok) {
+        setTranslationState({ status: 'error', message: (data as { error?: string }).error ?? 'Translation failed.' });
+        return;
+      }
+      const translations = (data as { translations: Record<string, string> }).translations;
+      const text = translations[targetLang];
+      if (!text) {
+        setTranslationState({ status: 'error', message: 'No translation returned.' });
+        return;
+      }
+      setTranslationState({ status: 'result', text, lang: targetLang });
+    } catch {
+      setTranslationState({ status: 'error', message: 'Could not connect to the server.' });
+    }
   };
 
   const handleAnalyze = async () => {
@@ -293,6 +347,70 @@ export default function Home() {
               className="w-full bg-transparent text-[1.5rem] font-medium text-ink placeholder:text-ink-faint outline-none border-b-2 border-line focus:border-accent transition-colors duration-200 pb-1"
             />
           </div>
+
+          {/* Inline translator */}
+          {canAnalyze && (
+            <div className="px-7 pb-5 border-t border-line pt-4">
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1.5 flex-wrap flex-1">
+                  {TRANSLATE_LANGS.map((l) => (
+                    <button
+                      key={l.id}
+                      onClick={() => setTargetLang(l.id)}
+                      className={`px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all duration-150 ${
+                        targetLang === l.id
+                          ? 'bg-accent text-white border-accent'
+                          : 'bg-bg text-ink-muted border-line hover:text-ink hover:border-ink-muted'
+                      }`}
+                    >
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={handleTranslate}
+                  disabled={translationState.status === 'loading'}
+                  className="shrink-0 px-3 py-1 rounded-[6px] text-xs font-medium border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {translationState.status === 'loading' ? (
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-3 h-3 border border-line border-t-accent rounded-full animate-spin" />
+                      Translating
+                    </span>
+                  ) : 'Translate'}
+                </button>
+              </div>
+
+              {translationState.status === 'result' && (
+                <div className="mt-4 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[1.5rem] font-bold tracking-tight leading-none" style={{ color: '#1A1A1A' }}>
+                      {translationState.text}
+                    </p>
+                    <p
+                      className="mt-1.5 text-[0.65rem] font-semibold uppercase"
+                      style={{ color: '#9A9A96', letterSpacing: '0.08em' }}
+                    >
+                      {TRANSLATE_LANGS.find((l) => l.id === translationState.lang)?.label}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigator.clipboard.writeText((translationState as { status: 'result'; text: string }).text)}
+                    className="mt-1 shrink-0 text-ink-faint hover:text-ink transition-colors duration-150"
+                    title="Copy"
+                  >
+                    <IconCopy />
+                  </button>
+                </div>
+              )}
+
+              {translationState.status === 'error' && (
+                <p className="mt-3 text-xs" style={{ color: '#B91C1C' }}>
+                  {translationState.message}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Section divider */}
           <div className="h-px bg-line" />
