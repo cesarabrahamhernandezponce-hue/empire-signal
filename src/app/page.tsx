@@ -344,8 +344,19 @@ export default function Home() {
               placeholder="Type a word..."
               autoComplete="off"
               spellCheck={false}
+              maxLength={40}
               className="w-full bg-transparent text-[1.5rem] font-medium text-ink placeholder:text-ink-faint outline-none border-b-2 border-line focus:border-accent transition-colors duration-200 pb-1"
             />
+            {word.length >= 25 && (
+              <p
+                className="text-right text-[10px] mt-0.5"
+                style={{ color: word.length === 40 ? '#E53935' : undefined }}
+              >
+                <span className={word.length < 40 ? 'text-ink-faint' : ''}>
+                  {word.length}/40
+                </span>
+              </p>
+            )}
           </div>
 
           {/* Inline translator */}

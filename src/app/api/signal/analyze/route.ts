@@ -22,7 +22,10 @@ const LANGUAGE_DB: Record<string, DbLanguage> = {
 };
 
 const bodySchema = z.object({
-  word:     z.string().min(1).max(100).trim(),
+  word:     z.string().min(1).max(40).trim()
+              .refine((val) => val.trim().split(/\s+/).length <= 3, {
+                message: 'Empire Signal analyzes words and short phrases, not sentences.',
+              }),
   context:  z.string().max(2000).nullish().transform((v) => v ?? null),
   tone:     z.enum(['practico', 'academico', 'creativo', 'infantil']).default('practico'),
   language: z.enum(['es', 'en']).default('en'),
