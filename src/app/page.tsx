@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import AnalysisResult, { type AnalyzeRecord } from '@/components/AnalysisResult';
 
 const CURIOSITIES = [
@@ -23,7 +23,8 @@ const TONES = [
   { id: 'infantil',  label: 'Simple' },
 ] as const;
 
-type Tone = (typeof TONES)[number]['id'];
+type Tone     = (typeof TONES)[number]['id'];
+type Language = 'en' | 'es';
 
 type PageState =
   | { status: 'idle' }
@@ -31,18 +32,47 @@ type PageState =
   | { status: 'result'; record: AnalyzeRecord }
   | { status: 'error'; message: string };
 
+function IconGear() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M6.5 1.5h3l.4 1.4c.4.2.8.4 1.1.7l1.4-.4 1.5 2.6-1 1c0 .2.1.5.1.7s0 .5-.1.7l1 1-1.5 2.6-1.4-.4c-.3.3-.7.5-1.1.7l-.4 1.4h-3l-.4-1.4a4.5 4.5 0 0 1-1.1-.7l-1.4.4-1.5-2.6 1-1A4.5 4.5 0 0 1 3 8c0-.2 0-.5.1-.7l-1-1 1.5-2.6 1.4.4c.3-.3.7-.5 1.1-.7l.4-1.4Z"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
 export default function Home() {
   const [word, setWord]                         = useState('');
   const [context, setContext]                   = useState('');
   const [showContext, setShowContext]           = useState(false);
   const [tone, setTone]                         = useState<Tone>('practico');
+  const [language, setLanguage]                 = useState<Language>('en');
+  const [theme, setTheme]                       = useState<'light' | 'dark'>('light');
+  const [settingsOpen, setSettingsOpen]         = useState(false);
   const [curiosity, setCuriosity]               = useState('');
   const [curiosityVisible, setCuriosityVisible] = useState(true);
   const [pageState, setPageState]               = useState<PageState>({ status: 'idle' });
+  const settingsRef                             = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setCuriosity(CURIOSITIES[Math.floor(Math.random() * CURIOSITIES.length)]);
   }, []);
+
+  useEffect(() => {
+    if (!settingsOpen) return;
+    function handler(e: MouseEvent) {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [settingsOpen]);
 
   const handleWordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -64,7 +94,7 @@ export default function Home() {
           word: trimmed,
           context: context.trim() || null,
           tone,
-          language: 'en',
+          language,
         }),
       });
 
@@ -106,131 +136,227 @@ export default function Home() {
     return <AnalysisResult record={pageState.record} onReset={handleReset} />;
   }
 
+  // ── Settings button + panel (shared by idle & error) ─────────────────────
+  const settingsButton = (
+    <div ref={settingsRef} className="fixed top-4 right-4 z-50">
+      <button
+        onClick={() => setSettingsOpen((v) => !v)}
+        className="p-1.5 text-ink-faint hover:text-ink transition-colors duration-150"
+        aria-label="Settings"
+      >
+        <IconGear />
+      </button>
+
+      {settingsOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 6px)',
+            right: 0,
+            background: '#FFFFFF',
+            border: '1px solid #EAEAE6',
+            borderRadius: '12px',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+            padding: '16px',
+            minWidth: '192px',
+            zIndex: 50,
+          }}
+        >
+          {/* Language */}
+          <div className="mb-4">
+            <p
+              className="mb-2 text-[0.7rem] font-semibold uppercase"
+              style={{ color: '#3A3D8F', letterSpacing: '0.05em' }}
+            >
+              Language
+            </p>
+            <div className="flex gap-1.5">
+              {(['en', 'es'] as const).map((lang) => (
+                <button
+                  key={lang}
+                  onClick={() => setLanguage(lang)}
+                  className={`px-3 py-1 rounded-[6px] text-xs font-medium border transition-all duration-150 ${
+                    language === lang
+                      ? 'bg-accent text-white border-accent'
+                      : 'bg-bg text-ink-muted border-line hover:text-ink hover:border-ink-muted'
+                  }`}
+                >
+                  {lang === 'en' ? 'English' : 'Español'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Theme */}
+          <div className="flex items-center justify-between gap-4">
+            <p
+              className="text-[0.7rem] font-semibold uppercase"
+              style={{ color: '#3A3D8F', letterSpacing: '0.05em' }}
+            >
+              Theme
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-ink-muted">
+                {theme === 'light' ? 'Light' : 'Dark'}
+              </span>
+              <button
+                onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
+                className="relative flex-shrink-0 flex items-center rounded-full border border-line transition-colors duration-200"
+                style={{
+                  width: '36px',
+                  height: '20px',
+                  background: theme === 'dark' ? '#3A3D8F' : '#F0F0EE',
+                  borderColor: theme === 'dark' ? '#3A3D8F' : '#EAEAE6',
+                }}
+                aria-label="Toggle theme"
+              >
+                <span
+                  className="absolute rounded-full bg-white shadow-sm transition-transform duration-200"
+                  style={{
+                    width: '14px',
+                    height: '14px',
+                    transform: theme === 'dark' ? 'translateX(19px)' : 'translateX(3px)',
+                  }}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   // ── Error ────────────────────────────────────────────────────────────────
   if (pageState.status === 'error') {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center px-4">
-        <div className="text-center max-w-sm">
-          <p className="text-sm text-ink mb-1">Something went wrong</p>
-          <p className="text-sm text-ink-muted mb-6">{pageState.message}</p>
-          <button
-            onClick={handleReset}
-            className="text-sm text-accent hover:text-accent-hover transition-colors duration-150"
-          >
-            ← Try again
-          </button>
+      <>
+        {settingsButton}
+        <div className="min-h-screen bg-bg flex items-center justify-center px-4">
+          <div className="text-center max-w-sm">
+            <p className="text-sm text-ink mb-1">Something went wrong</p>
+            <p className="text-sm text-ink-muted mb-6">{pageState.message}</p>
+            <button
+              onClick={handleReset}
+              className="text-sm text-accent hover:text-accent-hover transition-colors duration-150"
+            >
+              ← Try again
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   // ── Idle ─────────────────────────────────────────────────────────────────
   return (
-    <main className="min-h-screen bg-bg flex flex-col items-center justify-center px-4 py-16">
+    <>
+      {settingsButton}
+      <main className="min-h-screen bg-bg flex flex-col items-center justify-center px-4 py-16">
 
-      {/* Brand */}
-      <div className="text-center mb-10">
-        <h1 className="text-[2.75rem] font-bold tracking-tight text-ink leading-none">
-          Empire
-        </h1>
-        <p className="mt-2.5 text-sm text-ink-muted tracking-[0.06em]">
-          Linguistic intelligence
-        </p>
-      </div>
-
-      {/* Curiosity */}
-      <div
-        className={`w-full max-w-[600px] mb-5 transition-opacity duration-500 ${
-          curiosityVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-      >
-        <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-accent mb-1.5">
-          Empire Insight
-        </p>
-        <p className="text-sm text-ink-muted leading-relaxed" suppressHydrationWarning>
-          {curiosity}
-        </p>
-      </div>
-
-      {/* Search card */}
-      <div className="w-full max-w-[600px] bg-surface border border-line rounded-[12px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden">
-
-        {/* Input — protagonist */}
-        <div className="px-7 pt-7 pb-6">
-          <input
-            type="text"
-            value={word}
-            onChange={handleWordChange}
-            onKeyDown={(e) => e.key === 'Enter' && canAnalyze && handleAnalyze()}
-            placeholder="Type a word..."
-            autoComplete="off"
-            spellCheck={false}
-            className="w-full bg-transparent text-[1.5rem] font-medium text-ink placeholder:text-ink-faint outline-none border-b-2 border-line focus:border-accent transition-colors duration-200 pb-1"
-          />
+        {/* Brand */}
+        <div className="text-center mb-10">
+          <h1 className="text-[2.75rem] font-bold tracking-tight text-ink leading-none">
+            Empire
+          </h1>
+          <p className="mt-2.5 text-sm text-ink-muted tracking-[0.06em]">
+            Linguistic intelligence
+          </p>
         </div>
 
-        {/* Section divider */}
-        <div className="h-px bg-line" />
+        {/* Curiosity */}
+        <div
+          className={`w-full max-w-[600px] mb-5 transition-opacity duration-500 ${
+            curiosityVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+        >
+          <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-accent mb-1.5">
+            Empire Insight
+          </p>
+          <p className="text-sm text-ink-muted leading-relaxed" suppressHydrationWarning>
+            {curiosity}
+          </p>
+        </div>
 
-        {/* Options */}
-        <div className="px-7 py-6 space-y-5">
+        {/* Search card */}
+        <div className="w-full max-w-[600px] bg-surface border border-line rounded-[12px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden">
 
-          {/* Context toggle */}
-          <div>
-            <button
-              onClick={() => setShowContext((v) => !v)}
-              className="text-sm text-ink-faint hover:text-ink-muted transition-colors duration-150"
-            >
-              {showContext ? '− Hide context' : '+ Add context (optional)'}
-            </button>
-            <div
-              className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-                showContext ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-              }`}
-            >
-              <div className="overflow-hidden">
-                <textarea
-                  value={context}
-                  onChange={(e) => setContext(e.target.value)}
-                  placeholder="e.g. I'm reading a 19th-century medical text..."
-                  rows={3}
-                  className="mt-3 w-full bg-bg border border-line rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-faint outline-none focus:border-accent resize-none transition-colors duration-150"
-                />
-              </div>
-            </div>
+          {/* Input — protagonist */}
+          <div className="px-7 pt-7 pb-6">
+            <input
+              type="text"
+              value={word}
+              onChange={handleWordChange}
+              onKeyDown={(e) => e.key === 'Enter' && canAnalyze && handleAnalyze()}
+              placeholder="Type a word..."
+              autoComplete="off"
+              spellCheck={false}
+              className="w-full bg-transparent text-[1.5rem] font-medium text-ink placeholder:text-ink-faint outline-none border-b-2 border-line focus:border-accent transition-colors duration-200 pb-1"
+            />
           </div>
 
-          {/* Tone selector */}
-          <div className="flex flex-wrap gap-1.5">
-            {TONES.map((t) => (
+          {/* Section divider */}
+          <div className="h-px bg-line" />
+
+          {/* Options */}
+          <div className="px-7 py-6 space-y-5">
+
+            {/* Context toggle */}
+            <div>
               <button
-                key={t.id}
-                onClick={() => setTone(t.id)}
-                className={`px-3 py-1 rounded-[6px] text-xs font-medium border transition-all duration-150 ${
-                  tone === t.id
-                    ? 'bg-accent text-white border-accent'
-                    : 'bg-bg text-ink-muted border-line hover:text-ink hover:border-ink-muted'
+                onClick={() => setShowContext((v) => !v)}
+                className="text-sm text-ink-faint hover:text-ink-muted transition-colors duration-150"
+              >
+                {showContext ? '− Hide context' : '+ Add context (optional)'}
+              </button>
+              <div
+                className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+                  showContext ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
                 }`}
               >
-                {t.label}
-              </button>
-            ))}
-          </div>
+                <div className="overflow-hidden">
+                  <textarea
+                    value={context}
+                    onChange={(e) => setContext(e.target.value)}
+                    placeholder="e.g. I'm reading a 19th-century medical text..."
+                    rows={3}
+                    className="mt-3 w-full bg-bg border border-line rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-faint outline-none focus:border-accent resize-none transition-colors duration-150"
+                  />
+                </div>
+              </div>
+            </div>
 
-          {/* Analyze button */}
-          <button
-            onClick={handleAnalyze}
-            disabled={!canAnalyze}
-            className={`w-full py-3 rounded-lg text-sm font-medium text-white transition-colors duration-150 ${
-              canAnalyze
-                ? 'bg-accent hover:bg-accent-hover cursor-pointer'
-                : 'bg-accent opacity-40 cursor-not-allowed'
-            }`}
-          >
-            Analyze
-          </button>
+            {/* Tone selector */}
+            <div className="flex flex-wrap gap-1.5">
+              {TONES.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTone(t.id)}
+                  className={`px-3 py-1 rounded-[6px] text-xs font-medium border transition-all duration-150 ${
+                    tone === t.id
+                      ? 'bg-accent text-white border-accent'
+                      : 'bg-bg text-ink-muted border-line hover:text-ink hover:border-ink-muted'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Analyze button */}
+            <button
+              onClick={handleAnalyze}
+              disabled={!canAnalyze}
+              className={`w-full py-3 rounded-lg text-sm font-medium text-white transition-colors duration-150 ${
+                canAnalyze
+                  ? 'bg-accent hover:bg-accent-hover cursor-pointer'
+                  : 'bg-accent opacity-40 cursor-not-allowed'
+              }`}
+            >
+              Analyze
+            </button>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
