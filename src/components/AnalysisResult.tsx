@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { Analysis } from '@/lib/ai/schemas/analysis';
 
 export type AnalyzeRecord = {
@@ -123,37 +123,62 @@ export default function AnalysisResult({ record, onReset }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const { word, analysis } = record;
 
   const speechSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
-  function handleListen() {
-    if (!speechSupported) return;
-
-    if (isSpeaking) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-      return;
-    }
-
+  function speakFallback() {
+    if (!speechSupported) { setIsSpeaking(false); return; }
     const lang = LANG_CODE[record.language] ?? 'en-US';
-
-    function speak() {
+    function doSpeak() {
       const utter = new SpeechSynthesisUtterance(record.word);
       utter.lang = lang;
       const voice = pickVoice(lang);
       if (voice) utter.voice = voice;
-      utter.onstart = () => setIsSpeaking(true);
       utter.onend = () => setIsSpeaking(false);
       utter.onerror = () => setIsSpeaking(false);
       window.speechSynthesis.speak(utter);
     }
-
     if (window.speechSynthesis.getVoices().length === 0) {
-      window.speechSynthesis.addEventListener('voiceschanged', speak, { once: true });
+      window.speechSynthesis.addEventListener('voiceschanged', doSpeak, { once: true });
     } else {
-      speak();
+      doSpeak();
     }
+  }
+
+  async function handleListen() {
+    if (isSpeaking) {
+      audioRef.current?.pause();
+      audioRef.current = null;
+      if (speechSupported) window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    setIsSpeaking(true);
+
+    if (record.language === 'en') {
+      try {
+        const res = await fetch(
+          `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(record.word)}`
+        );
+        if (res.ok) {
+          const data: Array<{ phonetics: Array<{ audio?: string }> }> = await res.json();
+          const audioUrl = data[0]?.phonetics?.find((p) => p.audio)?.audio;
+          if (audioUrl) {
+            const audio = new Audio(audioUrl);
+            audioRef.current = audio;
+            audio.onended = () => { setIsSpeaking(false); audioRef.current = null; };
+            audio.onerror = () => { audioRef.current = null; speakFallback(); };
+            await audio.play();
+            return;
+          }
+        }
+      } catch { /* fall through to Web Speech */ }
+    }
+
+    speakFallback();
   }
   const { essential, advanced } = analysis;
 
