@@ -259,6 +259,11 @@ export default function Home() {
       setHistory((h) => h.slice(0, -1));
       setPageState({ status: 'result', record: prev });
     } else {
+      setWord('');
+      setCuriosityVisible(true);
+      setTranslationState({ status: 'idle' });
+      setSpellingError(null);
+      setSpellingSuggestion(null);
       setPageState({ status: 'idle' });
     }
   };
@@ -521,7 +526,7 @@ export default function Home() {
           </div>
 
           {/* Inline translator */}
-          {canAnalyze && (
+          {canAnalyze && !spellingError && (
             <div className="px-7 pb-5 border-t border-line pt-4">
               <div className="flex items-center gap-2">
                 <div className="flex gap-1.5 flex-wrap flex-1">
