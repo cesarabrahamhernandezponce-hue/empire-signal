@@ -245,15 +245,13 @@ export default function Home() {
   const handleAnalyze = () => handleAnalyzeWithWord(word);
 
   const handleReset = () => {
-    setHistory((h) => {
-      if (h.length > 0) {
-        const prev = h[h.length - 1];
-        setPageState({ status: 'result', record: prev });
-        return h.slice(0, -1);
-      }
+    if (history.length > 0) {
+      const prev = history[history.length - 1];
+      setHistory((h) => h.slice(0, -1));
+      setPageState({ status: 'result', record: prev });
+    } else {
       setPageState({ status: 'idle' });
-      return h;
-    });
+    }
   };
 
   const canAnalyze = word.trim().length > 0;
@@ -277,6 +275,7 @@ export default function Home() {
     const currentRecord = pageState.record;
     return (
       <AnalysisResult
+        key={currentRecord.id}
         record={currentRecord}
         onReset={handleReset}
         onAnalyzeWord={(w) => {
