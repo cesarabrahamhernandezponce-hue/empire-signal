@@ -275,7 +275,7 @@ export default function AnalysisResult({ record, onReset, onAnalyzeWord }: Props
       const res = await fetch('/api/signal/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sentence: trimmed, word: record.word, language: record.language }),
+        body: JSON.stringify({ sentence: trimmed, word: record.word, language: record.language.toLowerCase() }),
       });
       const data: unknown = await res.json();
       if (!res.ok) {

@@ -16,7 +16,7 @@ const bodySchema = z.object({
 
 const responseSchema = z.object({
   natural:    z.boolean(),
-  score:      z.number().int().min(0).max(100),
+  score:      z.number().min(0).max(100).transform(Math.round),
   feedback:   z.string(),
   suggestion: z.string().nullable().optional().transform((v) => v ?? undefined),
 });
