@@ -5,6 +5,9 @@ import { Language as DbLanguage } from '@prisma/client';
 import { askFollowUp } from '@/lib/services/signal';
 import { prisma } from '@/lib/db/prisma';
 import type { Language } from '@/lib/ai/prompts/types';
+import { getClientIp, hashIp, checkInMemoryLimit } from '@/lib/rate-limit';
+
+const DAILY_LIMIT = 20;
 
 const bodySchema = z.object({
   searchRecordId: z.string().min(1),
@@ -35,6 +38,11 @@ export async function POST(request: Request) {
     }
 
     const { searchRecordId, question } = parsed.data;
+
+    const ipHash = hashIp(getClientIp(request));
+    if (!checkInMemoryLimit(ipHash, DAILY_LIMIT)) {
+      return NextResponse.json({ error: 'Daily limit reached. Come back tomorrow.' }, { status: 429 });
+    }
 
     const record = await prisma.searchRecord.findUnique({ where: { id: searchRecordId } });
     if (!record) {

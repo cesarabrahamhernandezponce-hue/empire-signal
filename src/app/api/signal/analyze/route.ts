@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createHash } from 'crypto';
 import { z } from 'zod';
 import { Tone as DbTone, Language as DbLanguage } from '@prisma/client';
 
 import { analyzeWord, type AnalyzeRecord } from '@/lib/services/signal';
 import type { Analysis } from '@/lib/ai/schemas/analysis';
 import { prisma } from '@/lib/db/prisma';
+import { getClientIp, hashIp } from '@/lib/rate-limit';
 
 const DAILY_LIMIT = 10;
 
@@ -30,16 +30,6 @@ const bodySchema = z.object({
   tone:     z.enum(['practico', 'academico', 'creativo', 'infantil']).default('practico'),
   language: z.enum(['es', 'en']).default('en'),
 });
-
-function getClientIp(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return request.headers.get('x-real-ip') ?? 'unknown';
-}
-
-function hashIp(ip: string): string {
-  return createHash('sha256').update(ip).digest('hex');
-}
 
 export async function POST(request: Request) {
   try {

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { translateWord } from '@/lib/services/signal';
+import { getClientIp, hashIp, checkInMemoryLimit } from '@/lib/rate-limit';
+
+const DAILY_LIMIT = 30;
 
 const bodySchema = z.object({
   word:            z.string().min(1).max(100).trim(),
@@ -28,6 +31,11 @@ export async function POST(request: Request) {
     }
 
     const { word, targetLanguages, tone } = parsed.data;
+
+    const ipHash = hashIp(getClientIp(request));
+    if (!checkInMemoryLimit(ipHash, DAILY_LIMIT)) {
+      return NextResponse.json({ error: 'Daily limit reached. Come back tomorrow.' }, { status: 429 });
+    }
 
     const result = await translateWord({ word, targetLanguages, tone });
 

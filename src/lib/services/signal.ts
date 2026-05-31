@@ -67,9 +67,9 @@ export async function analyzeWord(params: {
   const dbTone = TONE_MAP[tone];
   const dbLanguage = LANGUAGE_MAP[language];
 
-  // Check cache
-  let cached: AnalyzeRecord | null = params.prefetched ?? null;
-  if (!cached) {
+  // Check cache — skip DB lookup if caller already verified (prefetched !== undefined)
+  let cached: AnalyzeRecord | null = params.prefetched !== undefined ? params.prefetched : null;
+  if (params.prefetched === undefined) {
     try {
       const found = await prisma.searchRecord.findFirst({
         where: { word, context, tone: dbTone, language: dbLanguage },
