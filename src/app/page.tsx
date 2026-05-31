@@ -142,6 +142,7 @@ export default function Home() {
   const [curiosityVisible, setCuriosityVisible] = useState(true);
   const [pageState, setPageState]               = useState<PageState>({ status: 'idle' });
   const [spellingError, setSpellingError]       = useState<string | null>(null);
+  const [spellingSuggestion, setSpellingSuggestion] = useState<string | null>(null);
   const [history, setHistory]                   = useState<AnalyzeRecord[]>([]);
   const [sessionHistory, setSessionHistory]     = useState<string[]>([]);
   const [targetLang, setTargetLang]             = useState<TranslateLang>('es');
@@ -175,6 +176,7 @@ export default function Home() {
     setCuriosityVisible(val.length === 0);
     setTranslationState({ status: 'idle' });
     setSpellingError(null);
+    setSpellingSuggestion(null);
   };
 
   const handleTranslate = async () => {
@@ -227,6 +229,8 @@ export default function Home() {
       if (res.status === 422) {
         setPageState({ status: 'idle' });
         setSpellingError('Word not found in dictionary. Check the spelling and try again.');
+        const suggestion = (data as { suggestion?: string | null }).suggestion ?? null;
+        setSpellingSuggestion(suggestion);
         return;
       }
 
@@ -487,9 +491,32 @@ export default function Home() {
               </p>
             )}
             {spellingError && (
-              <p style={{ color: '#E53935', fontSize: '0.75rem', marginTop: '4px', animation: 'fadeIn 0.25s ease' }}>
-                {spellingError}
-              </p>
+              <div style={{ marginTop: '4px', animation: 'fadeIn 0.25s ease' }}>
+                <p style={{ color: '#E53935', fontSize: '0.75rem' }}>{spellingError}</p>
+                {spellingSuggestion && (
+                  <button
+                    onClick={() => {
+                      setSpellingError(null);
+                      setSpellingSuggestion(null);
+                      setWord(spellingSuggestion);
+                      handleAnalyzeWithWord(spellingSuggestion);
+                    }}
+                    style={{
+                      color: '#3A3D8F',
+                      fontSize: '0.75rem',
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      marginTop: '2px',
+                      display: 'block',
+                    }}
+                  >
+                    Did you mean &ldquo;{spellingSuggestion}&rdquo;?
+                  </button>
+                )}
+              </div>
             )}
           </div>
 

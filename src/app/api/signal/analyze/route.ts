@@ -4,6 +4,7 @@ import { Tone as DbTone, Language as DbLanguage } from '@prisma/client';
 
 import { analyzeWord, type AnalyzeRecord } from '@/lib/services/signal';
 import type { Analysis } from '@/lib/ai/schemas/analysis';
+import { generateContent } from '@/lib/ai/client';
 import { prisma } from '@/lib/db/prisma';
 import { getClientIp, hashIp } from '@/lib/rate-limit';
 
@@ -49,7 +50,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const { word, context, tone, language } = parsed.data;
+    const { word: rawWord, context, tone, language } = parsed.data;
+
+    // Normalize: lowercase + strip leading/trailing punctuation so "Hola", "¡hola!" and "hola" hit the same cache entry
+    const word = rawWord.toLowerCase().replace(/^[\s!?¡¿.,;:'"()\[\]{}]+|[\s!?¡¿.,;:'"()\[\]{}]+$/g, '');
+    if (!word) {
+      return NextResponse.json(
+        { error: 'Invalid parameters: word — must contain at least one letter.' },
+        { status: 400 },
+      );
+    }
 
     // Dictionary validation — English only (dictionaryapi.dev has incomplete Spanish coverage)
     if (language === 'en') {
@@ -62,7 +72,18 @@ export async function POST(request: Request) {
         );
         clearTimeout(timeoutId);
         if (dictRes.status === 404) {
-          return NextResponse.json({ error: 'Word not found', suggestion: null }, { status: 422 });
+          let suggestion: string | null = null;
+          try {
+            const suggResult = await generateContent(
+              `The English word "${word}" is likely misspelled. What is the correct spelling? Reply with ONLY the correctly spelled word in lowercase, no punctuation, nothing else.`,
+              'text/plain',
+            );
+            if (suggResult.ok) {
+              const sugg = suggResult.text.trim().toLowerCase().replace(/[^a-z'\-]/g, '');
+              if (sugg && sugg !== word) suggestion = sugg;
+            }
+          } catch { /* ignore — suggestion stays null */ }
+          return NextResponse.json({ error: 'Word not found', suggestion }, { status: 422 });
         }
       } catch {
         // timeout or network failure — don't block analysis
