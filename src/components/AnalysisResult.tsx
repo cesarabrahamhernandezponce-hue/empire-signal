@@ -144,6 +144,11 @@ const LABELS = {
     wordFamily:      'Word family',
     analyzeAnother:  '← Analyze another word',
     notSupported:    'Not supported',
+    validateSection: 'Validate your sentence',
+    check:           'Check',
+    soundsNatural:   'Sounds natural',
+    needsAdjust:     'Needs adjustment',
+    tryInstead:      'Try instead',
   },
   es: {
     newSearch:       'Nueva búsqueda',
@@ -169,8 +174,19 @@ const LABELS = {
     wordFamily:      'Familia de palabras',
     analyzeAnother:  '← Analizar otra palabra',
     notSupported:    'No soportado',
+    validateSection: 'Valida tu oración',
+    check:           'Verificar',
+    soundsNatural:   'Suena natural',
+    needsAdjust:     'Necesita ajuste',
+    tryInstead:      'Intenta así',
   },
 } as const;
+
+type ValidationState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'result'; natural: boolean; score: number; feedback: string; suggestion?: string }
+  | { status: 'error'; message: string };
 
 function pickVoice(lang: string): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
@@ -187,6 +203,8 @@ export default function AnalysisResult({ record, onReset, onAnalyzeWord }: Props
   const [shareCopied, setShareCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [sentence, setSentence] = useState('');
+  const [validation, setValidation] = useState<ValidationState>({ status: 'idle' });
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { word, analysis } = record;
 
@@ -248,6 +266,29 @@ export default function AnalysisResult({ record, onReset, onAnalyzeWord }: Props
 
     speakFallback();
   }
+
+  async function handleValidate() {
+    const trimmed = sentence.trim();
+    if (!trimmed) return;
+    setValidation({ status: 'loading' });
+    try {
+      const res = await fetch('/api/signal/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sentence: trimmed, word: record.word, language: record.language }),
+      });
+      const data: unknown = await res.json();
+      if (!res.ok) {
+        setValidation({ status: 'error', message: (data as { error?: string }).error ?? 'Validation failed.' });
+        return;
+      }
+      const d = data as { natural: boolean; score: number; feedback: string; suggestion?: string };
+      setValidation({ status: 'result', natural: d.natural, score: d.score, feedback: d.feedback, suggestion: d.suggestion });
+    } catch {
+      setValidation({ status: 'error', message: 'Could not connect to the server.' });
+    }
+  }
+
   const lang = record.language.toLowerCase() as 'en' | 'es';
   const l = LABELS[lang] ?? LABELS.en;
   const { essential, advanced } = analysis;
@@ -404,6 +445,75 @@ export default function AnalysisResult({ record, onReset, onAnalyzeWord }: Props
               {essential.mnemonic}
               <span style={{ fontFamily: 'var(--font-dm-serif)', fontSize: '2rem', lineHeight: 1, color: '#3A3D8F', verticalAlign: '-0.3em', marginLeft: '0.15em' }}>{'”'}</span>
             </p>
+          </section>
+
+          {/* Validate your sentence */}
+          <section style={cardBase}>
+            <SectionLabel serif>{l.validateSection}</SectionLabel>
+            <textarea
+              value={sentence}
+              onChange={(e) => { setSentence(e.target.value); setValidation({ status: 'idle' }); }}
+              placeholder={lang === 'en' ? `Write a sentence using "${word}"...` : `Escribe una oración usando "${word}"...`}
+              rows={2}
+              maxLength={300}
+              className="w-full bg-bg border border-line rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-faint outline-none focus:border-accent resize-none transition-colors duration-150"
+            />
+            <div className="flex justify-end mt-2">
+              <button
+                onClick={handleValidate}
+                disabled={sentence.trim().length === 0 || validation.status === 'loading'}
+                className="px-4 py-1.5 rounded-[6px] text-xs font-medium border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {validation.status === 'loading' ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 border border-line border-t-accent rounded-full animate-spin" />
+                    {l.check}
+                  </span>
+                ) : l.check}
+              </button>
+            </div>
+
+            {validation.status === 'result' && (
+              <div className="mt-4">
+                <div className="flex items-baseline gap-2">
+                  <span
+                    className="text-2xl font-semibold"
+                    style={{ color: validation.natural ? '#2E7D32' : '#E65100' }}
+                  >
+                    {validation.score}/100
+                  </span>
+                  <span className="text-xs text-ink-muted">
+                    {validation.natural ? l.soundsNatural : l.needsAdjust}
+                  </span>
+                </div>
+                <p className="text-sm text-ink-muted mt-2">{validation.feedback}</p>
+                {!validation.natural && validation.suggestion && (
+                  <div
+                    style={{
+                      background: '#F5F5FB',
+                      borderLeft: '3px solid #3A3D8F',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      marginTop: '12px',
+                    }}
+                  >
+                    <p
+                      className="text-[0.65rem] font-semibold uppercase mb-1"
+                      style={{ color: 'var(--accent)', letterSpacing: '0.08em' }}
+                    >
+                      {l.tryInstead}
+                    </p>
+                    <p className="text-sm italic" style={{ color: 'var(--text-body)' }}>
+                      {validation.suggestion}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {validation.status === 'error' && (
+              <p className="mt-3 text-xs text-ink-muted">{validation.message}</p>
+            )}
           </section>
 
         </div>
