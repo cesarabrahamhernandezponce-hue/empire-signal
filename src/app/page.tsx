@@ -3,18 +3,73 @@
 import { useState, useEffect, useRef } from 'react';
 import AnalysisResult, { type AnalyzeRecord } from '@/components/AnalysisResult';
 
-const CURIOSITIES = [
-  'Did you know Spanish has over 500 million native speakers, making it the world\'s second most spoken language?',
-  'Did you know the word "robot" was coined in 1920 by Czech writer Karel Čapek, from the Slavic "robota" meaning forced labor?',
-  'Did you know "salary" comes from the Latin "salarium" — the payment in salt given to Roman soldiers?',
-  'Did you know "avocado" comes from the Nahuatl word "ahuácatl"? The Aztecs named it for its distinctive shape.',
-  'Did you know the word "set" has over 430 definitions in the Oxford Dictionary? It\'s the most polysemous word in English.',
-  'Did you know "hurricane" comes from "Huracán", the wind god worshipped by the indigenous peoples of the Caribbean?',
-  'Did you know the Ubykh language of the Caucasus, now extinct, had 84 distinct consonants? English has just 24.',
-  'Did you know "queue" is the only word in English that sounds the same even if you remove its last four letters?',
-  'Did you know the Silbo Gomero, a whistled language from La Gomera in the Canary Islands, has full grammar recognized by UNESCO?',
-  'Did you know the !Xóõ language of Botswana has over 100 distinct phonemes? It\'s the language with the most sounds in the world.',
-];
+const CURIOSITIES: Record<'en' | 'es', string[]> = {
+  en: [
+    'Did you know Spanish has over 500 million native speakers, making it the world\'s second most spoken language?',
+    'Did you know the word "robot" was coined in 1920 by Czech writer Karel Čapek, from the Slavic "robota" meaning forced labor?',
+    'Did you know "salary" comes from the Latin "salarium" — the payment in salt given to Roman soldiers?',
+    'Did you know "avocado" comes from the Nahuatl word "ahuácatl"? The Aztecs named it for its distinctive shape.',
+    'Did you know the word "set" has over 430 definitions in the Oxford Dictionary? It\'s the most polysemous word in English.',
+    'Did you know "hurricane" comes from "Huracán", the wind god worshipped by the indigenous peoples of the Caribbean?',
+    'Did you know the Ubykh language of the Caucasus, now extinct, had 84 distinct consonants? English has just 24.',
+    'Did you know "queue" is the only word in English that sounds the same even if you remove its last four letters?',
+    'Did you know the Silbo Gomero, a whistled language from La Gomera in the Canary Islands, has full grammar recognized by UNESCO?',
+    'Did you know the !Xóõ language of Botswana has over 100 distinct phonemes? It\'s the language with the most sounds in the world.',
+  ],
+  es: [
+    '¿Sabías que el español es el único idioma romance con una letra propia, la ñ, que no deriva de ninguna lengua latina clásica?',
+    '¿Sabías que la palabra "robot" fue acuñada en 1920 por el escritor checo Karel Čapek, del eslavo "robota" que significa trabajo forzado?',
+    '¿Sabías que "salario" viene del latín "salarium", el pago en sal que recibían los soldados romanos?',
+    '¿Sabías que "aguacate" viene del náhuatl "ahuácatl"? Los aztecas lo nombraron así por su forma característica.',
+    '¿Sabías que la palabra "set" tiene más de 430 definiciones en el diccionario Oxford? Es la palabra más polisémica del inglés.',
+    '¿Sabías que "huracán" viene de "Huracán", el dios del viento venerado por los pueblos indígenas del Caribe?',
+    '¿Sabías que el ubykh del Cáucaso, ya extinto, tenía 84 consonantes distintas? El español tiene solo 19.',
+    '¿Sabías que el español tiene dos formas de decir "ser": ser y estar, una distinción que muy pocos idiomas del mundo comparten?',
+    '¿Sabías que el silbo gomero, un lenguaje silbado de La Gomera (Canarias), tiene gramática completa y está reconocido por la UNESCO?',
+    '¿Sabías que el idioma !Xóõ de Botsuana tiene más de 100 fonemas distintos? Es el idioma con más sonidos del mundo.',
+  ],
+};
+
+const UI = {
+  en: {
+    insightLabel:    'Empire Insight',
+    tagline:         'Linguistic intelligence',
+    placeholder:     'Type a word...',
+    contextHint:     "e.g. I'm reading a 19th-century medical text...",
+    addContext:      '+ Add context (optional)',
+    hideContext:     '− Hide context',
+    translate:       'Translate',
+    translating:     'Translating',
+    analyze:         'Analyze',
+    analyzing:       'Analyzing...',
+    errorTitle:      'Something went wrong',
+    tryAgain:        '← Try again',
+    toneLabels:      ['Practical', 'Academic', 'Creative', 'Simple'] as const,
+    langLabel:       'Language',
+    themeLabel:      'Theme',
+    light:           'Light',
+    dark:            'Dark',
+  },
+  es: {
+    insightLabel:    'Perspectiva Empire',
+    tagline:         'Inteligencia lingüística',
+    placeholder:     'Escribe una palabra...',
+    contextHint:     'ej. Estoy leyendo un texto médico del siglo XIX...',
+    addContext:      '+ Agregar contexto (opcional)',
+    hideContext:     '− Ocultar contexto',
+    translate:       'Traducir',
+    translating:     'Traduciendo',
+    analyze:         'Analizar',
+    analyzing:       'Analizando...',
+    errorTitle:      'Algo salió mal',
+    tryAgain:        '← Intentar de nuevo',
+    toneLabels:      ['Práctico', 'Académico', 'Creativo', 'Simple'] as const,
+    langLabel:       'Idioma',
+    themeLabel:      'Tema',
+    light:           'Claro',
+    dark:            'Oscuro',
+  },
+} as const;
 
 const TONES = [
   { id: 'practico',  label: 'Practical' },
@@ -76,7 +131,12 @@ export default function Home() {
   const [showContext, setShowContext]           = useState(false);
   const [tone, setTone]                         = useState<Tone>('practico');
   const [language, setLanguage]                 = useState<Language>('en');
-  const [theme, setTheme]                       = useState<'light' | 'dark'>('light');
+  const [theme, setTheme]                       = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('theme') as 'light' | 'dark') ?? 'light';
+    }
+    return 'light';
+  });
   const [settingsOpen, setSettingsOpen]         = useState(false);
   const [curiosity, setCuriosity]               = useState('');
   const [curiosityVisible, setCuriosityVisible] = useState(true);
@@ -86,11 +146,13 @@ export default function Home() {
   const settingsRef                             = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setCuriosity(CURIOSITIES[Math.floor(Math.random() * CURIOSITIES.length)]);
-  }, []);
+    const pool = CURIOSITIES[language];
+    setCuriosity(pool[Math.floor(Math.random() * pool.length)]);
+  }, [language]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
   }, [theme]);
 
   useEffect(() => {
@@ -108,7 +170,7 @@ export default function Home() {
     const val = e.target.value;
     setWord(val);
     setCuriosityVisible(val.length === 0);
-    if (val.length === 0) setTranslationState({ status: 'idle' });
+    setTranslationState({ status: 'idle' });
   };
 
   const handleTranslate = async () => {
@@ -177,13 +239,15 @@ export default function Home() {
 
   const canAnalyze = word.trim().length > 0;
 
+  const t = UI[language];
+
   // ── Loading ──────────────────────────────────────────────────────────────
   if (pageState.status === 'loading') {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
         <div className="text-center">
           <div className="w-5 h-5 border-2 border-line border-t-accent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm text-ink-muted">Analyzing...</p>
+          <p className="text-sm text-ink-muted">{t.analyzing}</p>
         </div>
       </div>
     );
@@ -226,7 +290,7 @@ export default function Home() {
               className="mb-2 text-[0.7rem] font-semibold uppercase"
               style={{ color: '#3A3D8F', letterSpacing: '0.05em' }}
             >
-              Language
+              {t.langLabel}
             </p>
             <div className="flex gap-1.5">
               {(['en', 'es'] as const).map((lang) => (
@@ -251,11 +315,11 @@ export default function Home() {
               className="text-[0.7rem] font-semibold uppercase"
               style={{ color: '#3A3D8F', letterSpacing: '0.05em' }}
             >
-              Theme
+              {t.themeLabel}
             </p>
             <div className="flex items-center gap-2">
               <span className="text-xs text-ink-muted">
-                {theme === 'light' ? 'Light' : 'Dark'}
+                {theme === 'light' ? t.light : t.dark}
               </span>
               <button
                 onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
@@ -291,13 +355,13 @@ export default function Home() {
         {settingsButton}
         <div className="min-h-screen bg-bg flex items-center justify-center px-4">
           <div className="text-center max-w-sm">
-            <p className="text-sm text-ink mb-1">Something went wrong</p>
+            <p className="text-sm text-ink mb-1">{t.errorTitle}</p>
             <p className="text-sm text-ink-muted mb-6">{pageState.message}</p>
             <button
               onClick={handleReset}
               className="text-sm text-accent hover:text-accent-hover transition-colors duration-150"
             >
-              ← Try again
+              {t.tryAgain}
             </button>
           </div>
         </div>
@@ -320,7 +384,7 @@ export default function Home() {
             Empire
           </h1>
           <p className="mt-2.5 text-sm font-medium" style={{ letterSpacing: '0.12em', color: '#3A3D8F' }}>
-            Linguistic intelligence
+            {t.tagline}
           </p>
         </div>
 
@@ -331,7 +395,7 @@ export default function Home() {
           }`}
         >
           <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-accent mb-1.5">
-            Empire Insight
+            {t.insightLabel}
           </p>
           <p className="text-sm text-ink-muted leading-relaxed" suppressHydrationWarning>
             {curiosity}
@@ -348,7 +412,7 @@ export default function Home() {
               value={word}
               onChange={handleWordChange}
               onKeyDown={(e) => e.key === 'Enter' && canAnalyze && handleAnalyze()}
-              placeholder="Type a word..."
+              placeholder={t.placeholder}
               autoComplete="off"
               spellCheck={false}
               maxLength={40}
@@ -393,9 +457,9 @@ export default function Home() {
                   {translationState.status === 'loading' ? (
                     <span className="flex items-center gap-1.5">
                       <span className="w-3 h-3 border border-line border-t-accent rounded-full animate-spin" />
-                      Translating
+                      {t.translating}
                     </span>
-                  ) : 'Translate'}
+                  ) : t.translate}
                 </button>
               </div>
 
@@ -442,7 +506,7 @@ export default function Home() {
                 onClick={() => setShowContext((v) => !v)}
                 className="text-sm text-ink-faint hover:text-ink-muted transition-colors duration-150"
               >
-                {showContext ? '− Hide context' : '+ Add context (optional)'}
+                {showContext ? t.hideContext : t.addContext}
               </button>
               <div
                 className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
@@ -453,7 +517,7 @@ export default function Home() {
                   <textarea
                     value={context}
                     onChange={(e) => setContext(e.target.value)}
-                    placeholder="e.g. I'm reading a 19th-century medical text..."
+                    placeholder={t.contextHint}
                     rows={3}
                     className="mt-3 w-full bg-bg border border-line rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-faint outline-none focus:border-accent resize-none transition-colors duration-150"
                   />
@@ -463,17 +527,17 @@ export default function Home() {
 
             {/* Tone selector */}
             <div className="flex flex-wrap gap-1.5">
-              {TONES.map((t) => (
+              {TONES.map((tone_opt, i) => (
                 <button
-                  key={t.id}
-                  onClick={() => setTone(t.id)}
+                  key={tone_opt.id}
+                  onClick={() => setTone(tone_opt.id)}
                   className={`px-3 py-1 rounded-[6px] text-xs font-medium border transition-all duration-150 ${
-                    tone === t.id
+                    tone === tone_opt.id
                       ? 'bg-accent text-white border-accent'
                       : 'bg-bg text-ink-muted border-line hover:text-ink hover:border-ink-muted'
                   }`}
                 >
-                  {t.label}
+                  {t.toneLabels[i]}
                 </button>
               ))}
             </div>
@@ -488,7 +552,7 @@ export default function Home() {
                   : 'bg-accent opacity-40 cursor-not-allowed'
               }`}
             >
-              Analyze
+              {t.analyze}
             </button>
           </div>
         </div>

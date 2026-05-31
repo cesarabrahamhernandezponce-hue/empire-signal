@@ -109,6 +109,59 @@ function IconChevron({ open }: { open: boolean }) {
 
 const LANG_CODE: Record<string, string> = { es: 'es-ES', en: 'en-US' };
 
+const LABELS = {
+  en: {
+    newSearch:       'New search',
+    listen:          'Listen',
+    stop:            'Stop',
+    share:           'Share',
+    copied:          'Copied!',
+    copy:            'Copy',
+    meaningInCtx:    'Meaning in context',
+    wordType:        'Word type',
+    pronunciation:   'Pronunciation',
+    usageExamples:   'Usage examples',
+    collocations:    'Collocations',
+    mnemonic:        'Mnemonic',
+    viewFull:        'View full analysis',
+    hideFull:        'Hide full analysis',
+    etymology:       'Etymology',
+    story:           'The story behind',
+    synonyms:        'Synonyms',
+    antonyms:        'Antonyms',
+    registerLevel:   'Register level',
+    commonErrors:    'Common errors',
+    wordFamily:      'Word family',
+    analyzeAnother:  '← Analyze another word',
+    notSupported:    'Not supported',
+  },
+  es: {
+    newSearch:       'Nueva búsqueda',
+    listen:          'Escuchar',
+    stop:            'Detener',
+    share:           'Compartir',
+    copied:          '¡Copiado!',
+    copy:            'Copiar',
+    meaningInCtx:    'Significado en contexto',
+    wordType:        'Tipo de palabra',
+    pronunciation:   'Pronunciación',
+    usageExamples:   'Ejemplos de uso',
+    collocations:    'Colocaciones',
+    mnemonic:        'Mnemotécnico',
+    viewFull:        'Ver análisis completo',
+    hideFull:        'Ocultar análisis completo',
+    etymology:       'Etimología',
+    story:           'La historia detrás',
+    synonyms:        'Sinónimos',
+    antonyms:        'Antónimos',
+    registerLevel:   'Nivel de registro',
+    commonErrors:    'Errores comunes',
+    wordFamily:      'Familia de palabras',
+    analyzeAnother:  '← Analizar otra palabra',
+    notSupported:    'No soportado',
+  },
+} as const;
+
 function pickVoice(lang: string): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
   const prefix = lang.split('-')[0];
@@ -185,6 +238,8 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
     speakFallback();
   }
+  const lang = record.language.toLowerCase() as 'en' | 'es';
+  const l = LABELS[lang] ?? LABELS.en;
   const { essential, advanced } = analysis;
 
   return (
@@ -198,7 +253,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
             className="flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors duration-150"
           >
             <IconBack />
-            New search
+            {l.newSearch}
           </button>
           <span className="text-[10px] font-semibold tracking-[0.16em] uppercase text-ink-faint">
             Empire Signal
@@ -231,10 +286,10 @@ export default function AnalysisResult({ record, onReset }: Props) {
               className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
               onClick={handleListen}
               disabled={!speechSupported}
-              title={speechSupported ? undefined : 'Not supported'}
+              title={speechSupported ? undefined : l.notSupported}
             >
               {isSpeaking ? <IconStop /> : <IconSpeaker />}
-              {isSpeaking ? 'Stop' : 'Listen'}
+              {isSpeaking ? l.stop : l.listen}
             </button>
             <span className="text-ink-faint select-none">·</span>
             <button
@@ -248,7 +303,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
               }}
             >
               <IconShare />
-              {shareCopied ? 'Copied!' : 'Share'}
+              {shareCopied ? l.copied : l.share}
             </button>
             <span className="text-ink-faint select-none">·</span>
             <button
@@ -256,7 +311,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
               onClick={() => navigator.clipboard.writeText(word)}
             >
               <IconCopy />
-              Copy
+              {l.copy}
             </button>
           </div>
         </div>
@@ -266,7 +321,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
           {/* Meaning in context — accent left border */}
           <section style={{ ...cardBase, background: 'var(--surface-blue)', borderLeft: '3px solid var(--accent)' }}>
-            <SectionLabel serif>Meaning in context</SectionLabel>
+            <SectionLabel serif>{l.meaningInCtx}</SectionLabel>
             <p className="text-base leading-relaxed" style={{ color: 'var(--text-primary)' }}>
               {essential.meaningInContext}
             </p>
@@ -274,7 +329,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
           {/* Word type */}
           <section style={cardBase}>
-            <SectionLabel serif>Word type</SectionLabel>
+            <SectionLabel serif>{l.wordType}</SectionLabel>
             <div className="flex items-center gap-2 mb-2">
               <span
                 className="text-xs font-medium px-2 py-0.5 rounded-[4px]"
@@ -290,7 +345,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
           {/* Pronunciation */}
           <section style={cardBase}>
-            <SectionLabel serif>Pronunciation</SectionLabel>
+            <SectionLabel serif>{l.pronunciation}</SectionLabel>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
               {essential.pronunciation.guide}
             </p>
@@ -298,7 +353,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
           {/* Usage examples */}
           <section style={cardBase}>
-            <SectionLabel serif>Usage examples</SectionLabel>
+            <SectionLabel serif>{l.usageExamples}</SectionLabel>
             <div className="space-y-4">
               {essential.usageExamples.map((ex, i) => (
                 <div key={i} className="flex items-start gap-3">
@@ -311,7 +366,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
           {/* Collocations */}
           <section style={cardBase}>
-            <SectionLabel serif>Collocations</SectionLabel>
+            <SectionLabel serif>{l.collocations}</SectionLabel>
             <div>
               {essential.collocations.map((col, i) => (
                 <div
@@ -332,7 +387,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
           {/* Mnemonic — blue-tinted background */}
           <section style={{ ...cardBase, background: 'var(--surface-muted)' }}>
-            <SectionLabel serif>Mnemonic</SectionLabel>
+            <SectionLabel serif>{l.mnemonic}</SectionLabel>
             <p className="leading-relaxed italic" style={{ color: '#4A4A4A', fontSize: '1rem' }}>
               <span style={{ fontFamily: 'var(--font-dm-serif)', fontSize: '2rem', lineHeight: 1, color: '#3A3D8F', verticalAlign: '-0.3em', marginRight: '0.15em' }}>{'“'}</span>
               {essential.mnemonic}
@@ -348,7 +403,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
             onClick={() => setShowAdvanced((v) => !v)}
             className="w-full py-4 flex items-center justify-center gap-2 text-sm text-ink-muted hover:text-ink border-y border-line transition-colors duration-150"
           >
-            <span>{showAdvanced ? 'Hide full analysis' : 'View full analysis'}</span>
+            <span>{showAdvanced ? l.hideFull : l.viewFull}</span>
             <IconChevron open={showAdvanced} />
           </button>
 
@@ -363,7 +418,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
                 {advanced.etymology && (
                   <section style={cardBase}>
-                    <SectionLabel>Etymology</SectionLabel>
+                    <SectionLabel>{l.etymology}</SectionLabel>
                     <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
                       {advanced.etymology}
                     </p>
@@ -372,7 +427,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
                 {advanced.story && (
                   <section style={cardBase}>
-                    <SectionLabel>The story behind</SectionLabel>
+                    <SectionLabel>{l.story}</SectionLabel>
                     <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
                       {advanced.story}
                     </p>
@@ -380,7 +435,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
                 )}
 
                 <section style={cardBase}>
-                  <SectionLabel>Synonyms</SectionLabel>
+                  <SectionLabel>{l.synonyms}</SectionLabel>
                   <div className="space-y-3">
                     {advanced.synonyms.map((syn, i) => (
                       <div key={i} className="flex gap-4">
@@ -397,7 +452,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
 
                 {advanced.antonyms.length > 0 && (
                   <section style={cardBase}>
-                    <SectionLabel>Antonyms</SectionLabel>
+                    <SectionLabel>{l.antonyms}</SectionLabel>
                     <div className="space-y-3">
                       {advanced.antonyms.map((ant, i) => (
                         <div key={i} className="flex gap-4">
@@ -414,7 +469,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
                 )}
 
                 <section style={cardBase}>
-                  <SectionLabel>Register level</SectionLabel>
+                  <SectionLabel>{l.registerLevel}</SectionLabel>
                   <div className="flex items-center gap-2 mb-2">
                     <span
                       className="text-xs font-medium px-2 py-0.5 rounded-[4px]"
@@ -429,7 +484,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
                 </section>
 
                 <section style={{ ...cardBase, background: 'var(--surface-error)' }}>
-                  <SectionLabel>Common errors</SectionLabel>
+                  <SectionLabel>{l.commonErrors}</SectionLabel>
                   <div className="space-y-5">
                     {advanced.commonErrors.map((ce, i) => (
                       <div key={i}>
@@ -445,7 +500,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
                 </section>
 
                 <section style={cardBase}>
-                  <SectionLabel>Word family</SectionLabel>
+                  <SectionLabel>{l.wordFamily}</SectionLabel>
                   <div className="space-y-3">
                     {advanced.wordFamily.map((wf, i) => (
                       <div key={i} className="flex gap-4">
@@ -471,7 +526,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
             onClick={onReset}
             className="text-sm text-ink-faint hover:text-ink-muted transition-colors duration-150"
           >
-            ← Analyze another word
+            {l.analyzeAnother}
           </button>
         </div>
       </div>
