@@ -16,6 +16,7 @@ export type AnalyzeRecord = {
 interface Props {
   record: AnalyzeRecord;
   onReset: () => void;
+  onAnalyzeWord?: (word: string) => void;
 }
 
 const cardBase: React.CSSProperties = {
@@ -107,6 +108,15 @@ function IconChevron({ open }: { open: boolean }) {
   );
 }
 
+function ClickableWord({ word, onAnalyze }: { word: string; onAnalyze?: (w: string) => void }) {
+  if (!onAnalyze) return <>{word}</>;
+  return (
+    <button className="word-btn" onClick={() => onAnalyze(word)}>
+      {word}
+    </button>
+  );
+}
+
 const LANG_CODE: Record<string, string> = { es: 'es-ES', en: 'en-US' };
 
 const LABELS = {
@@ -172,7 +182,7 @@ function pickVoice(lang: string): SpeechSynthesisVoice | null {
   );
 }
 
-export default function AnalysisResult({ record, onReset }: Props) {
+export default function AnalysisResult({ record, onReset, onAnalyzeWord }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -375,7 +385,8 @@ export default function AnalysisResult({ record, onReset }: Props) {
                   style={{ background: i % 2 !== 0 ? 'var(--bg)' : 'transparent', padding: '6px 4px', borderRadius: '4px' }}
                 >
                   <span className="shrink-0 text-sm font-medium w-40" style={{ color: 'var(--text-primary)' }}>
-                    {col.phrase}
+                    <ClickableWord word={col.phrase.split(' ')[0]} onAnalyze={onAnalyzeWord} />
+                    {col.phrase.includes(' ') ? col.phrase.slice(col.phrase.indexOf(' ')) : ''}
                   </span>
                   <span className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
                     {col.meaning}
@@ -440,7 +451,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
                     {advanced.synonyms.map((syn, i) => (
                       <div key={i} className="flex gap-4">
                         <span className="shrink-0 text-sm font-medium w-28" style={{ color: 'var(--text-primary)' }}>
-                          {syn.word}
+                          <ClickableWord word={syn.word} onAnalyze={onAnalyzeWord} />
                         </span>
                         <span className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
                           {syn.nuance}
@@ -457,7 +468,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
                       {advanced.antonyms.map((ant, i) => (
                         <div key={i} className="flex gap-4">
                           <span className="shrink-0 text-sm font-medium w-28" style={{ color: 'var(--text-primary)' }}>
-                            {ant.word}
+                            <ClickableWord word={ant.word} onAnalyze={onAnalyzeWord} />
                           </span>
                           <span className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
                             {ant.context}
@@ -505,7 +516,7 @@ export default function AnalysisResult({ record, onReset }: Props) {
                     {advanced.wordFamily.map((wf, i) => (
                       <div key={i} className="flex gap-4">
                         <span className="shrink-0 text-sm font-medium w-28" style={{ color: 'var(--text-primary)' }}>
-                          {wf.word}
+                          <ClickableWord word={wf.word} onAnalyze={onAnalyzeWord} />
                         </span>
                         <span className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
                           {wf.relation}

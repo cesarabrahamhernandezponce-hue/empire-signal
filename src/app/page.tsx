@@ -142,6 +142,7 @@ export default function Home() {
   const [curiosityVisible, setCuriosityVisible] = useState(true);
   const [pageState, setPageState]               = useState<PageState>({ status: 'idle' });
   const [spellingError, setSpellingError]       = useState<string | null>(null);
+  const [history, setHistory]                   = useState<AnalyzeRecord[]>([]);
   const [targetLang, setTargetLang]             = useState<TranslateLang>('es');
   const [translationState, setTranslationState] = useState<TranslationState>({ status: 'idle' });
   const settingsRef                             = useRef<HTMLDivElement>(null);
@@ -202,8 +203,8 @@ export default function Home() {
     }
   };
 
-  const handleAnalyze = async () => {
-    const trimmed = word.trim();
+  const handleAnalyzeWithWord = async (w: string) => {
+    const trimmed = w.trim();
     if (!trimmed) return;
 
     setPageState({ status: 'loading' });
@@ -241,8 +242,18 @@ export default function Home() {
     }
   };
 
+  const handleAnalyze = () => handleAnalyzeWithWord(word);
+
   const handleReset = () => {
-    setPageState({ status: 'idle' });
+    setHistory((h) => {
+      if (h.length > 0) {
+        const prev = h[h.length - 1];
+        setPageState({ status: 'result', record: prev });
+        return h.slice(0, -1);
+      }
+      setPageState({ status: 'idle' });
+      return h;
+    });
   };
 
   const canAnalyze = word.trim().length > 0;
@@ -263,7 +274,18 @@ export default function Home() {
 
   // ── Result ───────────────────────────────────────────────────────────────
   if (pageState.status === 'result') {
-    return <AnalysisResult record={pageState.record} onReset={handleReset} />;
+    const currentRecord = pageState.record;
+    return (
+      <AnalysisResult
+        record={currentRecord}
+        onReset={handleReset}
+        onAnalyzeWord={(w) => {
+          setHistory((h) => [...h, currentRecord]);
+          setWord(w);
+          handleAnalyzeWithWord(w);
+        }}
+      />
+    );
   }
 
   // ── Settings button + panel (shared by idle & error) ─────────────────────
