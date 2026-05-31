@@ -2,7 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-const MODEL = 'gemini-2.5-flash';
+const MODEL = 'gemini-2.0-flash';
 const TIMEOUT_MS = 30000;
 
 export type AIResult =
@@ -36,6 +36,11 @@ export async function generateContent(
   } catch (err) {
     if (err instanceof Error && err.name === 'AbortError') {
       return { ok: false, error: 'The request took too long. Please try again.' };
+    }
+    const status = (err as { status?: number }).status;
+    const message = err instanceof Error ? err.message : '';
+    if (status === 429 || message.includes('RESOURCE_EXHAUSTED') || message.includes('429')) {
+      return { ok: false, error: 'The AI service is temporarily busy. Please try again in a moment.' };
     }
     return { ok: false, error: 'Could not reach the AI service.' };
   } finally {
