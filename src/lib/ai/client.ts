@@ -1,6 +1,12 @@
 const BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const TIMEOUT_MS = 30000;
 
+function stripCodeFences(text: string): string {
+  const match = text.match(/```(?:json)?\s*([\s\S]+?)\s*```/);
+  if (match) return match[1].trim();
+  return text.trim();
+}
+
 // Tried in order; next is used when a model is rate-limited (429)
 const MODELS = [
   'openai/gpt-oss-120b:free',
@@ -30,7 +36,10 @@ export async function generateContent(
         },
         body: JSON.stringify({
           model,
-          messages: [{ role: 'user', content: prompt }],
+          messages: [
+            ...(isJson ? [{ role: 'system', content: 'You are a JSON API. Respond with a single valid JSON object. No markdown, no code fences, no explanation — raw JSON only.' }] : []),
+            { role: 'user', content: prompt },
+          ],
           ...(isJson ? { response_format: { type: 'json_object' } } : {}),
         }),
         signal: controller.signal,
@@ -43,11 +52,14 @@ export async function generateContent(
       }
 
       const data = await res.json() as { choices?: { message?: { content?: string } }[] };
-      const text = data.choices?.[0]?.message?.content;
+      const raw = data.choices?.[0]?.message?.content;
 
-      if (!text) {
+      if (!raw) {
         return { ok: false, error: 'The AI returned an empty response.' };
       }
+
+      // Some models wrap JSON in markdown code fences despite instructions
+      const text = isJson ? stripCodeFences(raw) : raw;
 
       return { ok: true, text };
     }
