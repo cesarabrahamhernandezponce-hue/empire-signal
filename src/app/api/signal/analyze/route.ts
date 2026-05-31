@@ -51,6 +51,24 @@ export async function POST(request: Request) {
 
     const { word, context, tone, language } = parsed.data;
 
+    // Dictionary validation — English only (dictionaryapi.dev has incomplete Spanish coverage)
+    if (language === 'en') {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const dictRes = await fetch(
+          `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,
+          { signal: controller.signal },
+        );
+        clearTimeout(timeoutId);
+        if (dictRes.status === 404) {
+          return NextResponse.json({ error: 'Word not found', suggestion: null }, { status: 422 });
+        }
+      } catch {
+        // timeout or network failure — don't block analysis
+      }
+    }
+
     // Owner bypass: unlimited access for the owner via secret header
     const ownerKey = request.headers.get('x-owner-key');
     const bypassKey = process.env.OWNER_BYPASS_KEY;

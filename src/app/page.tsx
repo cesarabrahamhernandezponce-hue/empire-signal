@@ -141,6 +141,7 @@ export default function Home() {
   const [curiosity, setCuriosity]               = useState('');
   const [curiosityVisible, setCuriosityVisible] = useState(true);
   const [pageState, setPageState]               = useState<PageState>({ status: 'idle' });
+  const [spellingError, setSpellingError]       = useState<string | null>(null);
   const [targetLang, setTargetLang]             = useState<TranslateLang>('es');
   const [translationState, setTranslationState] = useState<TranslationState>({ status: 'idle' });
   const settingsRef                             = useRef<HTMLDivElement>(null);
@@ -171,6 +172,7 @@ export default function Home() {
     setWord(val);
     setCuriosityVisible(val.length === 0);
     setTranslationState({ status: 'idle' });
+    setSpellingError(null);
   };
 
   const handleTranslate = async () => {
@@ -219,6 +221,12 @@ export default function Home() {
       });
 
       const data: unknown = await res.json();
+
+      if (res.status === 422) {
+        setPageState({ status: 'idle' });
+        setSpellingError('Word not found in dictionary. Check the spelling and try again.');
+        return;
+      }
 
       if (!res.ok) {
         const message = (data as { error?: string }).error ?? 'Unknown server error.';
@@ -426,6 +434,11 @@ export default function Home() {
                 <span className={word.length < 40 ? 'text-ink-faint' : ''}>
                   {word.length}/40
                 </span>
+              </p>
+            )}
+            {spellingError && (
+              <p style={{ color: '#E53935', fontSize: '0.75rem', marginTop: '4px', animation: 'fadeIn 0.25s ease' }}>
+                {spellingError}
               </p>
             )}
           </div>
