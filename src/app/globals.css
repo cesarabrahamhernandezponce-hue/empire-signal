@@ -61,12 +61,12 @@ body {
   font-weight: inherit;
   font-size: inherit;
   font-family: inherit;
-  color: inherit;
+  color: var(--accent);
   text-decoration: underline dotted;
   text-underline-offset: 3px;
   cursor: pointer;
   transition: color 0.15s ease;
 }
 .word-btn:hover {
-  color: #3A3D8F;
+  color: var(--accent-hover);
 }
