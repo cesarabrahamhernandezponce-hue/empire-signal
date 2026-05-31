@@ -143,6 +143,7 @@ export default function Home() {
   const [pageState, setPageState]               = useState<PageState>({ status: 'idle' });
   const [spellingError, setSpellingError]       = useState<string | null>(null);
   const [history, setHistory]                   = useState<AnalyzeRecord[]>([]);
+  const [sessionHistory, setSessionHistory]     = useState<string[]>([]);
   const [targetLang, setTargetLang]             = useState<TranslateLang>('es');
   const [translationState, setTranslationState] = useState<TranslationState>({ status: 'idle' });
   const settingsRef                             = useRef<HTMLDivElement>(null);
@@ -237,6 +238,10 @@ export default function Home() {
 
       const record = (data as { record: AnalyzeRecord }).record;
       setPageState({ status: 'result', record });
+      setSessionHistory((prev) => {
+        const filtered = prev.filter((w) => w !== record.word);
+        return [record.word, ...filtered].slice(0, 5);
+      });
     } catch {
       setPageState({ status: 'error', message: 'Could not connect to the server. Check your connection.' });
     }
@@ -430,6 +435,30 @@ export default function Home() {
             {curiosity}
           </p>
         </div>
+
+        {/* Session history chips */}
+        {sessionHistory.length > 0 && word.length === 0 && (
+          <div className="w-full max-w-[600px] mb-4">
+            <p className="text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-ink-faint mb-2">
+              Recent
+            </p>
+            <div className="flex gap-1.5 flex-wrap">
+              {sessionHistory.map((w) => (
+                <button
+                  key={w}
+                  onClick={() => {
+                    setWord(w);
+                    setCuriosityVisible(false);
+                    handleAnalyzeWithWord(w);
+                  }}
+                  className="text-xs text-ink-muted border border-line bg-surface rounded-full hover:border-accent hover:text-accent transition-colors duration-150 px-3 py-1"
+                >
+                  {w}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Search card */}
         <div className="w-full max-w-[600px] bg-surface border border-line rounded-[12px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden">
