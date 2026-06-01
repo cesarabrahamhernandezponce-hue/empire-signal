@@ -108,6 +108,35 @@ function IconChevron({ open }: { open: boolean }) {
   );
 }
 
+const CEFR_STYLES: Record<string, { background: string; color: string }> = {
+  A1: { background: '#E8F5E9', color: '#2E7D32' },
+  A2: { background: '#E8F5E9', color: '#2E7D32' },
+  B1: { background: '#FFF8E1', color: '#F57F17' },
+  B2: { background: '#FFF8E1', color: '#F57F17' },
+  C1: { background: '#EEF0FF', color: '#3A3D8F' },
+  C2: { background: '#EEF0FF', color: '#3A3D8F' },
+};
+
+function CefrBadge({ level }: { level: string }) {
+  const s = CEFR_STYLES[level] ?? { background: '#F0F0EE', color: '#1A1A1A' };
+  return (
+    <span
+      style={{
+        background: s.background,
+        color: s.color,
+        fontSize: '0.7rem',
+        fontWeight: 700,
+        padding: '2px 8px',
+        borderRadius: 4,
+        letterSpacing: '0.06em',
+        fontFamily: 'var(--font-geist-mono)',
+      }}
+    >
+      {level}
+    </span>
+  );
+}
+
 function ClickableWord({ word, onAnalyze }: { word: string; onAnalyze?: (w: string) => void }) {
   if (!onAnalyze) return <>{word}</>;
   return (
@@ -322,12 +351,11 @@ export default function AnalysisResult({ record, onReset, onAnalyzeWord }: Props
           >
             {word}
           </h1>
-          {essential.pronunciation.phonetic && (
-            <p
-              className="text-lg text-ink-faint"
-              style={{ fontFamily: 'var(--font-geist-mono)' }}
-            >
-              {essential.pronunciation.phonetic}
+          {(essential.pronunciation.phonetic || essential.cefr) && (
+            <p className="flex items-center justify-center gap-2 text-lg text-ink-faint" style={{ fontFamily: 'var(--font-geist-mono)' }}>
+              {essential.pronunciation.phonetic && <span>{essential.pronunciation.phonetic}</span>}
+              {essential.pronunciation.phonetic && essential.cefr && <span className="select-none">·</span>}
+              {essential.cefr && <CefrBadge level={essential.cefr} />}
             </p>
           )}
 

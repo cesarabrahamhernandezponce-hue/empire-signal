@@ -47,7 +47,8 @@ Required JSON structure (fill every field with real content — no placeholder t
       { "phrase": "<collocation>", "meaning": "<usage>" },
       { "phrase": "<collocation>", "meaning": "<usage>" }
     ],
-    "mnemonic": "<original mnemonic to remember the meaning>"
+    "mnemonic": "<original mnemonic to remember the meaning>",
+    "cefr": "<CEFR level code>"
   },
   "advanced": {
     "etymology": "<origin and historical evolution>",
@@ -85,6 +86,7 @@ Rules:
 - wordFamily: exactly 4 items.
 - antonyms: exactly 3 items. If the word has no real antonyms, use an empty array [].
 - commonErrors: 1 or 2 items.
+- cefr: assign the CEFR level (A1/A2/B1/B2/C1/C2) that best represents this word's difficulty for English learners. Return only the level code, nothing else.
 - All content in English. Keys always in English.
 - No invented etymologies or false facts. If uncertain, be conservative.
 - Prioritize the meaning in the given context if the word is ambiguous.`;
