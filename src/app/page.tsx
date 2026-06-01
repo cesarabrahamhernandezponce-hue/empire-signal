@@ -138,7 +138,7 @@ export default function Home() {
     return 'light';
   });
   const [settingsOpen, setSettingsOpen]         = useState(false);
-  const [curiosity, setCuriosity]               = useState('');
+  const [curiosity, setCuriosity]               = useState(CURIOSITIES.en[0]);
   const [curiosityVisible, setCuriosityVisible] = useState(true);
   const [pageState, setPageState]               = useState<PageState>({ status: 'idle' });
   const [spellingError, setSpellingError]       = useState<string | null>(null);

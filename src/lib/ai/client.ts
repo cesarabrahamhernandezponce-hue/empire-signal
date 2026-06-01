@@ -7,7 +7,7 @@ function stripCodeFences(text: string): string {
   return text.trim();
 }
 
-// Tried in order; next is used when a model is rate-limited (429)
+// Tried in order; next is used when a model is rate-limited (429) or times out
 const MODELS = [
   'openai/gpt-oss-120b:free',
   'meta-llama/llama-3.3-70b-instruct:free',
@@ -22,12 +22,15 @@ export async function generateContent(
   prompt: string,
   mimeType: string = 'application/json',
 ): Promise<AIResult> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   const isJson = mimeType === 'application/json';
 
-  try {
-    for (const model of MODELS) {
+  for (const model of MODELS) {
+    // Each model gets its own independent timeout so a slow/rate-limited model
+    // doesn't eat into the budget of the next one.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    try {
       const res = await fetch(BASE_URL, {
         method: 'POST',
         headers: {
@@ -45,7 +48,7 @@ export async function generateContent(
         signal: controller.signal,
       });
 
-      if (res.status === 429) continue; // try next model
+      if (res.status === 429) continue;
 
       if (!res.ok) {
         return { ok: false, error: 'Could not reach the AI service.' };
@@ -58,19 +61,17 @@ export async function generateContent(
         return { ok: false, error: 'The AI returned an empty response.' };
       }
 
-      // Some models wrap JSON in markdown code fences despite instructions
       const text = isJson ? stripCodeFences(raw) : raw;
-
       return { ok: true, text };
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        continue; // timeout — try next model
+      }
+      return { ok: false, error: 'Could not reach the AI service.' };
+    } finally {
+      clearTimeout(timer);
     }
-
-    return { ok: false, error: 'The AI service is temporarily busy. Please try again in a moment.' };
-  } catch (err) {
-    if (err instanceof Error && err.name === 'AbortError') {
-      return { ok: false, error: 'The request took too long. Please try again.' };
-    }
-    return { ok: false, error: 'Could not reach the AI service.' };
-  } finally {
-    clearTimeout(timer);
   }
+
+  return { ok: false, error: 'The AI service is temporarily busy. Please try again in a moment.' };
 }

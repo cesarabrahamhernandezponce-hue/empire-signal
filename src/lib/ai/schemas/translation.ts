@@ -14,6 +14,7 @@ function stripMarkdown(raw: string): string {
 
 export function parseTranslation(
   raw: string,
+  expectedKeys: string[] = [],
 ): { ok: true; data: Translation } | { ok: false; error: string } {
   const cleaned = stripMarkdown(raw);
 
@@ -31,6 +32,13 @@ export function parseTranslation(
       ok: false,
       error: `Respuesta de IA con estructura inválida: ${first.path.join('.') || 'body'} — ${first.message}`,
     };
+  }
+
+  // Verify all requested language keys are present and non-empty
+  for (const key of expectedKeys) {
+    if (!result.data[key]) {
+      return { ok: false, error: `Missing or empty translation for language: ${key}` };
+    }
   }
 
   return { ok: true, data: result.data };

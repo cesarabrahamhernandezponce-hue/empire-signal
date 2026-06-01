@@ -1,4 +1,4 @@
-import { Tone as DbTone, Language as DbLanguage } from '@prisma/client';
+import { Tone as DbTone, Language as DbLanguage, Prisma } from '@prisma/client';
 
 import { generateContent } from '../ai/client';
 import { buildAnalyzePromptES } from '../ai/prompts/analyze-es';
@@ -50,7 +50,7 @@ export type AnalyzeResult =
 
 export type ShareResult =
   | { ok: true; record: ShareRecord }
-  | { ok: false; error: string };
+  | { ok: false; error: string; notFound: boolean };
 
 export async function analyzeWord(params: {
   word: string;
@@ -162,6 +162,34 @@ export async function analyzeWord(params: {
       },
     };
   } catch (err) {
+    // Two concurrent requests for the same word+tone+language can both reach this
+    // point simultaneously. The second create hits the unique constraint (P2002);
+    // recover by returning the record the first request already created.
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      const existing = await prisma.searchRecord.findFirst({
+        where: { word, context, tone: dbTone, language: dbLanguage },
+      });
+      if (existing) {
+        prisma.searchEvent.create({
+          data: {
+            word, context, tone: dbTone, language: dbLanguage,
+            userId, searchRecordId: existing.id, cacheHit: false, ipHash,
+          },
+        }).catch((e) => console.error('[analyzeWord] SearchEvent (concurrent) failed:', e));
+        return {
+          ok: true,
+          record: {
+            id:       existing.id,
+            word:     existing.word,
+            context:  existing.context,
+            tone:     existing.tone,
+            language: existing.language,
+            analysis: existing.analysisJson as unknown as Analysis,
+            shareId:  existing.shareId,
+          },
+        };
+      }
+    }
     console.error('[analyzeWord] DB write failed:', err);
     return { ok: false, error: 'Failed to save the analysis.' };
   }
@@ -217,7 +245,7 @@ export async function translateWord(params: {
   if (!aiResult.ok) {
     return { ok: false, error: aiResult.error };
   }
-  const firstParse = parseTranslation(aiResult.text);
+  const firstParse = parseTranslation(aiResult.text, targetLanguages);
 
   if (firstParse.ok) {
     return { ok: true, translations: firstParse.data };
@@ -228,7 +256,7 @@ export async function translateWord(params: {
   if (!aiRetry.ok) {
     return { ok: false, error: 'Could not generate a valid translation. Please try again.' };
   }
-  const secondParse = parseTranslation(aiRetry.text);
+  const secondParse = parseTranslation(aiRetry.text, targetLanguages);
   if (!secondParse.ok) {
     return { ok: false, error: 'Could not generate a valid translation. Please try again.' };
   }
@@ -241,7 +269,7 @@ export async function getAnalysisByShareId(shareId: string): Promise<ShareResult
     const found = await prisma.searchRecord.findUnique({ where: { shareId } });
 
     if (!found) {
-      return { ok: false, error: 'Analysis not found.' };
+      return { ok: false, error: 'Analysis not found.', notFound: true };
     }
 
     return {
@@ -259,6 +287,6 @@ export async function getAnalysisByShareId(shareId: string): Promise<ShareResult
     };
   } catch (err) {
     console.error('[getAnalysisByShareId] DB lookup failed:', err);
-    return { ok: false, error: 'Database query failed.' };
+    return { ok: false, error: 'Database query failed.', notFound: false };
   }
 }

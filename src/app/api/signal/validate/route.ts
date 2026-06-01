@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
     const aiResult = await generateContent(prompt);
     if (!aiResult.ok) {
-      return NextResponse.json({ error: aiResult.error }, { status: 502 });
+      return NextResponse.json({ error: aiResult.error }, { status: 503 });
     }
 
     let raw: unknown;

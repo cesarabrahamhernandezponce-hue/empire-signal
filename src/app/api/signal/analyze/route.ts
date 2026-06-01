@@ -6,7 +6,7 @@ import { analyzeWord, type AnalyzeRecord } from '@/lib/services/signal';
 import type { Analysis } from '@/lib/ai/schemas/analysis';
 import { generateContent } from '@/lib/ai/client';
 import { prisma } from '@/lib/db/prisma';
-import { getClientIp, hashIp } from '@/lib/rate-limit';
+import { getClientIp, hashIp, checkInMemoryLimit } from '@/lib/rate-limit';
 
 const DAILY_LIMIT = 10;
 
@@ -74,8 +74,10 @@ export async function POST(request: Request) {
         if (dictRes.status === 404) {
           let suggestion: string | null = null;
           try {
+            // Sanitize the word before inserting into prompt to prevent injection
+            const safeWord = word.replace(/["\\]/g, '');
             const suggResult = await generateContent(
-              `The English word "${word}" is likely misspelled. What is the correct spelling? Reply with ONLY the correctly spelled word in lowercase, no punctuation, nothing else.`,
+              `The English word "${safeWord}" is likely misspelled. What is the correct spelling? Reply with ONLY the correctly spelled word in lowercase, no punctuation, nothing else.`,
               'text/plain',
             );
             if (suggResult.ok) {
@@ -96,53 +98,56 @@ export async function POST(request: Request) {
     const isOwner = Boolean(bypassKey && ownerKey === bypassKey);
 
     const ipHash = hashIp(getClientIp(request));
+    const dbTone = TONE_DB[tone];
+    const dbLanguage = LANGUAGE_DB[language];
 
+    // Always check the cache first — this benefits everyone including the owner.
     let prefetched: AnalyzeRecord | null = null;
+    const cacheHit = await prisma.searchRecord.findFirst({
+      where: { word, context: context ?? null, tone: dbTone, language: dbLanguage },
+    });
+    if (cacheHit) {
+      prefetched = {
+        id:       cacheHit.id,
+        word:     cacheHit.word,
+        context:  cacheHit.context,
+        tone:     cacheHit.tone,
+        language: cacheHit.language,
+        analysis: cacheHit.analysisJson as unknown as Analysis,
+        shareId:  cacheHit.shareId,
+      };
+    }
 
-    if (!isOwner) {
-      // Cache hits don't count against the limit. Check cache first.
-      const dbTone     = TONE_DB[tone];
-      const dbLanguage = LANGUAGE_DB[language];
-
-      const found = await prisma.searchRecord.findFirst({
-        where: { word, context: context ?? null, tone: dbTone, language: dbLanguage },
+    if (!isOwner && !prefetched) {
+      // In-memory check: atomic within this process, eliminates same-process race conditions.
+      if (!checkInMemoryLimit(`analyze:${ipHash}`, DAILY_LIMIT)) {
+        return NextResponse.json(
+          { error: 'Daily limit reached. Come back tomorrow.' },
+          { status: 429 },
+        );
+      }
+      // DB check: authoritative across processes/instances.
+      const todayUtc = new Date();
+      todayUtc.setUTCHours(0, 0, 0, 0);
+      const usageCount = await prisma.searchEvent.count({
+        where: {
+          ipHash,
+          cacheHit: false,
+          createdAt: { gte: todayUtc },
+        },
       });
-
-      if (found) {
-        prefetched = {
-          id:       found.id,
-          word:     found.word,
-          context:  found.context,
-          tone:     found.tone,
-          language: found.language,
-          analysis: found.analysisJson as unknown as Analysis,
-          shareId:  found.shareId,
-        };
-      } else {
-        const todayUtc = new Date();
-        todayUtc.setUTCHours(0, 0, 0, 0);
-
-        const usageCount = await prisma.searchEvent.count({
-          where: {
-            ipHash,
-            cacheHit: false,
-            createdAt: { gte: todayUtc },
-          },
-        });
-
-        if (usageCount >= DAILY_LIMIT) {
-          return NextResponse.json(
-            { error: 'Daily limit reached. Come back tomorrow.' },
-            { status: 429 },
-          );
-        }
+      if (usageCount >= DAILY_LIMIT) {
+        return NextResponse.json(
+          { error: 'Daily limit reached. Come back tomorrow.' },
+          { status: 429 },
+        );
       }
     }
 
     const result = await analyzeWord({ word, context, tone, language, userId: null, ipHash, prefetched });
 
     if (!result.ok) {
-      return NextResponse.json({ error: result.error }, { status: 502 });
+      return NextResponse.json({ error: result.error }, { status: 503 });
     }
 
     return NextResponse.json({ record: result.record }, { status: 200 });

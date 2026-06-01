@@ -39,9 +39,15 @@ export async function POST(request: Request) {
 
     const { searchRecordId, question } = parsed.data;
 
-    const ipHash = hashIp(getClientIp(request));
-    if (!checkInMemoryLimit(ipHash, DAILY_LIMIT)) {
-      return NextResponse.json({ error: 'Daily limit reached. Come back tomorrow.' }, { status: 429 });
+    const ownerKey = request.headers.get('x-owner-key');
+    const bypassKey = process.env.OWNER_BYPASS_KEY;
+    const isOwner = Boolean(bypassKey && ownerKey === bypassKey);
+
+    if (!isOwner) {
+      const ipHash = hashIp(getClientIp(request));
+      if (!checkInMemoryLimit(ipHash, DAILY_LIMIT)) {
+        return NextResponse.json({ error: 'Daily limit reached. Come back tomorrow.' }, { status: 429 });
+      }
     }
 
     const record = await prisma.searchRecord.findUnique({ where: { id: searchRecordId } });
@@ -59,7 +65,7 @@ export async function POST(request: Request) {
     });
 
     if (!result.ok) {
-      return NextResponse.json({ error: result.error }, { status: 502 });
+      return NextResponse.json({ error: result.error }, { status: 503 });
     }
 
     return NextResponse.json({ answer: result.answer }, { status: 200 });

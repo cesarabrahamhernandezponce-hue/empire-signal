@@ -16,7 +16,7 @@ export async function GET(
     const result = await getAnalysisByShareId(shareId);
 
     if (!result.ok) {
-      return NextResponse.json({ error: result.error }, { status: 404 });
+      return NextResponse.json({ error: result.error }, { status: result.notFound ? 404 : 500 });
     }
 
     return NextResponse.json({ record: result.record }, { status: 200 });
