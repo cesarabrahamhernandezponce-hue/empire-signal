@@ -26,6 +26,7 @@ Required JSON structure (fill every field with real content — no placeholder t
 {
   "version": 1,
   "essential": {
+    "cefr": "<CEFR level code — one of: A1, A2, B1, B2, C1, C2>",
     "meaningInContext": "<precise meaning in context>",
     "wordType": {
       "category": "<one of: noun|verb|adjective|adverb|preposition|conjunction|interjection|pronoun>",
@@ -47,8 +48,7 @@ Required JSON structure (fill every field with real content — no placeholder t
       { "phrase": "<collocation>", "meaning": "<usage>" },
       { "phrase": "<collocation>", "meaning": "<usage>" }
     ],
-    "mnemonic": "<original mnemonic to remember the meaning>",
-    "cefr": "<CEFR level code>"
+    "mnemonic": "<original mnemonic to remember the meaning>"
   },
   "advanced": {
     "etymology": "<origin and historical evolution>",

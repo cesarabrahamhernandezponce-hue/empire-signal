@@ -26,6 +26,7 @@ Estructura JSON requerida (rellena cada campo con contenido real — sin texto d
 {
   "version": 1,
   "essential": {
+    "cefr": "<código de nivel CEFR — uno de: A1, A2, B1, B2, C1, C2>",
     "meaningInContext": "<significado preciso en el contexto>",
     "wordType": {
       "category": "<uno de: sustantivo|verbo|adjetivo|adverbio|preposición|conjunción|interjección|pronombre>",
@@ -47,8 +48,7 @@ Estructura JSON requerida (rellena cada campo con contenido real — sin texto d
       { "phrase": "<combinación natural>", "meaning": "<uso o significado>" },
       { "phrase": "<combinación natural>", "meaning": "<uso o significado>" }
     ],
-    "mnemonic": "<truco mnemotécnico original para recordar el significado>",
-    "cefr": "<código de nivel CEFR>"
+    "mnemonic": "<truco mnemotécnico original para recordar el significado>"
   },
   "advanced": {
     "etymology": "<origen y evolución histórica>",

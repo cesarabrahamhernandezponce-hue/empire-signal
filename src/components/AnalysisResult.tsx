@@ -272,10 +272,14 @@ export default function AnalysisResult({ record, onReset, onAnalyzeWord }: Props
     setIsSpeaking(true);
 
     if (record.language.toLowerCase() === 'en') {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
       try {
         const res = await fetch(
-          `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(record.word)}`
+          `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(record.word)}`,
+          { signal: controller.signal },
         );
+        clearTimeout(timeoutId);
         if (res.ok) {
           const data: Array<{ phonetics: Array<{ audio?: string }> }> = await res.json();
           const audioUrl = data[0]?.phonetics?.find((p) => p.audio)?.audio;
@@ -290,7 +294,10 @@ export default function AnalysisResult({ record, onReset, onAnalyzeWord }: Props
             } catch { /* play() rejected → fall through to speakFallback */ }
           }
         }
-      } catch { /* fall through to Web Speech */ }
+      } catch {
+        clearTimeout(timeoutId);
+        /* fall through to Web Speech */
+      }
     }
 
     speakFallback();

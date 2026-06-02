@@ -75,7 +75,7 @@ export async function POST(request: Request) {
           let suggestion: string | null = null;
           try {
             // Sanitize the word before inserting into prompt to prevent injection
-            const safeWord = word.replace(/["\\]/g, '');
+            const safeWord = JSON.stringify(word).slice(1, -1);
             const suggResult = await generateContent(
               `The English word "${safeWord}" is likely misspelled. What is the correct spelling? Reply with ONLY the correctly spelled word in lowercase, no punctuation, nothing else.`,
               'text/plain',
@@ -101,13 +101,19 @@ export async function POST(request: Request) {
     const dbTone = TONE_DB[tone];
     const dbLanguage = LANGUAGE_DB[language];
 
+    // Normalize context the same way analyzeWord does before storing it,
+    // so the cache lookup key matches the stored key exactly.
+    const normalizedContext = context?.trim() || null;
+
     // Always check the cache first — this benefits everyone including the owner.
-    let prefetched: AnalyzeRecord | null = null;
-    const cacheHit = await prisma.searchRecord.findFirst({
-      where: { word, context: context ?? null, tone: dbTone, language: dbLanguage },
-    });
-    if (cacheHit) {
-      prefetched = {
+    // prefetched=undefined signals analyzeWord to do its own lookup (fallback).
+    let prefetched: AnalyzeRecord | null | undefined = undefined;
+    try {
+      const cacheHit = await prisma.searchRecord.findFirst({
+        where: { word, context: normalizedContext, tone: dbTone, language: dbLanguage },
+      });
+      // Set explicitly: null = cache miss confirmed, non-null = hit.
+      prefetched = cacheHit ? {
         id:       cacheHit.id,
         word:     cacheHit.word,
         context:  cacheHit.context,
@@ -115,10 +121,14 @@ export async function POST(request: Request) {
         language: cacheHit.language,
         analysis: cacheHit.analysisJson as unknown as Analysis,
         shareId:  cacheHit.shareId,
-      };
+      } : null;
+    } catch (err) {
+      // DB error during cache lookup — leave prefetched=undefined so analyzeWord
+      // retries the lookup itself rather than skipping it entirely.
+      console.error('[POST /api/signal/analyze] Cache lookup failed:', err);
     }
 
-    if (!isOwner && !prefetched) {
+    if (!isOwner && !prefetched) { // !undefined and !null are both true → rate-limit on uncertainty
       // In-memory check: atomic within this process, eliminates same-process race conditions.
       if (!checkInMemoryLimit(`analyze:${ipHash}`, DAILY_LIMIT)) {
         return NextResponse.json(
@@ -144,7 +154,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const result = await analyzeWord({ word, context, tone, language, userId: null, ipHash, prefetched });
+    const result = await analyzeWord({ word, context: normalizedContext, tone, language, userId: null, ipHash, prefetched });
 
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: 503 });

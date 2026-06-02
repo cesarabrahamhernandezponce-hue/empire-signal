@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
     if (!isOwner) {
       const ipHash = hashIp(getClientIp(request));
-      if (!checkInMemoryLimit(ipHash, DAILY_LIMIT)) {
+      if (!checkInMemoryLimit(`translate:${ipHash}`, DAILY_LIMIT)) {
         return NextResponse.json({ error: 'Daily limit reached. Come back tomorrow.' }, { status: 429 });
       }
     }
