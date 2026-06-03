@@ -137,20 +137,26 @@ export async function POST(request: Request) {
         );
       }
       // DB check: authoritative across processes/instances.
-      const todayUtc = new Date();
-      todayUtc.setUTCHours(0, 0, 0, 0);
-      const usageCount = await prisma.searchEvent.count({
-        where: {
-          ipHash,
-          cacheHit: false,
-          createdAt: { gte: todayUtc },
-        },
-      });
-      if (usageCount >= DAILY_LIMIT) {
-        return NextResponse.json(
-          { error: 'Daily limit reached. Come back tomorrow.' },
-          { status: 429 },
-        );
+      // Wrapped in try/catch — if the DB is unreachable, skip and rely on the
+      // in-memory check above rather than returning a 500 to the user.
+      try {
+        const todayUtc = new Date();
+        todayUtc.setUTCHours(0, 0, 0, 0);
+        const usageCount = await prisma.searchEvent.count({
+          where: {
+            ipHash,
+            cacheHit: false,
+            createdAt: { gte: todayUtc },
+          },
+        });
+        if (usageCount >= DAILY_LIMIT) {
+          return NextResponse.json(
+            { error: 'Daily limit reached. Come back tomorrow.' },
+            { status: 429 },
+          );
+        }
+      } catch (err) {
+        console.error('[POST /api/signal/analyze] Rate-limit DB check failed:', err);
       }
     }
 

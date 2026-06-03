@@ -1,5 +1,5 @@
 const BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const TIMEOUT_MS = 30000;
+const TIMEOUT_MS = 25000;
 
 function stripCodeFences(text: string): string {
   const match = text.match(/```(?:json)?\s*([\s\S]+?)\s*```/);
@@ -7,11 +7,13 @@ function stripCodeFences(text: string): string {
   return text.trim();
 }
 
-// Tried in order; next is used when a model is rate-limited (429) or times out
+// All models raced concurrently; first successful response wins
 const MODELS = [
+  'nvidia/nemotron-3-nano-30b-a3b:free',
   'openai/gpt-oss-120b:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
   'meta-llama/llama-3.3-70b-instruct:free',
-  'google/gemma-4-31b-it:free',
+  'nousresearch/hermes-3-llama-3.1-405b:free',
 ];
 
 export type AIResult =
@@ -24,14 +26,23 @@ export async function generateContent(
 ): Promise<AIResult> {
   const isJson = mimeType === 'application/json';
 
-  for (const model of MODELS) {
-    // Each model gets its own independent timeout so a slow/rate-limited model
-    // doesn't eat into the budget of the next one.
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const controllers = MODELS.map(() => new AbortController());
+  const timers: ReturnType<typeof setTimeout>[] = [];
 
-    try {
-      const res = await fetch(BASE_URL, {
+  function cleanup() {
+    timers.forEach(clearTimeout);
+    controllers.forEach((c) => { try { c.abort(); } catch { /* already aborted */ } });
+  }
+
+  const attempts = MODELS.map((model, i) =>
+    new Promise<string>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        controllers[i].abort();
+        reject(new Error('timeout'));
+      }, TIMEOUT_MS);
+      timers.push(timer);
+
+      fetch(BASE_URL, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
@@ -45,33 +56,27 @@ export async function generateContent(
           ],
           ...(isJson ? { response_format: { type: 'json_object' } } : {}),
         }),
-        signal: controller.signal,
+        signal: controllers[i].signal,
+      }).then(async (res) => {
+        clearTimeout(timer);
+        if (!res.ok) { reject(new Error(`HTTP ${res.status}`)); return; }
+        const data = await res.json() as { choices?: { message?: { content?: string } }[] };
+        const raw = data.choices?.[0]?.message?.content;
+        if (!raw) { reject(new Error('empty')); return; }
+        resolve(isJson ? stripCodeFences(raw) : raw);
+      }).catch((e: unknown) => {
+        clearTimeout(timer);
+        reject(e);
       });
+    }),
+  );
 
-      if (res.status === 429) continue;
-
-      if (!res.ok) {
-        return { ok: false, error: 'Could not reach the AI service.' };
-      }
-
-      const data = await res.json() as { choices?: { message?: { content?: string } }[] };
-      const raw = data.choices?.[0]?.message?.content;
-
-      if (!raw) {
-        return { ok: false, error: 'The AI returned an empty response.' };
-      }
-
-      const text = isJson ? stripCodeFences(raw) : raw;
-      return { ok: true, text };
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') {
-        continue; // timeout — try next model
-      }
-      return { ok: false, error: 'Could not reach the AI service.' };
-    } finally {
-      clearTimeout(timer);
-    }
+  try {
+    const text = await Promise.any(attempts);
+    cleanup();
+    return { ok: true, text };
+  } catch {
+    cleanup();
+    return { ok: false, error: 'The AI service is temporarily busy. Please try again in a moment.' };
   }
-
-  return { ok: false, error: 'The AI service is temporarily busy. Please try again in a moment.' };
 }
