@@ -74,7 +74,7 @@ Reglas:
 - wordFamily: exactamente 4 elementos.
 - antonyms: exactamente 3 elementos. Si la palabra no tiene antónimos reales, usa un array vacío [].
 - commonErrors: 1 o 2 elementos.
-- cefr: asigna el nivel CEFR (A1/A2/B1/B2/C1/C2) que mejor representa la dificultad de esta palabra para estudiantes de inglés. Devuelve solo el código del nivel, nada más.
+- cefr: asigna el nivel CEFR (A1/A2/B1/B2/C1/C2) que mejor representa la dificultad de esta palabra para estudiantes de español. Devuelve solo el código del nivel, nada más.
 - Todo el contenido en español. Las claves siempre en inglés.
 - No inventes etimologías ni hechos falsos. Si no estás seguro, sé conservador.
 - Si la palabra es ambigua, prioriza el significado en el contexto dado.`;
