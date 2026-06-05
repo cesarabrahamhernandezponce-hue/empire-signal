@@ -26,6 +26,7 @@ export const analysisSchema = z.object({
     ).min(3).max(6),
     mnemonic: z.string().min(1),
     cefr: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']).optional(),
+    contextNote: z.string().optional(),
   }),
   advanced: z.object({
     etymology: z.string(),

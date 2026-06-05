@@ -42,10 +42,10 @@ Estructura JSON requerida (rellena cada campo con contenido real — sin texto d
     "etymology": "<origen y evolución histórica>",
     "story": "<narrativa cultural breve sobre la palabra>",
     "synonyms": [
-      { "word": "<sinónimo>", "nuance": "<matiz que lo diferencia de la palabra principal>" },
-      { "word": "<sinónimo>", "nuance": "<matiz que lo diferencia de la palabra principal>" },
-      { "word": "<sinónimo>", "nuance": "<matiz que lo diferencia de la palabra principal>" },
-      { "word": "<sinónimo>", "nuance": "<matiz que lo diferencia de la palabra principal>" }
+      { "word": "<sinónimo>", "nuance": "<explica qué significa esta palabra y cuándo usarla, en UNA oración — céntrate en la palabra en sí, NO la compares con la palabra buscada, NO hagas ninguna referencia a la palabra original>" },
+      { "word": "<sinónimo>", "nuance": "<explica qué significa esta palabra y cuándo usarla, en UNA oración — céntrate en la palabra en sí, NO la compares con la palabra buscada, NO hagas ninguna referencia a la palabra original>" },
+      { "word": "<sinónimo>", "nuance": "<explica qué significa esta palabra y cuándo usarla, en UNA oración — céntrate en la palabra en sí, NO la compares con la palabra buscada, NO hagas ninguna referencia a la palabra original>" },
+      { "word": "<sinónimo>", "nuance": "<explica qué significa esta palabra y cuándo usarla, en UNA oración — céntrate en la palabra en sí, NO la compares con la palabra buscada, NO hagas ninguna referencia a la palabra original>" }
     ],
     "antonyms": [
       { "word": "<antónimo>", "context": "<en qué contexto es antónimo>" },

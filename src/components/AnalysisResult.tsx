@@ -161,6 +161,7 @@ const LABELS = {
     usageExamples:   'Usage examples',
     collocations:    'Collocations',
     mnemonic:        'Mnemonic',
+    inYourContext:   'In your context',
     viewFull:        'View full analysis',
     hideFull:        'Hide full analysis',
     etymology:       'Etymology',
@@ -191,6 +192,7 @@ const LABELS = {
     usageExamples:   'Ejemplos de uso',
     collocations:    'Colocaciones',
     mnemonic:        'Mnemotécnico',
+    inYourContext:   'En tu contexto',
     viewFull:        'Ver análisis completo',
     hideFull:        'Ocultar análisis completo',
     etymology:       'Etimología',
@@ -411,6 +413,16 @@ export default function AnalysisResult({ record, onReset, onAnalyzeWord }: Props
               {essential.meaningInContext}
             </p>
           </section>
+
+          {/* In your context — only when contextNote is present */}
+          {essential.contextNote && (
+            <section style={{ ...cardBase, background: '#F0F4FF', borderLeft: '3px solid #3A3D8F' }}>
+              <SectionLabel serif>{l.inYourContext}</SectionLabel>
+              <p className="text-base leading-relaxed" style={{ color: '#1A1A1A' }}>
+                {essential.contextNote}
+              </p>
+            </section>
+          )}
 
           {/* Word type */}
           <section style={cardBase}>

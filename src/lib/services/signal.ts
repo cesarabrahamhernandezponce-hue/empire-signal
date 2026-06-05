@@ -3,6 +3,8 @@ import { Language as DbLanguage, Prisma } from '@prisma/client';
 import { generateContent } from '../ai/client';
 import { buildAnalyzePromptES } from '../ai/prompts/analyze-es';
 import { buildAnalyzePromptEN } from '../ai/prompts/analyze-en';
+import { buildContextPromptES } from '../ai/prompts/context-es';
+import { buildContextPromptEN } from '../ai/prompts/context-en';
 import { buildAskPromptES } from '../ai/prompts/ask-es';
 import { buildAskPromptEN } from '../ai/prompts/ask-en';
 import { buildTranslatePrompt } from '../ai/prompts/translate';
@@ -43,6 +45,38 @@ export type ShareResult =
   | { ok: true; record: ShareRecord }
   | { ok: false; error: string; notFound: boolean };
 
+async function enrichWithContext(
+  record: AnalyzeRecord,
+  word: string,
+  context: string | null,
+  language: Language,
+): Promise<AnalyzeRecord> {
+  if (!context || context.length <= 3) return record;
+  try {
+    const prompt = language === 'es'
+      ? buildContextPromptES(word, context)
+      : buildContextPromptEN(word, context);
+    const result = await generateContent(prompt);
+    if (!result.ok) return record;
+    const cleaned = result.text.trim()
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/, '')
+      .replace(/\s*```$/, '');
+    const raw: unknown = JSON.parse(cleaned);
+    const contextNote = (raw as { contextNote?: unknown }).contextNote;
+    if (typeof contextNote !== 'string' || contextNote.length === 0) return record;
+    return {
+      ...record,
+      analysis: {
+        ...record.analysis,
+        essential: { ...record.analysis.essential, contextNote },
+      },
+    };
+  } catch {
+    return record;
+  }
+}
+
 export async function analyzeWord(params: {
   word: string;
   context: string | null;
@@ -56,12 +90,12 @@ export async function analyzeWord(params: {
   const context = params.context?.trim() || null;
   const dbLanguage = LANGUAGE_MAP[language];
 
-  // Check cache — skip DB lookup if caller already verified (prefetched !== undefined)
+  // Cache key: word + language only — context generates an ephemeral contextNote separately
   let cached: AnalyzeRecord | null = params.prefetched !== undefined ? params.prefetched : null;
   if (params.prefetched === undefined) {
     try {
       const found = await prisma.searchRecord.findFirst({
-        where: { word, context, language: dbLanguage },
+        where: { word, language: dbLanguage },
       });
       if (found) {
         cached = {
@@ -80,7 +114,6 @@ export async function analyzeWord(params: {
   }
 
   if (cached) {
-    // Fire-and-forget event (telemetry, non-critical)
     prisma.searchEvent.create({
       data: {
         word, context, language: dbLanguage,
@@ -88,15 +121,15 @@ export async function analyzeWord(params: {
       },
     }).catch((err) => console.error('[analyzeWord] SearchEvent (cache hit) failed:', err));
 
-    return { ok: true, record: cached };
+    const record = await enrichWithContext(cached, word, context, language);
+    return { ok: true, record };
   }
 
-  // Cache miss — call AI
+  // Cache miss — base analysis never includes context (it's ephemeral)
   const prompt = language === 'es'
-    ? buildAnalyzePromptES(word, context)
-    : buildAnalyzePromptEN(word, context);
+    ? buildAnalyzePromptES(word, null)
+    : buildAnalyzePromptEN(word, null);
 
-  // First attempt
   const aiResult = await generateContent(prompt);
   if (!aiResult.ok) {
     return { ok: false, error: aiResult.error };
@@ -108,7 +141,6 @@ export async function analyzeWord(params: {
   if (firstParse.ok) {
     analysis = firstParse.data;
   } else {
-    // Retry once on parse failure
     const aiRetry = await generateContent(prompt);
     if (!aiRetry.ok) {
       return { ok: false, error: 'Could not generate a valid analysis. Please try again.' };
@@ -120,16 +152,11 @@ export async function analyzeWord(params: {
     analysis = secondParse.data;
   }
 
-  // Persist
   try {
     const record = await prisma.searchRecord.create({
-      data: {
-        word, context, language: dbLanguage,
-        analysisJson: analysis,
-      },
+      data: { word, language: dbLanguage, analysisJson: analysis },
     });
 
-    // Fire-and-forget event (telemetry, non-critical)
     prisma.searchEvent.create({
       data: {
         word, context, language: dbLanguage,
@@ -137,24 +164,22 @@ export async function analyzeWord(params: {
       },
     }).catch((err) => console.error('[analyzeWord] SearchEvent (cache miss) failed:', err));
 
-    return {
-      ok: true,
-      record: {
-        id:       record.id,
-        word:     record.word,
-        context:  record.context,
-        language: record.language,
-        analysis,
-        shareId:  record.shareId,
-      },
+    const baseRecord: AnalyzeRecord = {
+      id:       record.id,
+      word:     record.word,
+      context:  record.context,
+      language: record.language,
+      analysis,
+      shareId:  record.shareId,
     };
+    const enriched = await enrichWithContext(baseRecord, word, context, language);
+    return { ok: true, record: enriched };
   } catch (err) {
-    // Two concurrent requests for the same word+language can both reach this
-    // point simultaneously. The second create hits the unique constraint (P2002);
+    // Two concurrent requests for the same word+language hit the unique constraint (P2002);
     // recover by returning the record the first request already created.
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       const existing = await prisma.searchRecord.findFirst({
-        where: { word, context, language: dbLanguage },
+        where: { word, language: dbLanguage },
       });
       if (existing) {
         prisma.searchEvent.create({
@@ -163,17 +188,17 @@ export async function analyzeWord(params: {
             userId, searchRecordId: existing.id, cacheHit: false, ipHash,
           },
         }).catch((e) => console.error('[analyzeWord] SearchEvent (concurrent) failed:', e));
-        return {
-          ok: true,
-          record: {
-            id:       existing.id,
-            word:     existing.word,
-            context:  existing.context,
-            language: existing.language,
-            analysis: existing.analysisJson as unknown as Analysis,
-            shareId:  existing.shareId,
-          },
+
+        const baseRecord: AnalyzeRecord = {
+          id:       existing.id,
+          word:     existing.word,
+          context:  existing.context,
+          language: existing.language,
+          analysis: existing.analysisJson as unknown as Analysis,
+          shareId:  existing.shareId,
         };
+        const enriched = await enrichWithContext(baseRecord, word, context, language);
+        return { ok: true, record: enriched };
       }
     }
     console.error('[analyzeWord] DB write failed:', err);
@@ -237,7 +262,6 @@ export async function translateWord(params: {
     return { ok: true, translations: firstParse.data };
   }
 
-  // Retry once on parse failure
   const aiRetry = await generateContent(prompt);
   if (!aiRetry.ok) {
     return { ok: false, error: 'Could not generate a valid translation. Please try again.' };

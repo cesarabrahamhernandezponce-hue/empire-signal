@@ -42,10 +42,10 @@ Required JSON structure (fill every field with real content — no placeholder t
     "etymology": "<origin and historical evolution>",
     "story": "<brief cultural narrative about the word>",
     "synonyms": [
-      { "word": "<synonym>", "nuance": "<how it differs from the main word>" },
-      { "word": "<synonym>", "nuance": "<how it differs from the main word>" },
-      { "word": "<synonym>", "nuance": "<how it differs from the main word>" },
-      { "word": "<synonym>", "nuance": "<how it differs from the main word>" }
+      { "word": "<synonym>", "nuance": "<explain what this word means and when to use it, in ONE sentence — focus on the word itself, do NOT compare it to the searched word, do NOT reference the original word at all (e.g. 'geometer: a specialist in geometry, typically used in academic or historical contexts.')>" },
+      { "word": "<synonym>", "nuance": "<explain what this word means and when to use it, in ONE sentence — focus on the word itself, do NOT compare it to the searched word, do NOT reference the original word at all>" },
+      { "word": "<synonym>", "nuance": "<explain what this word means and when to use it, in ONE sentence — focus on the word itself, do NOT compare it to the searched word, do NOT reference the original word at all>" },
+      { "word": "<synonym>", "nuance": "<explain what this word means and when to use it, in ONE sentence — focus on the word itself, do NOT compare it to the searched word, do NOT reference the original word at all>" }
     ],
     "antonyms": [
       { "word": "<antonym>", "context": "<in what context it is an antonym>" },

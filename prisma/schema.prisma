@@ -55,7 +55,7 @@ model SearchRecord {
   bookmarks         Bookmark[]
   wordOfTheDay      WordOfTheDay?
 
-  @@unique([word, context, language])
+  @@unique([word, language])
   @@index([word])
   @@index([shareId])
   @@map("search_records")

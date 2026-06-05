@@ -101,7 +101,7 @@ export async function POST(request: Request) {
     let prefetched: AnalyzeRecord | null | undefined = undefined;
     try {
       const cacheHit = await prisma.searchRecord.findFirst({
-        where: { word, context: normalizedContext, language: dbLanguage },
+        where: { word, language: dbLanguage },
       });
       // Set explicitly: null = cache miss confirmed, non-null = hit.
       prefetched = cacheHit ? {
