@@ -44,7 +44,6 @@ const UI = {
     analyzing:       'Analyzing...',
     errorTitle:      'Something went wrong',
     tryAgain:        '← Try again',
-    toneLabels:      ['Practical', 'Academic', 'Creative', 'Simple'] as const,
     langLabel:       'Language',
     themeLabel:      'Theme',
     light:           'Light',
@@ -63,20 +62,12 @@ const UI = {
     analyzing:       'Analizando...',
     errorTitle:      'Algo salió mal',
     tryAgain:        '← Intentar de nuevo',
-    toneLabels:      ['Práctico', 'Académico', 'Creativo', 'Simple'] as const,
     langLabel:       'Idioma',
     themeLabel:      'Tema',
     light:           'Claro',
     dark:            'Oscuro',
   },
 } as const;
-
-const TONES = [
-  { id: 'practico',  label: 'Practical' },
-  { id: 'academico', label: 'Academic' },
-  { id: 'creativo',  label: 'Creative' },
-  { id: 'infantil',  label: 'Simple' },
-] as const;
 
 const TRANSLATE_LANGS = [
   { id: 'es', label: 'Spanish'    },
@@ -93,7 +84,6 @@ type TranslationState =
   | { status: 'result'; text: string; lang: TranslateLang }
   | { status: 'error'; message: string };
 
-type Tone     = (typeof TONES)[number]['id'];
 type Language = 'en' | 'es';
 
 type PageState =
@@ -129,7 +119,6 @@ export default function Home() {
   const [word, setWord]                         = useState('');
   const [context, setContext]                   = useState('');
   const [showContext, setShowContext]           = useState(false);
-  const [tone, setTone]                         = useState<Tone>('practico');
   const [language, setLanguage]                 = useState<Language>('en');
   const [theme, setTheme]                       = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
@@ -219,7 +208,6 @@ export default function Home() {
         body: JSON.stringify({
           word: trimmed,
           context: context.trim() || null,
-          tone,
           language,
         }),
       });
@@ -618,23 +606,6 @@ export default function Home() {
                   />
                 </div>
               </div>
-            </div>
-
-            {/* Tone selector */}
-            <div className="flex flex-wrap gap-1.5">
-              {TONES.map((tone_opt, i) => (
-                <button
-                  key={tone_opt.id}
-                  onClick={() => setTone(tone_opt.id)}
-                  className={`px-3 py-1 rounded-[6px] text-xs font-medium border transition-all duration-150 ${
-                    tone === tone_opt.id
-                      ? 'bg-accent text-white border-accent'
-                      : 'bg-bg text-ink-muted border-line hover:text-ink hover:border-ink-muted'
-                  }`}
-                >
-                  {t.toneLabels[i]}
-                </button>
-              ))}
             </div>
 
             {/* Analyze button */}

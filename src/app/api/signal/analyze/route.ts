@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { Tone as DbTone, Language as DbLanguage } from '@prisma/client';
+import { Language as DbLanguage } from '@prisma/client';
 
 import { analyzeWord, type AnalyzeRecord } from '@/lib/services/signal';
 import type { Analysis } from '@/lib/ai/schemas/analysis';
@@ -9,13 +9,6 @@ import { prisma } from '@/lib/db/prisma';
 import { getClientIp, hashIp, checkInMemoryLimit } from '@/lib/rate-limit';
 
 const DAILY_LIMIT = 10;
-
-const TONE_DB: Record<string, DbTone> = {
-  practico:  DbTone.PRACTICO,
-  academico: DbTone.ACADEMICO,
-  creativo:  DbTone.CREATIVO,
-  infantil:  DbTone.INFANTIL,
-};
 
 const LANGUAGE_DB: Record<string, DbLanguage> = {
   es: DbLanguage.ES,
@@ -28,7 +21,6 @@ const bodySchema = z.object({
                 message: 'Empire Signal analyzes words and short phrases, not sentences.',
               }),
   context:  z.string().max(2000).nullish().transform((v) => v ?? null),
-  tone:     z.enum(['practico', 'academico', 'creativo', 'infantil']).default('practico'),
   language: z.enum(['es', 'en']).default('en'),
 });
 
@@ -50,7 +42,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { word: rawWord, context, tone, language } = parsed.data;
+    const { word: rawWord, context, language } = parsed.data;
 
     // Normalize: lowercase + strip leading/trailing punctuation so "Hola", "¡hola!" and "hola" hit the same cache entry
     const word = rawWord.toLowerCase().replace(/^[\s!?¡¿.,;:'"()\[\]{}]+|[\s!?¡¿.,;:'"()\[\]{}]+$/g, '');
@@ -98,7 +90,6 @@ export async function POST(request: Request) {
     const isOwner = Boolean(bypassKey && ownerKey === bypassKey);
 
     const ipHash = hashIp(getClientIp(request));
-    const dbTone = TONE_DB[tone];
     const dbLanguage = LANGUAGE_DB[language];
 
     // Normalize context the same way analyzeWord does before storing it,
@@ -110,14 +101,13 @@ export async function POST(request: Request) {
     let prefetched: AnalyzeRecord | null | undefined = undefined;
     try {
       const cacheHit = await prisma.searchRecord.findFirst({
-        where: { word, context: normalizedContext, tone: dbTone, language: dbLanguage },
+        where: { word, context: normalizedContext, language: dbLanguage },
       });
       // Set explicitly: null = cache miss confirmed, non-null = hit.
       prefetched = cacheHit ? {
         id:       cacheHit.id,
         word:     cacheHit.word,
         context:  cacheHit.context,
-        tone:     cacheHit.tone,
         language: cacheHit.language,
         analysis: cacheHit.analysisJson as unknown as Analysis,
         shareId:  cacheHit.shareId,
@@ -160,7 +150,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const result = await analyzeWord({ word, context: normalizedContext, tone, language, userId: null, ipHash, prefetched });
+    const result = await analyzeWord({ word, context: normalizedContext, language, userId: null, ipHash, prefetched });
 
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: 503 });

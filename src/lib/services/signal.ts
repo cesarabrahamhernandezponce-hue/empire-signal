@@ -1,4 +1,4 @@
-import { Tone as DbTone, Language as DbLanguage, Prisma } from '@prisma/client';
+import { Language as DbLanguage, Prisma } from '@prisma/client';
 
 import { generateContent } from '../ai/client';
 import { buildAnalyzePromptES } from '../ai/prompts/analyze-es';
@@ -7,16 +7,9 @@ import { buildAskPromptES } from '../ai/prompts/ask-es';
 import { buildAskPromptEN } from '../ai/prompts/ask-en';
 import { buildTranslatePrompt } from '../ai/prompts/translate';
 import { parseTranslation } from '../ai/schemas/translation';
-import type { Tone, Language } from '../ai/prompts/types';
+import type { Language } from '../ai/prompts/types';
 import { parseAnalysis, type Analysis } from '../ai/schemas/analysis';
 import { prisma } from '../db/prisma';
-
-const TONE_MAP: Record<Tone, DbTone> = {
-  practico:  DbTone.PRACTICO,
-  academico: DbTone.ACADEMICO,
-  creativo:  DbTone.CREATIVO,
-  infantil:  DbTone.INFANTIL,
-};
 
 const LANGUAGE_MAP: Record<Language, DbLanguage> = {
   es: DbLanguage.ES,
@@ -27,7 +20,6 @@ export type AnalyzeRecord = {
   id: string;
   word: string;
   context: string | null;
-  tone: DbTone;
   language: DbLanguage;
   analysis: Analysis;
   shareId: string;
@@ -37,7 +29,6 @@ type ShareRecord = {
   id: string;
   word: string;
   context: string | null;
-  tone: DbTone;
   language: DbLanguage;
   analysis: Analysis;
   shareId: string;
@@ -55,16 +46,14 @@ export type ShareResult =
 export async function analyzeWord(params: {
   word: string;
   context: string | null;
-  tone: Tone;
   language: Language;
   userId?: string | null;
   ipHash?: string | null;
   prefetched?: AnalyzeRecord | null;
 }): Promise<AnalyzeResult> {
-  const { word, tone, language, userId = null, ipHash = null } = params;
+  const { word, language, userId = null, ipHash = null } = params;
 
   const context = params.context?.trim() || null;
-  const dbTone = TONE_MAP[tone];
   const dbLanguage = LANGUAGE_MAP[language];
 
   // Check cache — skip DB lookup if caller already verified (prefetched !== undefined)
@@ -72,14 +61,13 @@ export async function analyzeWord(params: {
   if (params.prefetched === undefined) {
     try {
       const found = await prisma.searchRecord.findFirst({
-        where: { word, context, tone: dbTone, language: dbLanguage },
+        where: { word, context, language: dbLanguage },
       });
       if (found) {
         cached = {
           id:       found.id,
           word:     found.word,
           context:  found.context,
-          tone:     found.tone,
           language: found.language,
           analysis: found.analysisJson as unknown as Analysis,
           shareId:  found.shareId,
@@ -95,7 +83,7 @@ export async function analyzeWord(params: {
     // Fire-and-forget event (telemetry, non-critical)
     prisma.searchEvent.create({
       data: {
-        word, context, tone: dbTone, language: dbLanguage,
+        word, context, language: dbLanguage,
         userId, searchRecordId: cached.id, cacheHit: true, ipHash,
       },
     }).catch((err) => console.error('[analyzeWord] SearchEvent (cache hit) failed:', err));
@@ -105,8 +93,8 @@ export async function analyzeWord(params: {
 
   // Cache miss — call AI
   const prompt = language === 'es'
-    ? buildAnalyzePromptES(word, context, tone)
-    : buildAnalyzePromptEN(word, context, tone);
+    ? buildAnalyzePromptES(word, context)
+    : buildAnalyzePromptEN(word, context);
 
   // First attempt
   const aiResult = await generateContent(prompt);
@@ -136,7 +124,7 @@ export async function analyzeWord(params: {
   try {
     const record = await prisma.searchRecord.create({
       data: {
-        word, context, tone: dbTone, language: dbLanguage,
+        word, context, language: dbLanguage,
         analysisJson: analysis,
       },
     });
@@ -144,7 +132,7 @@ export async function analyzeWord(params: {
     // Fire-and-forget event (telemetry, non-critical)
     prisma.searchEvent.create({
       data: {
-        word, context, tone: dbTone, language: dbLanguage,
+        word, context, language: dbLanguage,
         userId, searchRecordId: record.id, cacheHit: false, ipHash,
       },
     }).catch((err) => console.error('[analyzeWord] SearchEvent (cache miss) failed:', err));
@@ -155,24 +143,23 @@ export async function analyzeWord(params: {
         id:       record.id,
         word:     record.word,
         context:  record.context,
-        tone:     record.tone,
         language: record.language,
         analysis,
         shareId:  record.shareId,
       },
     };
   } catch (err) {
-    // Two concurrent requests for the same word+tone+language can both reach this
+    // Two concurrent requests for the same word+language can both reach this
     // point simultaneously. The second create hits the unique constraint (P2002);
     // recover by returning the record the first request already created.
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       const existing = await prisma.searchRecord.findFirst({
-        where: { word, context, tone: dbTone, language: dbLanguage },
+        where: { word, context, language: dbLanguage },
       });
       if (existing) {
         prisma.searchEvent.create({
           data: {
-            word, context, tone: dbTone, language: dbLanguage,
+            word, context, language: dbLanguage,
             userId, searchRecordId: existing.id, cacheHit: false, ipHash,
           },
         }).catch((e) => console.error('[analyzeWord] SearchEvent (concurrent) failed:', e));
@@ -182,7 +169,6 @@ export async function analyzeWord(params: {
             id:       existing.id,
             word:     existing.word,
             context:  existing.context,
-            tone:     existing.tone,
             language: existing.language,
             analysis: existing.analysisJson as unknown as Analysis,
             shareId:  existing.shareId,
@@ -278,7 +264,6 @@ export async function getAnalysisByShareId(shareId: string): Promise<ShareResult
         id:        found.id,
         word:      found.word,
         context:   found.context,
-        tone:      found.tone,
         language:  found.language,
         analysis:  found.analysisJson as unknown as Analysis,
         shareId:   found.shareId,

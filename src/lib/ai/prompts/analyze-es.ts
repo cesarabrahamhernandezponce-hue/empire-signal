@@ -1,25 +1,13 @@
-import type { Tone } from './types';
-
-const TONE_INSTRUCTIONS: Record<Tone, string> = {
-  practico:  'Usa un registro práctico y directo. Enfocado en cómo usar la palabra en situaciones reales.',
-  academico: 'Usa un registro académico y formal. Terminología técnica, referencias a autores o fuentes si procede.',
-  creativo:  'Usa un registro creativo y narrativo. Metáforas, imágenes poéticas, hazlo memorable.',
-  infantil:  'Explica como si el usuario tuviera 12 años. Simple, claro, con ejemplos cotidianos.',
-};
-
 export function buildAnalyzePromptES(
   word: string,
   context: string | null,
-  tone: Tone,
 ): string {
   const contextText = context?.trim() || 'Sin contexto específico proporcionado.';
-  const toneInstruction = TONE_INSTRUCTIONS[tone];
 
   return `Analiza la palabra en español que aparece abajo y devuelve un análisis lingüístico como objeto JSON.
 
 Palabra: "${word}"
 Contexto: ${contextText}
-Tono: ${toneInstruction}
 
 Estructura JSON requerida (rellena cada campo con contenido real — sin texto de ejemplo):
 

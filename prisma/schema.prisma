@@ -41,7 +41,6 @@ model SearchRecord {
   id       String   @id @default(uuid())
   word     String
   context  String?
-  tone     Tone     @default(PRACTICO)
   language Language @default(EN)
 
   analysisJson Json
@@ -56,17 +55,10 @@ model SearchRecord {
   bookmarks         Bookmark[]
   wordOfTheDay      WordOfTheDay?
 
-  @@unique([word, context, tone, language])
+  @@unique([word, context, language])
   @@index([word])
   @@index([shareId])
   @@map("search_records")
-}
-
-enum Tone {
-  PRACTICO
-  ACADEMICO
-  CREATIVO
-  INFANTIL
 }
 
 enum Language {
@@ -116,7 +108,6 @@ model SearchEvent {
   id             String   @id @default(uuid())
   word           String
   context        String?
-  tone           Tone
   language       Language
 
   userId         String?

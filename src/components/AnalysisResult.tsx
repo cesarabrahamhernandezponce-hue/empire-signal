@@ -7,7 +7,6 @@ export type AnalyzeRecord = {
   id: string;
   word: string;
   context: string | null;
-  tone: string;
   language: string;
   analysis: Analysis;
   shareId: string;
