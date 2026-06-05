@@ -11,8 +11,9 @@ function createPrismaClient() {
     keepAlive: true,
     keepAliveInitialDelayMillis: 10000,
     connectionTimeoutMillis: 10000,
-    idleTimeoutMillis: 60000,
-    max: 5,
+    // Stay under pgbouncer's server_idle_timeout (~60s) to avoid "connection terminated" errors
+    idleTimeoutMillis: 30000,
+    max: 2,
   });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({
