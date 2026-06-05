@@ -109,7 +109,7 @@ export async function analyzeWord(params: {
       }
     } catch (err) {
       console.error('[analyzeWord] Cache lookup failed:', err);
-      return { ok: false, error: 'Database query failed.' };
+      // DB unreachable — fall through to AI call rather than blocking the user
     }
   }
 
@@ -202,7 +202,12 @@ export async function analyzeWord(params: {
       }
     }
     console.error('[analyzeWord] DB write failed:', err);
-    return { ok: false, error: 'Failed to save the analysis.' };
+    // Return the analysis anyway — persistence failed but the user gets a result
+    const enriched = await enrichWithContext(
+      { id: '', word, context: null, language: dbLanguage, analysis, shareId: '' },
+      word, context, language,
+    );
+    return { ok: true, record: enriched };
   }
 }
 
