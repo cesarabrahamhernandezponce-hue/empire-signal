@@ -460,8 +460,7 @@ export default function AnalysisResult({ record, onReset, onAnalyzeWord }: Props
                   style={{ background: i % 2 !== 0 ? 'var(--bg)' : 'transparent', padding: '6px 4px', borderRadius: '4px' }}
                 >
                   <span className="shrink-0 text-sm font-medium w-40" style={{ color: 'var(--text-primary)' }}>
-                    <ClickableWord word={col.phrase.split(' ')[0]} onAnalyze={onAnalyzeWord} />
-                    {col.phrase.includes(' ') ? col.phrase.slice(col.phrase.indexOf(' ')) : ''}
+                    {col.phrase}
                   </span>
                   <span className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
                     {col.meaning}

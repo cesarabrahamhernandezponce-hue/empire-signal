@@ -36,7 +36,7 @@ Estructura JSON requerida (rellena cada campo con contenido real — sin texto d
       { "phrase": "<combinación natural>", "meaning": "<uso o significado>" },
       { "phrase": "<combinación natural>", "meaning": "<uso o significado>" }
     ],
-    "mnemonic": "<truco mnemotécnico original para recordar el significado>"
+    "mnemonic": "<Crea un truco de memoria vívido e inesperado para esta palabra. Usa UNA de estas técnicas — la que mejor encaje: (1) Asociación sonora: la palabra suena como otra palabra o frase que conecta con su significado; (2) Imagen visual: una imagen mental bizarra, imposible o graciosa que fija el significado (cuanto más extraña mejor); (3) Historia gancho: una micro-historia de 1 oración donde el significado de la palabra es el remate. Reglas: máximo 25 palabras, debe ser inmediatamente memorable, debe conectar directamente con el significado central, nunca uses asociaciones genéricas u obvias.>"
   },
   "advanced": {
     "etymology": "<origen y evolución histórica>",

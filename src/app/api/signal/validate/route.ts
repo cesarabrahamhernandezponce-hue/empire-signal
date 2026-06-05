@@ -41,6 +41,17 @@ export async function POST(request: Request) {
 
     const { sentence, word, language } = parsed.data;
 
+    const wordInSentence = sentence.toLowerCase().includes(word.toLowerCase());
+    if (!wordInSentence) {
+      return NextResponse.json(
+        { error: language === 'es'
+            ? `La oración debe contener la palabra "${word}".`
+            : `The sentence must contain the word "${word}".`
+        },
+        { status: 422 },
+      );
+    }
+
     const ownerKey = request.headers.get('x-owner-key');
     const bypassKey = process.env.OWNER_BYPASS_KEY;
     const isOwner = Boolean(bypassKey && ownerKey === bypassKey);

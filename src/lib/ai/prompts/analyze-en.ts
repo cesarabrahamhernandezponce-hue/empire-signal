@@ -36,7 +36,7 @@ Required JSON structure (fill every field with real content — no placeholder t
       { "phrase": "<collocation>", "meaning": "<usage>" },
       { "phrase": "<collocation>", "meaning": "<usage>" }
     ],
-    "mnemonic": "<original mnemonic to remember the meaning>"
+    "mnemonic": "<Create a vivid, unexpected memory trick for this word. Use ONE of these techniques — choose whichever fits best: (1) Sound association: the word sounds like another word or phrase that connects to its meaning (e.g. 'frugal sounds like frugal frog who never spends coins'); (2) Visual image: a bizarre, impossible, or funny mental image that locks in the meaning (the stranger the better); (3) Story hook: a 1-sentence micro-story where the word's meaning is the punchline. Rules: must be under 25 words, must be immediately memorable, must directly connect to the word's core meaning, never use generic or obvious associations.>"
   },
   "advanced": {
     "etymology": "<origin and historical evolution>",
