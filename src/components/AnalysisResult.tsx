@@ -179,6 +179,9 @@ const LABELS = {
     soundsNatural:   'Sounds natural',
     needsAdjust:     'Needs adjustment',
     tryInstead:      'Try instead',
+    askSection:      'Ask about this word',
+    askBtn:          'Ask',
+    asking:          'Asking...',
   },
   es: {
     newSearch:       'Nueva búsqueda',
@@ -210,6 +213,9 @@ const LABELS = {
     soundsNatural:   'Suena natural',
     needsAdjust:     'Necesita ajuste',
     tryInstead:      'Intenta así',
+    askSection:      'Pregunta sobre esta palabra',
+    askBtn:          'Preguntar',
+    asking:          'Procesando...',
   },
 } as const;
 
@@ -218,6 +224,8 @@ type ValidationState =
   | { status: 'loading' }
   | { status: 'result'; natural: boolean; score: number; feedback: string; suggestion?: string }
   | { status: 'error'; message: string };
+
+type AskItem = { question: string; answer: string };
 
 function pickVoice(lang: string): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
@@ -236,6 +244,9 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
   const [speechSupported, setSpeechSupported] = useState(false);
   const [sentence, setSentence] = useState('');
   const [validation, setValidation] = useState<ValidationState>({ status: 'idle' });
+  const [question, setQuestion] = useState('');
+  const [askLoading, setAskLoading] = useState(false);
+  const [askHistory, setAskHistory] = useState<AskItem[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { word, analysis } = record;
 
@@ -327,6 +338,25 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
     }
   }
 
+  async function handleAsk() {
+    const trimmed = question.trim();
+    if (!trimmed || askLoading || !record.id) return;
+    setAskLoading(true);
+    try {
+      const res = await fetch('/api/signal/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ searchRecordId: record.id, question: trimmed }),
+      });
+      const data: unknown = await res.json();
+      if (res.ok) {
+        setAskHistory((prev) => [...prev, { question: trimmed, answer: (data as { answer: string }).answer }]);
+        setQuestion('');
+      }
+    } catch { /* silently ignore — question input stays */ }
+    finally { setAskLoading(false); }
+  }
+
   const lang = record.language.toLowerCase() as 'en' | 'es';
   const l = LABELS[lang] ?? LABELS.en;
   const { essential, advanced } = analysis;
@@ -387,7 +417,8 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             </button>
             <span className="text-ink-faint select-none">·</span>
             <button
-              className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent transition-colors duration-150"
+              className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled={!record.shareId}
               onClick={() => {
                 const url = `${window.location.origin}/share/${record.shareId}`;
                 navigator.clipboard.writeText(url).then(() => {
@@ -692,6 +723,48 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             </div>
           </div>
         </div>
+
+        {/* Follow-up questions */}
+        {record.id && (
+          <section className="mt-4" style={cardBase}>
+            <SectionLabel serif>{l.askSection}</SectionLabel>
+
+            {askHistory.length > 0 && (
+              <div className="mb-4 space-y-5">
+                {askHistory.map((item, i) => (
+                  <div key={i}>
+                    <p className="text-xs font-semibold mb-1.5" style={{ color: '#3A3D8F' }}>{item.question}</p>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>{item.answer}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAsk(); } }}
+                placeholder={lang === 'en' ? `Ask anything about "${word}"...` : `Pregunta lo que quieras sobre "${word}"...`}
+                maxLength={500}
+                className="flex-1 bg-bg border border-line rounded-lg px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint outline-none focus:border-accent transition-colors duration-150"
+              />
+              <button
+                onClick={handleAsk}
+                disabled={question.trim().length === 0 || askLoading}
+                className="shrink-0 px-4 py-2.5 rounded-[6px] text-xs font-medium border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {askLoading ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 border border-line border-t-accent rounded-full animate-spin" />
+                    {l.asking}
+                  </span>
+                ) : l.askBtn}
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* Bottom reset */}
         <div className="mt-16 pb-8 text-center">

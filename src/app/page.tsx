@@ -355,6 +355,8 @@ export default function Home() {
       setTranslationState({ status: 'idle' });
       setSpellingError(null);
       setSpellingSuggestion(null);
+      setWaitlistEmail('');
+      setWaitlistStatus('idle');
       setPageState({ status: 'idle' });
     }
   };

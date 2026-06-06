@@ -2,7 +2,7 @@ const BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const TIMEOUT_MS = 25000;
 
 function stripCodeFences(text: string): string {
-  const match = text.match(/```(?:json)?\s*([\s\S]+?)\s*```/);
+  const match = text.match(/```(?:json)?\s*([\s\S]+)\s*```/);
   if (match) return match[1].trim();
   return text.trim();
 }
