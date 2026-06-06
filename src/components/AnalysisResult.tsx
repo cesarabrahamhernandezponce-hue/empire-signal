@@ -421,6 +421,75 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             </p>
           </section>
 
+          {/* Validate your sentence */}
+          <section style={cardBase}>
+            <SectionLabel serif>{l.validateSection}</SectionLabel>
+            <textarea
+              value={sentence}
+              onChange={(e) => { setSentence(e.target.value); setValidation({ status: 'idle' }); }}
+              placeholder={lang === 'en' ? `Write a sentence using "${word}"...` : `Escribe una oración usando "${word}"...`}
+              rows={2}
+              maxLength={300}
+              className="w-full bg-bg border border-line rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-faint outline-none focus:border-accent resize-none transition-colors duration-150"
+            />
+            <div className="flex justify-end mt-2">
+              <button
+                onClick={handleValidate}
+                disabled={sentence.trim().length === 0 || validation.status === 'loading'}
+                className="px-4 py-1.5 rounded-[6px] text-xs font-medium border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {validation.status === 'loading' ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 border border-line border-t-accent rounded-full animate-spin" />
+                    {l.check}
+                  </span>
+                ) : l.check}
+              </button>
+            </div>
+
+            {validation.status === 'result' && (
+              <div className="mt-4">
+                <div className="flex items-baseline gap-2">
+                  <span
+                    className="text-2xl font-semibold"
+                    style={{ color: validation.natural ? '#2E7D32' : '#E65100' }}
+                  >
+                    {validation.score}/100
+                  </span>
+                  <span className="text-xs text-ink-muted">
+                    {validation.natural ? l.soundsNatural : l.needsAdjust}
+                  </span>
+                </div>
+                <p className="text-sm text-ink-muted mt-2">{validation.feedback}</p>
+                {!validation.natural && validation.suggestion && (
+                  <div
+                    style={{
+                      background: '#F5F5FB',
+                      borderLeft: '3px solid #3A3D8F',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      marginTop: '12px',
+                    }}
+                  >
+                    <p
+                      className="text-[0.65rem] font-semibold uppercase mb-1"
+                      style={{ color: 'var(--accent)', letterSpacing: '0.08em' }}
+                    >
+                      {l.tryInstead}
+                    </p>
+                    <p className="text-sm italic" style={{ color: 'var(--text-body)' }}>
+                      {validation.suggestion}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {validation.status === 'error' && (
+              <p className="mt-3 text-xs text-ink-muted">{validation.message}</p>
+            )}
+          </section>
+
           {/* In your context — only when contextNote is present */}
           {essential.contextNote && (
             <section style={{ ...cardBase, background: '#F0F4FF', borderLeft: '3px solid #3A3D8F' }}>
@@ -497,75 +566,6 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
               {essential.mnemonic}
               <span style={{ fontFamily: 'var(--font-dm-serif)', fontSize: '2rem', lineHeight: 1, color: '#3A3D8F', verticalAlign: '-0.3em', marginLeft: '0.15em' }}>{'”'}</span>
             </p>
-          </section>
-
-          {/* Validate your sentence */}
-          <section style={cardBase}>
-            <SectionLabel serif>{l.validateSection}</SectionLabel>
-            <textarea
-              value={sentence}
-              onChange={(e) => { setSentence(e.target.value); setValidation({ status: 'idle' }); }}
-              placeholder={lang === 'en' ? `Write a sentence using "${word}"...` : `Escribe una oración usando "${word}"...`}
-              rows={2}
-              maxLength={300}
-              className="w-full bg-bg border border-line rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-faint outline-none focus:border-accent resize-none transition-colors duration-150"
-            />
-            <div className="flex justify-end mt-2">
-              <button
-                onClick={handleValidate}
-                disabled={sentence.trim().length === 0 || validation.status === 'loading'}
-                className="px-4 py-1.5 rounded-[6px] text-xs font-medium border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {validation.status === 'loading' ? (
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 border border-line border-t-accent rounded-full animate-spin" />
-                    {l.check}
-                  </span>
-                ) : l.check}
-              </button>
-            </div>
-
-            {validation.status === 'result' && (
-              <div className="mt-4">
-                <div className="flex items-baseline gap-2">
-                  <span
-                    className="text-2xl font-semibold"
-                    style={{ color: validation.natural ? '#2E7D32' : '#E65100' }}
-                  >
-                    {validation.score}/100
-                  </span>
-                  <span className="text-xs text-ink-muted">
-                    {validation.natural ? l.soundsNatural : l.needsAdjust}
-                  </span>
-                </div>
-                <p className="text-sm text-ink-muted mt-2">{validation.feedback}</p>
-                {!validation.natural && validation.suggestion && (
-                  <div
-                    style={{
-                      background: '#F5F5FB',
-                      borderLeft: '3px solid #3A3D8F',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      marginTop: '12px',
-                    }}
-                  >
-                    <p
-                      className="text-[0.65rem] font-semibold uppercase mb-1"
-                      style={{ color: 'var(--accent)', letterSpacing: '0.08em' }}
-                    >
-                      {l.tryInstead}
-                    </p>
-                    <p className="text-sm italic" style={{ color: 'var(--text-body)' }}>
-                      {validation.suggestion}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {validation.status === 'error' && (
-              <p className="mt-3 text-xs text-ink-muted">{validation.message}</p>
-            )}
           </section>
 
         </div>

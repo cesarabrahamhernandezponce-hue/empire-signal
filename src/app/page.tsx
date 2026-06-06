@@ -48,6 +48,9 @@ const UI = {
     themeLabel:      'Theme',
     light:           'Light',
     dark:            'Dark',
+    howToUse:        'How to use Empire Signal',
+    howToUseTitle:   'What you can do',
+    close:           'Close',
   },
   es: {
     insightLabel:    'Perspectiva Empire',
@@ -66,6 +69,9 @@ const UI = {
     themeLabel:      'Tema',
     light:           'Claro',
     dark:            'Oscuro',
+    howToUse:        'Cómo usar Empire Signal',
+    howToUseTitle:   'Qué puedes hacer',
+    close:           'Cerrar',
   },
 } as const;
 
@@ -115,6 +121,88 @@ function IconGear() {
   );
 }
 
+const FEATURES = [
+  {
+    title: 'Deep word analysis',
+    body: 'Type any word — like "ephemeral" — and get etymology, CEFR level, collocations, mnemonic, usage examples, and more.',
+  },
+  {
+    title: 'Personal context',
+    body: 'Add the sentence where you found the word and receive a note specific to that exact usage.',
+  },
+  {
+    title: 'Sentence validator',
+    body: 'Write your own sentence using the word, get a score from 0 to 100, and a corrected version if needed.',
+  },
+  {
+    title: 'Follow-up questions',
+    body: 'After the analysis, ask anything about the word directly from the results page.',
+  },
+];
+
+function IconClose() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function HelpModal({ title, onClose }: { title: string; onClose: () => void }) {
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.30)' }}
+      onClick={onClose}
+    >
+      <div
+        style={{ background: '#FAFAF8', borderRadius: '16px', border: '1px solid #EAEAE6', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', padding: '28px 32px', maxWidth: '480px', width: '100%', position: 'relative' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <p style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#3A3D8F' }}>
+            {title}
+          </p>
+          <button
+            onClick={onClose}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9A9A96', padding: '2px', display: 'flex', alignItems: 'center' }}
+            aria-label="Close"
+          >
+            <IconClose />
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {FEATURES.map((f, i) => (
+            <div key={i} style={{ display: 'flex', gap: '14px' }}>
+              <span
+                style={{ flexShrink: 0, width: '20px', height: '20px', borderRadius: '50%', background: '#EEF0FF', color: '#3A3D8F', fontSize: '0.6rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1px' }}
+              >
+                {i + 1}
+              </span>
+              <div>
+                <p style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1A1A1A', marginBottom: '3px' }}>
+                  {f.title}
+                </p>
+                <p style={{ fontSize: '0.8rem', color: '#6B6B67', lineHeight: 1.6 }}>
+                  {f.body}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [word, setWord]                         = useState('');
   const [context, setContext]                   = useState('');
@@ -134,8 +222,10 @@ export default function Home() {
   const [spellingSuggestion, setSpellingSuggestion] = useState<string | null>(null);
   const [history, setHistory]                   = useState<AnalyzeRecord[]>([]);
   const [sessionHistory, setSessionHistory]     = useState<string[]>([]);
-  const [targetLang, setTargetLang]             = useState<TranslateLang>('es');
-  const [translationState, setTranslationState] = useState<TranslationState>({ status: 'idle' });
+  const [showHelp, setShowHelp]                   = useState(false);
+  const [translateExpanded, setTranslateExpanded] = useState(false);
+  const [targetLang, setTargetLang]               = useState<TranslateLang | null>(null);
+  const [translationState, setTranslationState]   = useState<TranslationState>({ status: 'idle' });
   const settingsRef                             = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -163,20 +253,23 @@ export default function Home() {
     const val = e.target.value;
     setWord(val);
     setCuriosityVisible(val.length === 0);
+    setTranslateExpanded(false);
+    setTargetLang(null);
     setTranslationState({ status: 'idle' });
     setSpellingError(null);
     setSpellingSuggestion(null);
   };
 
-  const handleTranslate = async () => {
+  const handleTranslate = async (lang: TranslateLang) => {
     const trimmed = word.trim();
     if (!trimmed) return;
+    setTargetLang(lang);
     setTranslationState({ status: 'loading' });
     try {
       const res = await fetch('/api/signal/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word: trimmed, targetLanguages: [targetLang] }),
+        body: JSON.stringify({ word: trimmed, targetLanguages: [lang] }),
       });
       const data: unknown = await res.json();
       if (!res.ok) {
@@ -184,12 +277,12 @@ export default function Home() {
         return;
       }
       const translations = (data as { translations: Record<string, string> }).translations;
-      const text = translations[targetLang];
+      const text = translations[lang];
       if (!text) {
         setTranslationState({ status: 'error', message: 'No translation returned.' });
         return;
       }
-      setTranslationState({ status: 'result', text, lang: targetLang });
+      setTranslationState({ status: 'result', text, lang });
     } catch {
       setTranslationState({ status: 'error', message: 'Could not connect to the server.' });
     }
@@ -250,6 +343,8 @@ export default function Home() {
     } else {
       setWord('');
       setCuriosityVisible(true);
+      setTranslateExpanded(false);
+      setTargetLang(null);
       setTranslationState({ status: 'idle' });
       setSpellingError(null);
       setSpellingSuggestion(null);
@@ -459,6 +554,8 @@ export default function Home() {
           </div>
         )}
 
+        {showHelp && <HelpModal title={t.howToUseTitle} onClose={() => setShowHelp(false)} />}
+
         {/* Search card */}
         <div className="w-full max-w-[600px] bg-surface border border-line rounded-[12px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden">
 
@@ -519,23 +616,34 @@ export default function Home() {
           {canAnalyze && !spellingError && (
             <div className="px-7 pb-5 border-t border-line pt-4">
               <div className="flex items-center gap-2">
-                <div className="flex gap-1.5 flex-wrap flex-1">
-                  {TRANSLATE_LANGS.map((l) => (
-                    <button
-                      key={l.id}
-                      onClick={() => setTargetLang(l.id)}
-                      className={`px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all duration-150 ${
-                        targetLang === l.id
-                          ? 'bg-accent text-white border-accent'
-                          : 'bg-bg text-ink-muted border-line hover:text-ink hover:border-ink-muted'
-                      }`}
-                    >
-                      {l.label}
-                    </button>
-                  ))}
-                </div>
+                {translateExpanded && (
+                  <div className="flex gap-1.5 flex-wrap flex-1">
+                    {TRANSLATE_LANGS.map((l) => (
+                      <button
+                        key={l.id}
+                        onClick={() => handleTranslate(l.id)}
+                        disabled={translationState.status === 'loading'}
+                        className={`px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed ${
+                          targetLang === l.id
+                            ? 'bg-accent text-white border-accent'
+                            : 'bg-bg text-ink-muted border-line hover:text-ink hover:border-ink-muted'
+                        }`}
+                      >
+                        {l.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <button
-                  onClick={handleTranslate}
+                  onClick={() => {
+                    if (translateExpanded) {
+                      setTranslateExpanded(false);
+                      setTargetLang(null);
+                      setTranslationState({ status: 'idle' });
+                    } else {
+                      setTranslateExpanded(true);
+                    }
+                  }}
                   disabled={translationState.status === 'loading'}
                   className="shrink-0 px-3 py-1 rounded-[6px] text-xs font-medium border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -624,6 +732,15 @@ export default function Home() {
             </button>
           </div>
         </div>
+
+        {/* How to use link */}
+        <button
+          onClick={() => setShowHelp(true)}
+          className="mt-5 text-xs text-ink-faint hover:text-ink-muted transition-colors duration-150"
+        >
+          {t.howToUse}
+        </button>
+
       </main>
     </>
   );
