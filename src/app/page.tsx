@@ -96,7 +96,7 @@ type PageState =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'result'; record: AnalyzeRecord; cacheHit: boolean }
-  | { status: 'error'; message: string };
+  | { status: 'error'; message: string; rateLimited?: boolean };
 
 function IconCopy() {
   return (
@@ -223,6 +223,8 @@ export default function Home() {
   const [history, setHistory]                   = useState<AnalyzeRecord[]>([]);
   const [sessionHistory, setSessionHistory]     = useState<string[]>([]);
   const [showHelp, setShowHelp]                   = useState(false);
+  const [waitlistEmail, setWaitlistEmail]         = useState('');
+  const [waitlistStatus, setWaitlistStatus]       = useState<'idle' | 'loading' | 'success' | 'duplicate'>('idle');
   const [translateExpanded, setTranslateExpanded] = useState(false);
   const [targetLang, setTargetLang]               = useState<TranslateLang | null>(null);
   const [translationState, setTranslationState]   = useState<TranslationState>({ status: 'idle' });
@@ -315,6 +317,11 @@ export default function Home() {
         return;
       }
 
+      if (res.status === 429) {
+        setPageState({ status: 'error', message: (data as { error?: string }).error ?? 'Daily limit reached.', rateLimited: true });
+        return;
+      }
+
       if (!res.ok) {
         const message = (data as { error?: string }).error ?? 'Unknown server error.';
         setPageState({ status: 'error', message });
@@ -349,6 +356,24 @@ export default function Home() {
       setSpellingError(null);
       setSpellingSuggestion(null);
       setPageState({ status: 'idle' });
+    }
+  };
+
+  const handleWaitlist = async () => {
+    const trimmed = waitlistEmail.trim();
+    if (!trimmed) return;
+    setWaitlistStatus('loading');
+    try {
+      const res = await fetch('/api/signal/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmed }),
+      });
+      if (res.status === 409) { setWaitlistStatus('duplicate'); return; }
+      if (!res.ok) { setWaitlistStatus('idle'); return; }
+      setWaitlistStatus('success');
+    } catch {
+      setWaitlistStatus('idle');
     }
   };
 
@@ -482,15 +507,61 @@ export default function Home() {
       <>
         {settingsButton}
         <div className="min-h-screen bg-bg flex items-center justify-center px-4">
-          <div className="text-center max-w-sm">
-            <p className="text-sm text-ink mb-1">{t.errorTitle}</p>
-            <p className="text-sm text-ink-muted mb-6">{pageState.message}</p>
-            <button
-              onClick={handleReset}
-              className="text-sm text-accent hover:text-accent-hover transition-colors duration-150"
-            >
-              {t.tryAgain}
-            </button>
+          <div className="max-w-sm w-full">
+            {pageState.rateLimited ? (
+              <div className="text-center">
+                <p className="text-sm font-medium text-ink mb-1">{"You've reached today's limit"}</p>
+                <p className="text-xs text-ink-muted mb-6 leading-relaxed">
+                  Come back tomorrow, or leave your email to be notified when accounts launch.
+                </p>
+                {waitlistStatus === 'success' ? (
+                  <p className="text-sm text-ink-muted">{"You're on the list."}</p>
+                ) : (
+                  <form onSubmit={(e) => { e.preventDefault(); handleWaitlist(); }} className="flex flex-col gap-2">
+                    <input
+                      type="email"
+                      value={waitlistEmail}
+                      onChange={(e) => setWaitlistEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      required
+                      className="w-full bg-bg border border-line rounded-lg px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint outline-none focus:border-accent transition-colors duration-150"
+                    />
+                    {waitlistStatus === 'duplicate' && (
+                      <p className="text-xs text-ink-muted text-left">Already on the list.</p>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={waitlistStatus === 'loading' || waitlistEmail.trim().length === 0}
+                      className="w-full py-2.5 rounded-lg text-sm font-medium text-white bg-accent hover:bg-accent-hover transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {waitlistStatus === 'loading' ? (
+                        <span className="flex items-center justify-center gap-1.5">
+                          <span className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin" />
+                          Sending...
+                        </span>
+                      ) : 'Notify me when accounts launch'}
+                    </button>
+                  </form>
+                )}
+                <button
+                  onClick={handleReset}
+                  className="mt-5 text-xs text-ink-faint hover:text-ink-muted transition-colors duration-150"
+                >
+                  {t.tryAgain}
+                </button>
+              </div>
+            ) : (
+              <div className="text-center">
+                <p className="text-sm text-ink mb-1">{t.errorTitle}</p>
+                <p className="text-sm text-ink-muted mb-6">{pageState.message}</p>
+                <button
+                  onClick={handleReset}
+                  className="text-sm text-accent hover:text-accent-hover transition-colors duration-150"
+                >
+                  {t.tryAgain}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </>

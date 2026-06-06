@@ -122,7 +122,7 @@ export async function POST(request: Request) {
       // In-memory check: atomic within this process, eliminates same-process race conditions.
       if (!checkInMemoryLimit(`analyze:${ipHash}`, DAILY_LIMIT)) {
         return NextResponse.json(
-          { error: 'Daily limit reached. Come back tomorrow.' },
+          { error: 'Daily limit reached. Come back tomorrow.', rateLimited: true },
           { status: 429 },
         );
       }
@@ -141,7 +141,7 @@ export async function POST(request: Request) {
         });
         if (usageCount >= DAILY_LIMIT) {
           return NextResponse.json(
-            { error: 'Daily limit reached. Come back tomorrow.' },
+            { error: 'Daily limit reached. Come back tomorrow.', rateLimited: true },
             { status: 429 },
           );
         }
