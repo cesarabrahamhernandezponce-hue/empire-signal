@@ -93,6 +93,16 @@ function IconCopy() {
   );
 }
 
+function IconDownload() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M7 2v7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M4.5 6.5L7 9l2.5-2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2 12h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function IconChevron({ open }: { open: boolean }) {
   return (
     <svg
@@ -182,6 +192,7 @@ const LABELS = {
     askSection:      'Ask about this word',
     askBtn:          'Ask',
     asking:          'Asking...',
+    saveCard:        'Save card',
   },
   es: {
     newSearch:       'Nueva búsqueda',
@@ -216,6 +227,7 @@ const LABELS = {
     askSection:      'Pregunta sobre esta palabra',
     askBtn:          'Preguntar',
     asking:          'Procesando...',
+    saveCard:        'Guardar tarjeta',
   },
 } as const;
 
@@ -226,6 +238,139 @@ type ValidationState =
   | { status: 'error'; message: string };
 
 type AskItem = { question: string; answer: string };
+
+// ── Card generation ──────────────────────────────────────────────────────────
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines: number): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let current = '';
+
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (ctx.measureText(candidate).width > maxWidth && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) lines.push(current);
+
+  if (lines.length > maxLines) {
+    let last = lines[maxLines - 1];
+    while (last.length > 0 && ctx.measureText(last + '…').width > maxWidth) {
+      last = last.slice(0, -1).trimEnd();
+    }
+    return [...lines.slice(0, maxLines - 1), last + '…'];
+  }
+  return lines;
+}
+
+const CEFR_CARD_COLORS: Record<string, { bg: string; text: string }> = {
+  A1: { bg: 'rgba(74,222,128,0.15)',  text: '#4ADE80' },
+  A2: { bg: 'rgba(74,222,128,0.15)',  text: '#4ADE80' },
+  B1: { bg: 'rgba(96,165,250,0.15)',  text: '#60A5FA' },
+  B2: { bg: 'rgba(96,165,250,0.15)',  text: '#60A5FA' },
+  C1: { bg: 'rgba(192,132,252,0.15)', text: '#C084FC' },
+  C2: { bg: 'rgba(192,132,252,0.15)', text: '#C084FC' },
+};
+
+function generateCard(word: string, essential: Analysis['essential']): void {
+  const SIZE = 1080;
+  const PAD  = 80;
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // Background — subtle radial gradient for depth
+  const grad = ctx.createRadialGradient(SIZE / 2, SIZE * 0.38, 0, SIZE / 2, SIZE * 0.38, SIZE * 0.78);
+  grad.addColorStop(0, '#1C1C1C');
+  grad.addColorStop(1, '#0F0F0F');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Brand label
+  ctx.fillStyle    = '#C9A84C';
+  ctx.letterSpacing = '5px';
+  ctx.font = '600 13px system-ui, -apple-system, sans-serif';
+  ctx.fillText('EMPIRE SIGNAL', SIZE / 2, PAD + 18);
+  ctx.letterSpacing = '0px';
+
+  // Word — scale font to fit
+  const wordFontSize = word.length <= 6 ? 140 : word.length <= 10 ? 110 : word.length <= 14 ? 85 : 65;
+  ctx.font      = `400 ${wordFontSize}px Georgia, "Times New Roman", serif`;
+  ctx.fillStyle = '#FFFFFF';
+  const wordY   = 460;
+  ctx.fillText(word, SIZE / 2, wordY);
+
+  // Accumulate Y below the word
+  let y = wordY + Math.round(wordFontSize / 2) + 44;
+
+  // Phonetic (IPA)
+  if (essential.pronunciation.phonetic) {
+    ctx.font      = '400 26px "Courier New", monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.fillText(essential.pronunciation.phonetic, SIZE / 2, y);
+    y += 54;
+  }
+
+  // CEFR badge — pill shape
+  if (essential.cefr) {
+    const cc = CEFR_CARD_COLORS[essential.cefr] ?? { bg: 'rgba(255,255,255,0.1)', text: '#FFFFFF' };
+    ctx.font = '700 19px "Courier New", monospace';
+    const tw   = ctx.measureText(essential.cefr).width;
+    const pH   = 36;
+    const pPad = 20;
+    const pW   = tw + pPad * 2;
+    const pX   = SIZE / 2 - pW / 2;
+
+    ctx.fillStyle = cc.bg;
+    ctx.beginPath();
+    ctx.roundRect(pX, y - pH / 2, pW, pH, pH / 2);
+    ctx.fill();
+
+    ctx.fillStyle = cc.text;
+    ctx.fillText(essential.cefr, SIZE / 2, y);
+    y += 56;
+  }
+
+  // Mnemonic — italic, 2 lines max
+  if (essential.mnemonic) {
+    ctx.font      = 'italic 400 22px Georgia, "Times New Roman", serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.60)';
+    const maxW = SIZE - (PAD + 60) * 2;
+    const lines = wrapText(ctx, `"${essential.mnemonic}"`, maxW, 2);
+    for (const line of lines) {
+      ctx.fillText(line, SIZE / 2, y);
+      y += 36;
+    }
+  }
+
+  // URL — bottom anchor
+  ctx.fillStyle    = '#C9A84C';
+  ctx.letterSpacing = '2px';
+  ctx.font = '400 13px system-ui, -apple-system, sans-serif';
+  ctx.fillText('empire-signal.vercel.app', SIZE / 2, SIZE - PAD);
+  ctx.letterSpacing = '0px';
+
+  // Download PNG
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a');
+    a.href     = url;
+    a.download = `${word}-empire.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, 'image/png');
+}
 
 function pickVoice(lang: string): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
@@ -437,6 +582,14 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             >
               <IconCopy />
               {l.copy}
+            </button>
+            <span className="text-ink-faint select-none">·</span>
+            <button
+              className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent transition-colors duration-150"
+              onClick={() => generateCard(word, essential)}
+            >
+              <IconDownload />
+              {l.saveCard}
             </button>
           </div>
         </div>
