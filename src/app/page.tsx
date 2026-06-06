@@ -89,7 +89,7 @@ type Language = 'en' | 'es';
 type PageState =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'result'; record: AnalyzeRecord }
+  | { status: 'result'; record: AnalyzeRecord; cacheHit: boolean }
   | { status: 'error'; message: string };
 
 function IconCopy() {
@@ -229,7 +229,8 @@ export default function Home() {
       }
 
       const record = (data as { record: AnalyzeRecord }).record;
-      setPageState({ status: 'result', record });
+      const cacheHit = (data as { cacheHit?: boolean }).cacheHit ?? false;
+      setPageState({ status: 'result', record, cacheHit });
       setSessionHistory((prev) => {
         const filtered = prev.filter((w) => w !== record.word);
         return [record.word, ...filtered].slice(0, 5);
@@ -245,7 +246,7 @@ export default function Home() {
     if (history.length > 0) {
       const prev = history[history.length - 1];
       setHistory((h) => h.slice(0, -1));
-      setPageState({ status: 'result', record: prev });
+      setPageState({ status: 'result', record: prev, cacheHit: true });
     } else {
       setWord('');
       setCuriosityVisible(true);
@@ -279,6 +280,7 @@ export default function Home() {
       <AnalysisResult
         key={currentRecord.id}
         record={currentRecord}
+        cacheHit={pageState.cacheHit}
         onReset={handleReset}
         onAnalyzeWord={(w) => {
           setHistory((h) => [...h, currentRecord]);

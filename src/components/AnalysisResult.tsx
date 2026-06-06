@@ -14,6 +14,7 @@ export type AnalyzeRecord = {
 
 interface Props {
   record: AnalyzeRecord;
+  cacheHit?: boolean;
   onReset: () => void;
   onAnalyzeWord?: (word: string) => void;
 }
@@ -228,7 +229,7 @@ function pickVoice(lang: string): SpeechSynthesisVoice | null {
   );
 }
 
-export default function AnalysisResult({ record, onReset, onAnalyzeWord }: Props) {
+export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWord }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -364,6 +365,12 @@ export default function AnalysisResult({ record, onReset, onAnalyzeWord }: Props
               {essential.pronunciation.phonetic && <span>{essential.pronunciation.phonetic}</span>}
               {essential.pronunciation.phonetic && essential.cefr && <span className="select-none">·</span>}
               {essential.cefr && <CefrBadge level={essential.cefr} />}
+            </p>
+          )}
+
+          {cacheHit && (
+            <p className="mt-2 text-[0.65rem] font-medium tracking-widest uppercase" style={{ color: '#2E7D32' }}>
+              cached
             </p>
           )}
 

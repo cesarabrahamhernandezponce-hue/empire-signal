@@ -38,7 +38,7 @@ type ShareRecord = {
 };
 
 export type AnalyzeResult =
-  | { ok: true; record: AnalyzeRecord }
+  | { ok: true; record: AnalyzeRecord; cacheHit: boolean }
   | { ok: false; error: string };
 
 export type ShareResult =
@@ -122,7 +122,7 @@ export async function analyzeWord(params: {
     }).catch((err) => console.error('[analyzeWord] SearchEvent (cache hit) failed:', err));
 
     const record = await enrichWithContext(cached, word, context, language);
-    return { ok: true, record };
+    return { ok: true, record, cacheHit: true };
   }
 
   // Cache miss — base analysis never includes context (it's ephemeral)
@@ -173,7 +173,7 @@ export async function analyzeWord(params: {
       shareId:  record.shareId,
     };
     const enriched = await enrichWithContext(baseRecord, word, context, language);
-    return { ok: true, record: enriched };
+    return { ok: true, record: enriched, cacheHit: false };
   } catch (err) {
     // Two concurrent requests for the same word+language hit the unique constraint (P2002);
     // recover by returning the record the first request already created.
@@ -198,7 +198,7 @@ export async function analyzeWord(params: {
           shareId:  existing.shareId,
         };
         const enriched = await enrichWithContext(baseRecord, word, context, language);
-        return { ok: true, record: enriched };
+        return { ok: true, record: enriched, cacheHit: false };
       }
     }
     console.error('[analyzeWord] DB write failed:', err);
@@ -207,7 +207,7 @@ export async function analyzeWord(params: {
       { id: '', word, context: null, language: dbLanguage, analysis, shareId: '' },
       word, context, language,
     );
-    return { ok: true, record: enriched };
+    return { ok: true, record: enriched, cacheHit: false };
   }
 }
 
