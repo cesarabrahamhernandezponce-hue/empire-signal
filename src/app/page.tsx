@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import AnalysisResult, { type AnalyzeRecord } from '@/components/AnalysisResult';
+import { track } from '@/lib/analytics';
 
 const CURIOSITIES: Record<'en' | 'es', string[]> = {
   en: [
@@ -267,6 +268,7 @@ export default function Home() {
     if (!trimmed) return;
     setTargetLang(lang);
     setTranslationState({ status: 'loading' });
+    track('translation_requested', { targetLanguage: lang });
     try {
       const res = await fetch('/api/signal/translate', {
         method: 'POST',
@@ -318,6 +320,7 @@ export default function Home() {
       }
 
       if (res.status === 429) {
+        track('rate_limit_hit', { word: trimmed });
         setPageState({ status: 'error', message: (data as { error?: string }).error ?? 'Daily limit reached.', rateLimited: true });
         return;
       }
@@ -330,6 +333,7 @@ export default function Home() {
 
       const record = (data as { record: AnalyzeRecord }).record;
       const cacheHit = (data as { cacheHit?: boolean }).cacheHit ?? false;
+      track('word_analyzed', { word: record.word, language, cacheHit });
       setPageState({ status: 'result', record, cacheHit });
       setSessionHistory((prev) => {
         const filtered = prev.filter((w) => w !== record.word);
@@ -373,6 +377,7 @@ export default function Home() {
       });
       if (res.status === 409) { setWaitlistStatus('duplicate'); return; }
       if (!res.ok) { setWaitlistStatus('idle'); return; }
+      track('waitlist_signup', {});
       setWaitlistStatus('success');
     } catch {
       setWaitlistStatus('idle');

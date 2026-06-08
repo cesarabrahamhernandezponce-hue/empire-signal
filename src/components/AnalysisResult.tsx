@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import type { Analysis } from '@/lib/ai/schemas/analysis';
+import { track } from '@/lib/analytics';
 
 export type AnalyzeRecord = {
   id: string;
@@ -477,6 +478,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
         return;
       }
       const d = data as { natural: boolean; score: number; feedback: string; suggestion?: string };
+      track('sentence_validated', { score: d.score, natural: d.natural });
       setValidation({ status: 'result', natural: d.natural, score: d.score, feedback: d.feedback, suggestion: d.suggestion });
     } catch {
       setValidation({ status: 'error', message: 'Could not connect to the server.' });
@@ -586,7 +588,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             <span className="text-ink-faint select-none">·</span>
             <button
               className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent transition-colors duration-150"
-              onClick={() => generateCard(word, essential)}
+              onClick={() => { track('share_card_saved', { word }); generateCard(word, essential); }}
             >
               <IconDownload />
               {l.saveCard}
