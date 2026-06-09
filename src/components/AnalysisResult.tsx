@@ -783,9 +783,11 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
           {/* Pronunciation */}
           <section style={cardBase}>
             <SectionLabel serif>{l.pronunciation}</SectionLabel>
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
-              {essential.pronunciation.guide}
-            </p>
+            {essential.pronunciation.guide.split(/(?<=\.)\s+/).map((sentence, i) => (
+              <p key={i} className="text-sm leading-relaxed" style={{ color: 'var(--text-body)', marginTop: i > 0 ? '6px' : 0 }}>
+                {sentence}
+              </p>
+            ))}
           </section>
 
           {/* Usage examples */}

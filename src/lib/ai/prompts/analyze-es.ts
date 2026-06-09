@@ -25,7 +25,7 @@ Estructura JSON requerida (rellena cada campo con contenido real — sin texto d
     },
     "pronunciation": {
       "phonetic": "<transcripción IPA>",
-      "guide": "<guía de pronunciación en español simple, sin símbolos técnicos>"
+      "guide": "<guía en prosa de máximo 2 oraciones: indica en qué sílaba recae el acento, describe los sonidos difíciles usando palabras de referencia conocidas, menciona cualquier sonido que resulte complicado para no nativos. Nunca reproduzcas el IPA. Nunca uses mayúsculas para marcar el acento — descríbelo con palabras.>"
     },
     "usageExamples": [
       { "register": "formal",    "example": "<oración>" },

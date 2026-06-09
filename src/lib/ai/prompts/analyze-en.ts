@@ -22,7 +22,7 @@ Required JSON structure (fill every field with real content — no placeholder t
     },
     "pronunciation": {
       "phonetic": "<IPA transcription>",
-      "guide": "<plain-English pronunciation guide, no symbols>"
+      "guide": "<2-sentence max prose guide: explain which syllable carries the stress, describe tricky sounds using familiar reference words (e.g. 'the o sounds like in go'), flag any sounds non-native speakers find difficult. Never reproduce IPA. Never use capital letters to mark stress — describe it in words instead.>"
     },
     "usageExamples": [
       { "register": "formal",    "example": "<sentence>" },
