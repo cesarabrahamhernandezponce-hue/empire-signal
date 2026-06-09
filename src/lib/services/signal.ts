@@ -134,6 +134,17 @@ export async function analyzeWord(params: {
   if (!aiResult.ok) {
     return { ok: false, error: aiResult.error };
   }
+
+  // Check for word-not-found sentinel before attempting full parse
+  const rawCleaned = aiResult.text.trim()
+    .replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+  try {
+    const probe = JSON.parse(rawCleaned) as unknown;
+    if (typeof probe === 'object' && probe !== null && (probe as Record<string, unknown>).error === 'WORD_NOT_FOUND') {
+      return { ok: false, error: 'WORD_NOT_FOUND' };
+    }
+  } catch { /* not the sentinel — fall through to parseAnalysis */ }
+
   const firstParse = parseAnalysis(aiResult.text);
 
   let analysis: Analysis;

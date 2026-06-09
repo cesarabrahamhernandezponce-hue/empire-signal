@@ -313,7 +313,7 @@ export default function Home() {
 
       if (res.status === 422) {
         setPageState({ status: 'idle' });
-        setSpellingError('Word not found in dictionary. Check the spelling and try again.');
+        setSpellingError((data as { error?: string }).error ?? 'Word not found. Check the spelling and try again.');
         const suggestion = (data as { suggestion?: string | null }).suggestion ?? null;
         setSpellingSuggestion(suggestion);
         return;

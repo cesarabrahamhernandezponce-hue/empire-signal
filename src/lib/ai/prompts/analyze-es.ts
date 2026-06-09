@@ -6,6 +6,9 @@ export function buildAnalyzePromptES(
 
   return `Analiza la palabra en español que aparece abajo y devuelve un análisis lingüístico como objeto JSON.
 
+IMPORTANTE: Si la palabra no existe en español estándar y no es un nombre propio reconocido, devuelve EXACTAMENTE este JSON y nada más:
+{ "error": "WORD_NOT_FOUND", "suggestion": null }
+
 Palabra: "${word}"
 Contexto: ${contextText}
 

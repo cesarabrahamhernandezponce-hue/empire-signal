@@ -153,6 +153,9 @@ export async function POST(request: Request) {
     const result = await analyzeWord({ word, context: normalizedContext, language, userId: null, ipHash, prefetched });
 
     if (!result.ok) {
+      if (result.error === 'WORD_NOT_FOUND') {
+        return NextResponse.json({ error: 'Esta palabra no existe en español estándar.', suggestion: null }, { status: 422 });
+      }
       return NextResponse.json({ error: result.error }, { status: 503 });
     }
 
