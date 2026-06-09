@@ -544,7 +544,6 @@ export default function Home() {
   if (pageState.status === 'loading') {
     return (
       <>
-        {authBar}
         <div className="min-h-screen bg-bg flex items-center justify-center">
           <div className="text-center">
             <div className="w-5 h-5 border-2 border-line border-t-accent rounded-full animate-spin mx-auto mb-4" />
@@ -560,7 +559,6 @@ export default function Home() {
     const currentRecord = pageState.record;
     return (
       <>
-        {authBar}
         <AnalysisResult
           key={currentRecord.id}
           record={currentRecord}

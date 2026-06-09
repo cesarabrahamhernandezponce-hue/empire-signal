@@ -8,7 +8,7 @@ const DAILY_LIMIT = 30;
 
 const bodySchema = z.object({
   word:            z.string().min(1).max(100).trim(),
-  targetLanguages: z.array(z.enum(['en', 'es', 'fr', 'de', 'zh'])).min(1),
+  targetLanguages: z.array(z.enum(['en', 'es', 'fr', 'de', 'zh', 'it', 'pt', 'ru', 'ja', 'ar', 'ko', 'hi', 'nl', 'pl', 'tr', 'sv', 'uk'])).min(1),
   tone:            z.enum(['formal', 'informal', 'neutral']).default('neutral'),
 });
 

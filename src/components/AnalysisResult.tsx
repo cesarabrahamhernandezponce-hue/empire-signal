@@ -50,14 +50,6 @@ function RegisterBadge({ label }: { label: string }) {
   );
 }
 
-function IconBack() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 function IconSpeaker() {
   return (
     <svg width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden>
@@ -521,22 +513,6 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
 
   return (
     <div className="min-h-screen bg-bg">
-
-      {/* Sticky top nav */}
-      <div className="sticky top-0 z-10 border-b border-line" style={{ backgroundColor: 'var(--bg-translucent)', backdropFilter: 'blur(8px)' }}>
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-          <button
-            onClick={onReset}
-            className="flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors duration-150"
-          >
-            <IconBack />
-            {l.newSearch}
-          </button>
-          <span className="text-[10px] font-semibold tracking-[0.16em] uppercase text-ink-faint">
-            Empire Signal
-          </span>
-        </div>
-      </div>
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12">
 

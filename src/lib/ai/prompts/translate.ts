@@ -4,6 +4,18 @@ const LANG_NAMES: Record<string, string> = {
   fr: 'French',
   de: 'German',
   zh: 'Chinese (Simplified)',
+  it: 'Italian',
+  pt: 'Portuguese',
+  ru: 'Russian',
+  ja: 'Japanese',
+  ar: 'Arabic',
+  ko: 'Korean',
+  hi: 'Hindi',
+  nl: 'Dutch',
+  pl: 'Polish',
+  tr: 'Turkish',
+  sv: 'Swedish',
+  uk: 'Ukrainian',
 };
 
 const TONE_INSTRUCTIONS: Record<string, string> = {
