@@ -903,7 +903,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAsk(); } }}
                 placeholder={lang === 'en' ? `Ask anything about "${word}"...` : `Pregunta lo que quieras sobre "${word}"...`}
                 maxLength={500}
-                className="flex-1 bg-bg border border-line rounded-lg px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint outline-none focus:border-accent transition-colors duration-150"
+                className="flex-1 min-w-0 bg-bg border border-line rounded-lg px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint outline-none focus:border-accent transition-colors duration-150"
               />
               <button
                 onClick={handleAsk}
