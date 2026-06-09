@@ -569,6 +569,8 @@ export default function Home() {
             setWord(w);
             handleAnalyzeWithWord(w);
           }}
+          user={user}
+          onSignOut={handleSignOut}
         />
       </>
     );

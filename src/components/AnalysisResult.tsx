@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
+import type { User } from '@supabase/supabase-js';
 import type { Analysis } from '@/lib/ai/schemas/analysis';
 import { track } from '@/lib/analytics';
 
@@ -18,6 +20,8 @@ interface Props {
   cacheHit?: boolean;
   onReset: () => void;
   onAnalyzeWord?: (word: string) => void;
+  user?: User | null;
+  onSignOut?: () => void;
 }
 
 const cardBase: React.CSSProperties = {
@@ -47,6 +51,14 @@ function RegisterBadge({ label }: { label: string }) {
     >
       {label}
     </span>
+  );
+}
+
+function IconBack() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
@@ -375,7 +387,7 @@ function pickVoice(lang: string): SpeechSynthesisVoice | null {
   );
 }
 
-export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWord }: Props) {
+export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWord, user, onSignOut }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [wordCopied, setWordCopied] = useState(false);
@@ -513,6 +525,45 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
 
   return (
     <div className="min-h-screen bg-bg">
+
+      {/* Sticky header: back left, auth right */}
+      <div className="sticky top-0 z-10 border-b border-line" style={{ backgroundColor: 'var(--bg-translucent)', backdropFilter: 'blur(8px)' }}>
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+          <button
+            onClick={onReset}
+            className="flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors duration-150 shrink-0"
+          >
+            <IconBack />
+            {l.newSearch}
+          </button>
+
+          {user === null && (
+            <div className="flex items-center gap-3 shrink-0">
+              <Link href="/auth/login" className="text-xs text-ink-muted hover:text-ink transition-colors duration-150">
+                Log in
+              </Link>
+              <Link
+                href="/auth/signup"
+                className="text-xs px-3 py-1 rounded-[6px] border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150"
+              >
+                Sign up
+              </Link>
+            </div>
+          )}
+
+          {user && (
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-xs text-ink-faint hidden sm:inline truncate max-w-[160px]">{user.email}</span>
+              <button
+                onClick={onSignOut}
+                className="text-xs text-ink-muted hover:text-ink transition-colors duration-150 shrink-0"
+              >
+                Log out
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12">
 
