@@ -27,7 +27,7 @@ interface Props {
 const cardBase: React.CSSProperties = {
   background: 'var(--surface)',
   borderRadius: '12px',
-  border: '1px solid #E8E8E4',
+  border: '1px solid var(--border)',
   padding: '24px',
   boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
 };
@@ -650,7 +650,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
         <div className="flex flex-col gap-4">
 
           {/* Meaning in context — accent left border */}
-          <section style={{ ...cardBase, borderLeft: '4px solid #3A3D8F' }}>
+          <section style={{ ...cardBase, borderLeft: '4px solid var(--accent)' }}>
             <SectionLabel serif>{l.meaningInCtx}</SectionLabel>
             <p className="text-base leading-relaxed" style={{ color: 'var(--text-primary)' }}>
               {essential.meaningInContext}
@@ -658,7 +658,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
           </section>
 
           {/* Validate your sentence */}
-          <section style={{ ...cardBase, background: '#F0F4FF' }}>
+          <section style={{ ...cardBase, background: 'var(--surface-blue)' }}>
             <SectionLabel serif>{l.validateSection}</SectionLabel>
             <p className="text-sm text-ink-muted mb-4 -mt-1 leading-relaxed">{l.validateHint}</p>
             <textarea
@@ -699,8 +699,8 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                 {!validation.natural && validation.suggestion && (
                   <div
                     style={{
-                      background: '#F5F5FB',
-                      borderLeft: '3px solid #3A3D8F',
+                      background: 'var(--surface-muted)',
+                      borderLeft: '3px solid var(--accent)',
                       padding: '12px',
                       borderRadius: '8px',
                       marginTop: '12px',
@@ -727,7 +727,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
 
           {/* In your context — only when contextNote is present */}
           {essential.contextNote && (
-            <section style={{ ...cardBase, background: '#F0F4FF', borderLeft: '3px solid #3A3D8F' }}>
+            <section style={{ ...cardBase, background: 'var(--surface-blue)', borderLeft: '3px solid var(--accent)' }}>
               <SectionLabel serif>{l.inYourContext}</SectionLabel>
               <p className="text-base leading-relaxed" style={{ color: '#1A1A1A' }}>
                 {essential.contextNote}
@@ -881,7 +881,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                   </p>
                 </section>
 
-                <section style={{ ...cardBase, background: '#FFF8F8' }}>
+                <section style={{ ...cardBase, background: 'var(--surface-error)' }}>
                   <SectionLabel>{l.commonErrors}</SectionLabel>
                   <div className="space-y-5">
                     {advanced.commonErrors.map((ce, i) => (
