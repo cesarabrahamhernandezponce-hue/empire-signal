@@ -309,7 +309,7 @@ function generateCard(word: string, essential: Analysis['essential'], etymology:
   ctx.font      = `400 ${wordFontSize}px Georgia, "Times New Roman", serif`;
   ctx.fillStyle = '#FFFFFF';
   const wordY   = 460;
-  ctx.fillText(word, SIZE / 2, wordY);
+  ctx.fillText(word, SIZE / 2, wordY, SIZE - PAD * 2);
 
   // Accumulate Y below the word
   let y = wordY + Math.round(wordFontSize / 2) + 44;
@@ -400,6 +400,15 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
 
   useEffect(() => {
     setSpeechSupported('speechSynthesis' in window);
+  }, []);
+
+  // Cancel audio and speech synthesis when the component unmounts
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+      audioRef.current = null;
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    };
   }, []);
 
   function speakFallback() {
