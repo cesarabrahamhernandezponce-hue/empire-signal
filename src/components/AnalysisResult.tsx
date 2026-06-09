@@ -27,16 +27,16 @@ interface Props {
 const cardBase: React.CSSProperties = {
   background: 'var(--surface)',
   borderRadius: '12px',
-  border: '1px solid var(--border)',
+  border: '1px solid #E8E8E4',
   padding: '24px',
-  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
 };
 
 function SectionLabel({ children, serif }: { children: React.ReactNode; serif?: boolean }) {
   return (
     <p
       className="mb-3 text-[0.75rem] font-semibold uppercase"
-      style={{ color: '#3A3D8F', letterSpacing: '0.05em', fontFamily: serif ? 'var(--font-dm-serif)' : undefined }}
+      style={{ color: '#3A3D8F', letterSpacing: '0.12em', fontFamily: serif ? 'var(--font-dm-serif)' : undefined }}
     >
       {children}
     </p>
@@ -64,7 +64,7 @@ function IconBack() {
 
 function IconSpeaker() {
   return (
-    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden>
+    <svg width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden>
       <path d="M2 5H5L9 2V12L5 9H2V5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
       <path d="M11 4.5C11.9 5.4 12.5 6.1 12.5 7C12.5 7.9 11.9 8.6 11 9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
@@ -73,7 +73,7 @@ function IconSpeaker() {
 
 function IconStop() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden>
       <rect x="3" y="3" width="8" height="8" rx="1" fill="currentColor" />
     </svg>
   );
@@ -81,7 +81,7 @@ function IconStop() {
 
 function IconShare() {
   return (
-    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden>
+    <svg width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden>
       <path d="M6 2H3C2.4 2 2 2.4 2 3V11C2 11.6 2.4 12 3 12H11C11.6 12 12 11.6 12 11V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
       <path d="M9 2H12V5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M7 7L12 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
@@ -91,7 +91,7 @@ function IconShare() {
 
 function IconCopy() {
   return (
-    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden>
+    <svg width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden>
       <rect x="5" y="5" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.2" />
       <path d="M2 9V3C2 2.4 2.4 2 3 2H9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
@@ -100,7 +100,7 @@ function IconCopy() {
 
 function IconDownload() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+    <svg width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden>
       <path d="M7 2v7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
       <path d="M4.5 6.5L7 9l2.5-2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M2 12h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
@@ -569,8 +569,8 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12">
 
-        {/* Word hero — untouched */}
-        <div className="mb-12 text-center">
+        {/* Word hero */}
+        <div className="mb-4 text-center">
           <h1
             className="text-[3.25rem] sm:text-[3.75rem] tracking-tight text-ink leading-none mb-3"
             style={{ fontFamily: 'var(--font-dm-serif)' }}
@@ -592,9 +592,9 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
           )}
 
           {/* Action buttons */}
-          <div className="flex items-center justify-center gap-3 mt-6">
+          <div className="flex items-center justify-center gap-1 mt-5">
             <button
-              className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 text-sm py-2.5 px-3 text-ink-muted hover:text-accent transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
               onClick={handleListen}
               disabled={!speechSupported}
               title={speechSupported ? undefined : l.notSupported}
@@ -604,7 +604,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             </button>
             <span className="text-ink-faint select-none">·</span>
             <button
-              className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 text-sm py-2.5 px-3 text-ink-muted hover:text-accent transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
               disabled={!record.shareId}
               onClick={() => {
                 const url = `${window.location.origin}/share/${record.shareId}`;
@@ -619,7 +619,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             </button>
             <span className="text-ink-faint select-none">·</span>
             <button
-              className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent transition-colors duration-150"
+              className="flex items-center gap-1.5 text-sm py-2.5 px-3 text-ink-muted hover:text-accent transition-colors duration-150"
               onClick={() => {
                 navigator.clipboard.writeText(word).then(() => {
                   setWordCopied(true);
@@ -632,7 +632,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             </button>
             <span className="text-ink-faint select-none">·</span>
             <button
-              className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent transition-colors duration-150"
+              className="flex items-center gap-1.5 text-sm py-2.5 px-3 text-ink-muted hover:text-accent transition-colors duration-150"
               onClick={() => {
                 track('share_card_saved', { word });
                 generateCard(word, essential, advanced.etymology);
@@ -650,7 +650,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
         <div className="flex flex-col gap-4">
 
           {/* Meaning in context — accent left border */}
-          <section style={{ ...cardBase, background: 'var(--surface-blue)', borderLeft: '3px solid var(--accent)' }}>
+          <section style={{ ...cardBase, borderLeft: '4px solid #3A3D8F' }}>
             <SectionLabel serif>{l.meaningInCtx}</SectionLabel>
             <p className="text-base leading-relaxed" style={{ color: 'var(--text-primary)' }}>
               {essential.meaningInContext}
@@ -658,7 +658,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
           </section>
 
           {/* Validate your sentence */}
-          <section style={cardBase}>
+          <section style={{ ...cardBase, background: '#F0F4FF' }}>
             <SectionLabel serif>{l.validateSection}</SectionLabel>
             <p className="text-sm text-ink-muted mb-4 -mt-1 leading-relaxed">{l.validateHint}</p>
             <textarea
@@ -881,7 +881,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                   </p>
                 </section>
 
-                <section style={{ ...cardBase, background: 'var(--surface-error)' }}>
+                <section style={{ ...cardBase, background: '#FFF8F8' }}>
                   <SectionLabel>{l.commonErrors}</SectionLabel>
                   <div className="space-y-5">
                     {advanced.commonErrors.map((ce, i) => (
