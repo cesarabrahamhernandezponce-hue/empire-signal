@@ -30,11 +30,11 @@ Required JSON structure (fill every field with real content — no placeholder t
       { "register": "everyday",  "example": "<sentence>" }
     ],
     "collocations": [
-      { "phrase": "<collocation>", "meaning": "<usage>" },
-      { "phrase": "<collocation>", "meaning": "<usage>" },
-      { "phrase": "<collocation>", "meaning": "<usage>" },
-      { "phrase": "<collocation>", "meaning": "<usage>" },
-      { "phrase": "<collocation>", "meaning": "<usage>" }
+      { "phrase": "<natural phrase using the word in real context, e.g. 'run a marathon'>", "meaning": "<usage>" },
+      { "phrase": "<natural phrase using the word in real context, e.g. 'run out of time'>", "meaning": "<usage>" },
+      { "phrase": "<natural phrase using the word in real context, e.g. 'run a business'>", "meaning": "<usage>" },
+      { "phrase": "<natural phrase using the word in real context>", "meaning": "<usage>" },
+      { "phrase": "<natural phrase using the word in real context>", "meaning": "<usage>" }
     ],
     "mnemonic": "<Create a vivid, unexpected memory trick for this word. Use ONE of these techniques — choose whichever fits best: (1) Sound association: the word sounds like another word or phrase that connects to its meaning (e.g. 'frugal sounds like frugal frog who never spends coins'); (2) Visual image: a bizarre, impossible, or funny mental image that locks in the meaning (the stranger the better); (3) Story hook: a 1-sentence micro-story where the word's meaning is the punchline. Rules: must be under 25 words, must be immediately memorable, must directly connect to the word's core meaning, never use generic or obvious associations.>"
   },
@@ -69,7 +69,7 @@ Required JSON structure (fill every field with real content — no placeholder t
 }
 
 Rules:
-- collocations: exactly 5 items.
+- collocations: exactly 5 items. Each phrase must be a natural expression where the word is used in real context (e.g. "run a marathon", "run out of time", "run a business"). Never generate collocations that are just a noun compounded with the analyzed word (e.g. NOT "marathon run", "business run"). The word must appear as it naturally does in fluent speech or writing.
 - synonyms: exactly 4 items.
 - wordFamily: exactly 4 items.
 - antonyms: exactly 3 items. If the word has no real antonyms, use an empty array [].

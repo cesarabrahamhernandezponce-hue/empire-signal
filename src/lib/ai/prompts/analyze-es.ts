@@ -30,11 +30,11 @@ Estructura JSON requerida (rellena cada campo con contenido real — sin texto d
       { "register": "everyday",  "example": "<oración>" }
     ],
     "collocations": [
-      { "phrase": "<combinación natural>", "meaning": "<uso o significado>" },
-      { "phrase": "<combinación natural>", "meaning": "<uso o significado>" },
-      { "phrase": "<combinación natural>", "meaning": "<uso o significado>" },
-      { "phrase": "<combinación natural>", "meaning": "<uso o significado>" },
-      { "phrase": "<combinación natural>", "meaning": "<uso o significado>" }
+      { "phrase": "<frase natural donde la palabra aparece en contexto real, p.ej. 'correr un maratón'>", "meaning": "<uso o significado>" },
+      { "phrase": "<frase natural donde la palabra aparece en contexto real, p.ej. 'quedarse sin tiempo'>", "meaning": "<uso o significado>" },
+      { "phrase": "<frase natural donde la palabra aparece en contexto real, p.ej. 'dirigir un negocio'>", "meaning": "<uso o significado>" },
+      { "phrase": "<frase natural donde la palabra aparece en contexto real>", "meaning": "<uso o significado>" },
+      { "phrase": "<frase natural donde la palabra aparece en contexto real>", "meaning": "<uso o significado>" }
     ],
     "mnemonic": "<Crea un truco de memoria vívido e inesperado para esta palabra. Usa UNA de estas técnicas — la que mejor encaje: (1) Asociación sonora: la palabra suena como otra palabra o frase que conecta con su significado; (2) Imagen visual: una imagen mental bizarra, imposible o graciosa que fija el significado (cuanto más extraña mejor); (3) Historia gancho: una micro-historia de 1 oración donde el significado de la palabra es el remate. Reglas: máximo 25 palabras, debe ser inmediatamente memorable, debe conectar directamente con el significado central, nunca uses asociaciones genéricas u obvias.>"
   },
@@ -69,7 +69,7 @@ Estructura JSON requerida (rellena cada campo con contenido real — sin texto d
 }
 
 Reglas:
-- collocations: exactamente 5 elementos.
+- collocations: exactamente 5 elementos. Cada frase debe ser una expresión natural donde la palabra aparece en contexto real (p.ej. "correr un maratón", "correr un riesgo", "correr a casa"). Nunca generes colocaciones que sean simplemente un sustantivo compuesto con la palabra analizada (p.ej. NO "maratón correr"). La palabra debe aparecer tal como se usa de forma natural en el habla o escritura fluida.
 - synonyms: exactamente 4 elementos.
 - wordFamily: exactamente 4 elementos.
 - antonyms: exactamente 3 elementos. Si la palabra no tiene antónimos reales, usa un array vacío [].
