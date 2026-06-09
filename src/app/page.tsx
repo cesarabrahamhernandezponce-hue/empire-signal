@@ -1,8 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import type { User } from '@supabase/supabase-js';
 import AnalysisResult, { type AnalyzeRecord } from '@/components/AnalysisResult';
 import { track } from '@/lib/analytics';
+import { createClient } from '@/lib/supabase/client';
 
 const CURIOSITIES: Record<'en' | 'es', string[]> = {
   en: [
@@ -216,6 +220,8 @@ function HelpModal({ title, onClose }: { title: string; onClose: () => void }) {
 }
 
 export default function Home() {
+  const router = useRouter();
+  const [user, setUser]                         = useState<User | null | undefined>(undefined);
   const [word, setWord]                         = useState('');
   const [context, setContext]                   = useState('');
   const [showContext, setShowContext]           = useState(false);
@@ -241,6 +247,16 @@ export default function Home() {
   const [targetLang, setTargetLang]               = useState<TranslateLang | null>(null);
   const [translationState, setTranslationState]   = useState<TranslationState>({ status: 'idle' });
   const settingsRef                             = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    if (!supabase) { setUser(null); return; }
+    supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const pool = CURIOSITIES[language];
@@ -357,6 +373,12 @@ export default function Home() {
 
   const handleAnalyze = () => handleAnalyzeWithWord(word);
 
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    if (supabase) await supabase.auth.signOut();
+    router.refresh();
+  };
+
   const handleReset = () => {
     if (history.length > 0) {
       const prev = history[history.length - 1];
@@ -399,35 +421,34 @@ export default function Home() {
 
   const t = UI[language];
 
-  // ── Loading ──────────────────────────────────────────────────────────────
-  if (pageState.status === 'loading') {
-    return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-5 h-5 border-2 border-line border-t-accent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm text-ink-muted">{t.analyzing}</p>
+  // ── Auth bar (top-left, shared by all states) ────────────────────────────
+  const authBar = user !== undefined && (
+    <div className="fixed top-4 left-4 z-50">
+      {user === null ? (
+        <div className="flex items-center gap-3">
+          <Link href="/auth/login" className="text-xs text-ink-muted hover:text-ink transition-colors duration-150">
+            Log in
+          </Link>
+          <Link
+            href="/auth/signup"
+            className="text-xs px-3 py-1 rounded-[6px] border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150"
+          >
+            Sign up
+          </Link>
         </div>
-      </div>
-    );
-  }
-
-  // ── Result ───────────────────────────────────────────────────────────────
-  if (pageState.status === 'result') {
-    const currentRecord = pageState.record;
-    return (
-      <AnalysisResult
-        key={currentRecord.id}
-        record={currentRecord}
-        cacheHit={pageState.cacheHit}
-        onReset={handleReset}
-        onAnalyzeWord={(w) => {
-          setHistory((h) => [...h, currentRecord]);
-          setWord(w);
-          handleAnalyzeWithWord(w);
-        }}
-      />
-    );
-  }
+      ) : (
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-ink-faint hidden sm:inline">{user.email}</span>
+          <button
+            onClick={handleSignOut}
+            className="text-xs text-ink-muted hover:text-ink transition-colors duration-150"
+          >
+            Log out
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
   // ── Settings button + panel (shared by idle & error) ─────────────────────
   const settingsButton = (
@@ -519,10 +540,47 @@ export default function Home() {
     </div>
   );
 
+  // ── Loading ──────────────────────────────────────────────────────────────
+  if (pageState.status === 'loading') {
+    return (
+      <>
+        {authBar}
+        <div className="min-h-screen bg-bg flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-5 h-5 border-2 border-line border-t-accent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-sm text-ink-muted">{t.analyzing}</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ── Result ───────────────────────────────────────────────────────────────
+  if (pageState.status === 'result') {
+    const currentRecord = pageState.record;
+    return (
+      <>
+        {authBar}
+        <AnalysisResult
+          key={currentRecord.id}
+          record={currentRecord}
+          cacheHit={pageState.cacheHit}
+          onReset={handleReset}
+          onAnalyzeWord={(w) => {
+            setHistory((h) => [...h, currentRecord]);
+            setWord(w);
+            handleAnalyzeWithWord(w);
+          }}
+        />
+      </>
+    );
+  }
+
   // ── Error ────────────────────────────────────────────────────────────────
   if (pageState.status === 'error') {
     return (
       <>
+        {authBar}
         {settingsButton}
         <div className="min-h-screen bg-bg flex items-center justify-center px-4">
           <div className="max-w-sm w-full">
@@ -589,6 +647,7 @@ export default function Home() {
   // ── Idle ─────────────────────────────────────────────────────────────────
   return (
     <>
+      {authBar}
       {settingsButton}
       <main className="min-h-screen bg-bg flex flex-col items-center justify-center px-4 py-16">
 
