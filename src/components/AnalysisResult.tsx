@@ -277,7 +277,7 @@ const CEFR_CARD_COLORS: Record<string, { bg: string; text: string }> = {
   C2: { bg: 'rgba(192,132,252,0.15)', text: '#C084FC' },
 };
 
-function generateCard(word: string, essential: Analysis['essential']): void {
+function generateCard(word: string, essential: Analysis['essential'], etymology: string): void {
   const SIZE = 1080;
   const PAD  = 80;
 
@@ -342,12 +342,12 @@ function generateCard(word: string, essential: Analysis['essential']): void {
     y += 56;
   }
 
-  // Mnemonic — italic, 2 lines max
-  if (essential.mnemonic) {
+  // Etymology — italic, 3 lines max
+  if (etymology) {
     ctx.font      = 'italic 400 22px Georgia, "Times New Roman", serif';
     ctx.fillStyle = 'rgba(255,255,255,0.60)';
     const maxW = SIZE - (PAD + 60) * 2;
-    const lines = wrapText(ctx, `"${essential.mnemonic}"`, maxW, 2);
+    const lines = wrapText(ctx, etymology, maxW, 3);
     for (const line of lines) {
       ctx.fillText(line, SIZE / 2, y);
       y += 36;
@@ -588,7 +588,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             <span className="text-ink-faint select-none">·</span>
             <button
               className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent transition-colors duration-150"
-              onClick={() => { track('share_card_saved', { word }); generateCard(word, essential); }}
+              onClick={() => { track('share_card_saved', { word }); generateCard(word, essential, advanced.etymology); }}
             >
               <IconDownload />
               {l.saveCard}
@@ -847,7 +847,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                   <div className="space-y-5">
                     {advanced.commonErrors.map((ce, i) => (
                       <div key={i}>
-                        <p className="text-sm mb-1.5" style={{ color: '#C0392B', textDecoration: 'line-through' }}>
+                        <p className="text-sm mb-1.5" style={{ color: '#C0392B' }}>
                           {ce.error}
                         </p>
                         <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
