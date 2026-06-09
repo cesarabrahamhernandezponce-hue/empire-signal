@@ -81,21 +81,21 @@ const UI = {
 } as const;
 
 const TRANSLATE_LANGS = [
-  { id: 'fr', label: 'French'             },
-  { id: 'de', label: 'German'             },
-  { id: 'pt', label: 'Portuguese'         },
-  { id: 'it', label: 'Italian'            },
-  { id: 'ru', label: 'Russian'            },
-  { id: 'ja', label: 'Japanese'           },
+  { id: 'es', label: 'Spanish'              },
+  { id: 'fr', label: 'French'               },
+  { id: 'pt', label: 'Portuguese'           },
+  { id: 'it', label: 'Italian'              },
+  { id: 'de', label: 'German'               },
+  { id: 'ru', label: 'Russian'              },
+  { id: 'ja', label: 'Japanese'             },
   { id: 'zh', label: 'Chinese (Simplified)' },
-  { id: 'ar', label: 'Arabic'             },
-  { id: 'ko', label: 'Korean'             },
-  { id: 'hi', label: 'Hindi'              },
-  { id: 'nl', label: 'Dutch'              },
-  { id: 'pl', label: 'Polish'             },
-  { id: 'tr', label: 'Turkish'            },
-  { id: 'sv', label: 'Swedish'            },
-  { id: 'uk', label: 'Ukrainian'          },
+  { id: 'ar', label: 'Arabic'               },
+  { id: 'ko', label: 'Korean'               },
+  { id: 'nl', label: 'Dutch'                },
+  { id: 'pl', label: 'Polish'               },
+  { id: 'tr', label: 'Turkish'              },
+  { id: 'sv', label: 'Swedish'              },
+  { id: 'uk', label: 'Ukrainian'            },
 ] as const;
 
 type TranslateLang = (typeof TRANSLATE_LANGS)[number]['id'];
@@ -786,11 +786,11 @@ export default function Home() {
                   onClick={() => {
                     if (translateExpanded) {
                       setTranslateExpanded(false);
-                      setTargetLang(null);
-                      setTranslationState({ status: 'idle' });
                     } else {
                       setTranslateExpanded(true);
                     }
+                    setTargetLang(null);
+                    setTranslationState({ status: 'idle' });
                   }}
                   disabled={translationState.status === 'loading'}
                   className="shrink-0 px-3 py-1 rounded-[6px] text-xs font-medium border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
