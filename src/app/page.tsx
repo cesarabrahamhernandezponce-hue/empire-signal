@@ -77,10 +77,21 @@ const UI = {
 } as const;
 
 const TRANSLATE_LANGS = [
-  { id: 'es', label: 'Spanish'    },
-  { id: 'fr', label: 'French'     },
-  { id: 'de', label: 'German'     },
-  { id: 'zh', label: 'Chinese'    },
+  { id: 'fr', label: 'French'             },
+  { id: 'de', label: 'German'             },
+  { id: 'pt', label: 'Portuguese'         },
+  { id: 'it', label: 'Italian'            },
+  { id: 'ru', label: 'Russian'            },
+  { id: 'ja', label: 'Japanese'           },
+  { id: 'zh', label: 'Chinese (Simplified)' },
+  { id: 'ar', label: 'Arabic'             },
+  { id: 'ko', label: 'Korean'             },
+  { id: 'hi', label: 'Hindi'              },
+  { id: 'nl', label: 'Dutch'              },
+  { id: 'pl', label: 'Polish'             },
+  { id: 'tr', label: 'Turkish'            },
+  { id: 'sv', label: 'Swedish'            },
+  { id: 'uk', label: 'Ukrainian'          },
 ] as const;
 
 type TranslateLang = (typeof TRANSLATE_LANGS)[number]['id'];
