@@ -172,7 +172,6 @@ const LABELS = {
     pronunciation:   'Pronunciation',
     usageExamples:   'Usage examples',
     collocations:    'Collocations',
-    mnemonic:        'Mnemonic',
     inYourContext:   'In your context',
     viewFull:        'View full analysis',
     hideFull:        'Hide full analysis',
@@ -194,6 +193,7 @@ const LABELS = {
     askBtn:          'Ask',
     asking:          'Asking...',
     saveCard:        'Save card',
+    cardSaved:       'Saved!',
   },
   es: {
     newSearch:       'Nueva búsqueda',
@@ -207,7 +207,6 @@ const LABELS = {
     pronunciation:   'Pronunciación',
     usageExamples:   'Ejemplos de uso',
     collocations:    'Colocaciones',
-    mnemonic:        'Mnemotécnico',
     inYourContext:   'En tu contexto',
     viewFull:        'Ver análisis completo',
     hideFull:        'Ocultar análisis completo',
@@ -229,6 +228,7 @@ const LABELS = {
     askBtn:          'Preguntar',
     asking:          'Procesando...',
     saveCard:        'Guardar tarjeta',
+    cardSaved:       '¡Guardado!',
   },
 } as const;
 
@@ -386,6 +386,8 @@ function pickVoice(lang: string): SpeechSynthesisVoice | null {
 export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWord }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [wordCopied, setWordCopied] = useState(false);
+  const [cardSaved, setCardSaved] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [sentence, setSentence] = useState('');
@@ -580,18 +582,28 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             <span className="text-ink-faint select-none">·</span>
             <button
               className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent transition-colors duration-150"
-              onClick={() => navigator.clipboard.writeText(word)}
+              onClick={() => {
+                navigator.clipboard.writeText(word).then(() => {
+                  setWordCopied(true);
+                  setTimeout(() => setWordCopied(false), 1500);
+                });
+              }}
             >
               <IconCopy />
-              {l.copy}
+              {wordCopied ? l.copied : l.copy}
             </button>
             <span className="text-ink-faint select-none">·</span>
             <button
               className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent transition-colors duration-150"
-              onClick={() => { track('share_card_saved', { word }); generateCard(word, essential, advanced.etymology); }}
+              onClick={() => {
+                track('share_card_saved', { word });
+                generateCard(word, essential, advanced.etymology);
+                setCardSaved(true);
+                setTimeout(() => setCardSaved(false), 1500);
+              }}
             >
               <IconDownload />
-              {l.saveCard}
+              {cardSaved ? l.cardSaved : l.saveCard}
             </button>
           </div>
         </div>
@@ -742,16 +754,6 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                 </div>
               ))}
             </div>
-          </section>
-
-          {/* Mnemonic — blue-tinted background */}
-          <section style={{ ...cardBase, background: 'var(--surface-muted)' }}>
-            <SectionLabel serif>{l.mnemonic}</SectionLabel>
-            <p className="leading-relaxed italic" style={{ color: '#4A4A4A', fontSize: '1rem' }}>
-              <span style={{ fontFamily: 'var(--font-dm-serif)', fontSize: '2rem', lineHeight: 1, color: '#3A3D8F', verticalAlign: '-0.3em', marginRight: '0.15em' }}>{'“'}</span>
-              {essential.mnemonic}
-              <span style={{ fontFamily: 'var(--font-dm-serif)', fontSize: '2rem', lineHeight: 1, color: '#3A3D8F', verticalAlign: '-0.3em', marginLeft: '0.15em' }}>{'”'}</span>
-            </p>
           </section>
 
         </div>
