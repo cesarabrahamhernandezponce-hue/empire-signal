@@ -39,6 +39,9 @@ Estructura JSON requerida (rellena cada campo con contenido real — sin texto d
       { "phrase": "<frase natural donde la palabra aparece en contexto real>", "meaning": "<uso o significado>" },
       { "phrase": "<frase natural donde la palabra aparece en contexto real>", "meaning": "<uso o significado>" }
     ],
+    "meanings": [
+      { "definition": "<significado más común>", "partOfSpeech": "<sustantivo|verbo|adjetivo|etc>", "example": "<oración corta opcional>" }
+    ]
   },
   "advanced": {
     "etymology": "<origen y evolución histórica>",
@@ -77,6 +80,7 @@ Reglas:
 - antonyms: exactamente 3 elementos. Si la palabra no tiene antónimos reales, usa un array vacío [].
 - commonErrors: 1 o 2 elementos.
 - cefr: asigna el nivel CEFR (A1/A2/B1/B2/C1/C2) que mejor representa la dificultad de esta palabra para estudiantes de español. Devuelve solo el código del nivel, nada más.
+- meanings: si la palabra es polisémica (tiene varios significados distintos según la parte del discurso o el contexto — ej. "banco", "tipo", "pico", "cura"), rellena "meanings" con TODOS los significados relevantes ordenados por frecuencia de uso. Cada entrada: definition, partOfSpeech y opcionalmente un ejemplo corto. Si la palabra tiene un único significado claro ("efímero", "océano", "mesa"), devuelve un array con un solo elemento.
 - Todo el contenido en español. Las claves siempre en inglés.
 - No inventes etimologías ni hechos falsos. Si no estás seguro, sé conservador.
 - Si la palabra es ambigua, prioriza el significado en el contexto dado.`;

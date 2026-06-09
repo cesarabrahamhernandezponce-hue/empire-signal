@@ -36,6 +36,9 @@ Required JSON structure (fill every field with real content — no placeholder t
       { "phrase": "<natural phrase using the word in real context>", "meaning": "<usage>" },
       { "phrase": "<natural phrase using the word in real context>", "meaning": "<usage>" }
     ],
+    "meanings": [
+      { "definition": "<first and most common meaning>", "partOfSpeech": "<noun|verb|adjective|etc>", "example": "<optional short sentence>" }
+    ]
   },
   "advanced": {
     "etymology": "<origin and historical evolution>",
@@ -74,6 +77,7 @@ Rules:
 - antonyms: exactly 3 items. If the word has no real antonyms, use an empty array [].
 - commonErrors: 1 or 2 items.
 - cefr: assign the CEFR level (A1/A2/B1/B2/C1/C2) that best represents this word's difficulty for English learners. Return only the level code, nothing else.
+- meanings: if the word is polysemous (multiple distinct meanings across different parts of speech or usage contexts — e.g. "type", "run", "set", "bank", "get"), populate "meanings" as an array of ALL relevant meanings ordered by frequency of use. Each entry: definition, partOfSpeech, and optionally a short example sentence. If the word has one clear primary meaning ("ephemeral", "ocean", "table"), return a single-element array with that meaning only.
 - All content in English. Keys always in English.
 - No invented etymologies or false facts. If uncertain, be conservative.
 - Prioritize the meaning in the given context if the word is ambiguous.`;

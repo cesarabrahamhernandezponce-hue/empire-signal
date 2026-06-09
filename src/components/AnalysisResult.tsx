@@ -171,6 +171,8 @@ const LABELS = {
     share:           'Share',
     copied:          'Copied!',
     copy:            'Copy',
+    meaning:         'Meaning',
+    meanings:        'Meanings',
     meaningInCtx:    'Meaning in context',
     wordType:        'Word type',
     pronunciation:   'Pronunciation',
@@ -207,6 +209,8 @@ const LABELS = {
     share:           'Compartir',
     copied:          '¡Copiado!',
     copy:            'Copiar',
+    meaning:         'Significado',
+    meanings:        'Significados',
     meaningInCtx:    'Significado en contexto',
     wordType:        'Tipo de palabra',
     pronunciation:   'Pronunciación',
@@ -651,11 +655,36 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
 
           {/* Meaning in context — accent left border */}
           <section style={{ ...cardBase, borderLeft: '4px solid var(--accent)' }}>
-            <SectionLabel serif>{l.meaningInCtx}</SectionLabel>
+            <SectionLabel serif>{essential.contextNote ? l.meaningInCtx : l.meaning}</SectionLabel>
             <p className="text-base leading-relaxed" style={{ color: 'var(--text-primary)' }}>
               {essential.meaningInContext}
             </p>
           </section>
+
+          {/* Multiple meanings — polysemous words */}
+          {essential.meanings && essential.meanings.length > 1 && (
+            <section style={cardBase}>
+              <SectionLabel serif>{l.meanings}</SectionLabel>
+              <div className="space-y-4">
+                {essential.meanings.map((m, i) => (
+                  <div key={i} className={i > 0 ? 'pt-4 border-t border-line' : ''}>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span
+                        className="text-xs font-medium px-2 py-0.5 rounded-[4px]"
+                        style={{ background: 'var(--badge-bg)', color: 'var(--accent)', border: '1px solid var(--badge-border)' }}
+                      >
+                        {m.partOfSpeech}
+                      </span>
+                    </div>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>{m.definition}</p>
+                    {m.example && (
+                      <p className="text-sm italic mt-1.5" style={{ color: 'var(--text-body)' }}>{m.example}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Validate your sentence */}
           <section style={{ ...cardBase, background: 'var(--surface-blue)' }}>
