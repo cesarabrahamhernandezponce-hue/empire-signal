@@ -189,6 +189,7 @@ const LABELS = {
     analyzeAnother:  '← Analyze another word',
     notSupported:    'Not supported',
     validateSection: 'Validate your sentence',
+    validateHint:    'Write a sentence using this word and we\'ll tell you if it sounds natural.',
     check:           'Check',
     soundsNatural:   'Sounds natural',
     needsAdjust:     'Needs adjustment',
@@ -224,6 +225,7 @@ const LABELS = {
     analyzeAnother:  '← Analizar otra palabra',
     notSupported:    'No soportado',
     validateSection: 'Valida tu oración',
+    validateHint:    'Escribe una oración con esta palabra y te diremos si suena natural.',
     check:           'Verificar',
     soundsNatural:   'Suena natural',
     needsAdjust:     'Necesita ajuste',
@@ -658,6 +660,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
           {/* Validate your sentence */}
           <section style={cardBase}>
             <SectionLabel serif>{l.validateSection}</SectionLabel>
+            <p className="text-sm text-ink-muted mb-4 -mt-1 leading-relaxed">{l.validateHint}</p>
             <textarea
               value={sentence}
               onChange={(e) => { setSentence(e.target.value); setValidation({ status: 'idle' }); }}
@@ -666,20 +669,18 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
               maxLength={300}
               className="w-full bg-bg border border-line rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-faint outline-none focus:border-accent resize-none transition-colors duration-150"
             />
-            <div className="flex justify-end mt-2">
-              <button
-                onClick={handleValidate}
-                disabled={sentence.trim().length === 0 || validation.status === 'loading'}
-                className="px-4 py-1.5 rounded-[6px] text-xs font-medium border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {validation.status === 'loading' ? (
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 border border-line border-t-accent rounded-full animate-spin" />
-                    {l.check}
-                  </span>
-                ) : l.check}
-              </button>
-            </div>
+            <button
+              onClick={handleValidate}
+              disabled={sentence.trim().length === 0 || validation.status === 'loading'}
+              className="mt-3 w-full py-3 rounded-lg text-sm font-medium text-white bg-accent hover:bg-accent-hover transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {validation.status === 'loading' ? (
+                <span className="flex items-center justify-center gap-1.5">
+                  <span className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin" />
+                  {l.check}
+                </span>
+              ) : l.check}
+            </button>
 
             {validation.status === 'result' && (
               <div className="mt-4">
