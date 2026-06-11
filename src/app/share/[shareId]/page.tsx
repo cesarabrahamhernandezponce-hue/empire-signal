@@ -77,6 +77,7 @@ export default function SharePage() {
     <AnalysisResult
       record={state.record}
       onReset={() => router.push('/')}
+      uiLang={state.record.language.toLowerCase() as 'en' | 'es'}
     />
   );
 }
