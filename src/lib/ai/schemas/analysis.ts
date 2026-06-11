@@ -9,7 +9,7 @@ export const analysisSchema = z.object({
       explanation: z.string().min(1),
     }),
     pronunciation: z.object({
-      phonetic: z.string(),
+      phonetic: z.string().max(45),
       guide:    z.string().min(1),
     }),
     usageExamples: z.array(

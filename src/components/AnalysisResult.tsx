@@ -327,8 +327,8 @@ function generateCard(word: string, essential: Analysis['essential'], etymology:
   // Accumulate Y below the word
   let y = wordY + Math.round(wordFontSize / 2) + 44;
 
-  // Phonetic (IPA)
-  if (essential.pronunciation.phonetic) {
+  // Phonetic (IPA) — skip if the field contains prose instead of compact IPA
+  if (essential.pronunciation.phonetic && essential.pronunciation.phonetic.length <= 45) {
     ctx.font      = '400 26px "Courier New", monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.45)';
     ctx.fillText(essential.pronunciation.phonetic, SIZE / 2, y);
@@ -531,6 +531,9 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
   const lang = record.language.toLowerCase() as 'en' | 'es';
   const l = LABELS[lang] ?? LABELS.en;
   const { essential, advanced } = analysis;
+  const heroPhonetic = essential.pronunciation.phonetic.length <= 45
+    ? essential.pronunciation.phonetic
+    : null;
 
   return (
     <div className="min-h-screen bg-bg">
@@ -584,10 +587,10 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
           >
             {word}
           </h1>
-          {(essential.pronunciation.phonetic || essential.cefr) && (
+          {(heroPhonetic || essential.cefr) && (
             <p className="flex items-center justify-center gap-2 text-lg text-ink-faint" style={{ fontFamily: 'var(--font-geist-mono)' }}>
-              {essential.pronunciation.phonetic && <span>{essential.pronunciation.phonetic}</span>}
-              {essential.pronunciation.phonetic && essential.cefr && <span className="select-none">·</span>}
+              {heroPhonetic && <span>{heroPhonetic}</span>}
+              {heroPhonetic && essential.cefr && <span className="select-none">·</span>}
               {essential.cefr && <CefrBadge level={essential.cefr} />}
             </p>
           )}

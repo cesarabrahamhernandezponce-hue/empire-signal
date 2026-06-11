@@ -24,7 +24,7 @@ Estructura JSON requerida (rellena cada campo con contenido real — sin texto d
       "explanation": "<función gramatical en este contexto>"
     },
     "pronunciation": {
-      "phonetic": "<transcripción IPA>",
+      "phonetic": "<SOLO la transcripción IPA compacta entre barras, p.ej. /eˈlo/ — máximo 30 caracteres, NUNCA una oración o explicación. Deja cadena vacía si no estás seguro.>",
       "guide": "<guía en prosa de máximo 2 oraciones: indica en qué sílaba recae el acento, describe los sonidos difíciles usando palabras de referencia conocidas, menciona cualquier sonido que resulte complicado para no nativos. Nunca reproduzcas el IPA. Nunca uses mayúsculas para marcar el acento — descríbelo con palabras.>"
     },
     "usageExamples": [
@@ -81,6 +81,7 @@ Reglas:
 - commonErrors: 1 o 2 elementos.
 - cefr: asigna el nivel CEFR (A1/A2/B1/B2/C1/C2) que mejor representa la dificultad de esta palabra para estudiantes de español. Devuelve solo el código del nivel, nada más.
 - meanings: si la palabra es polisémica (tiene varios significados distintos según la parte del discurso o el contexto — ej. "banco", "tipo", "pico", "cura"), rellena "meanings" con TODOS los significados relevantes ordenados por frecuencia de uso. Cada entrada: definition, partOfSpeech y opcionalmente un ejemplo corto. Si la palabra tiene un único significado claro ("efímero", "océano", "mesa"), devuelve un array con un solo elemento.
+- pronunciation.phonetic: SOLO la IPA compacta entre barras (p.ej. /eˈlo/), máximo 30 caracteres. NUNCA una oración ni prosa — toda la explicación va en guide.
 - Todo el contenido en español. Las claves siempre en inglés.
 - No inventes etimologías ni hechos falsos. Si no estás seguro, sé conservador.
 - Si la palabra es ambigua, prioriza el significado en el contexto dado.`;
