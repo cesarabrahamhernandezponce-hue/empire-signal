@@ -19,15 +19,15 @@ export default async function RateLimitsPage() {
   const rows = await prisma.$queryRaw<RateLimitRow[]>`
     SELECT
       se."ipHash",
-      se."userId",
-      u.email,
+      MAX(se."userId")  AS "userId",
+      MAX(u.email)      AS email,
       DATE(se."createdAt") AS date,
-      COUNT(*)::int          AS count
+      COUNT(*)::int        AS count
     FROM search_events se
     LEFT JOIN users u ON u.id = se."userId"
     WHERE se."cacheHit" = false
       AND se."createdAt" >= ${cutoff}
-    GROUP BY se."ipHash", se."userId", u.email, DATE(se."createdAt")
+    GROUP BY se."ipHash", DATE(se."createdAt")
     ORDER BY count DESC
   `;
 
