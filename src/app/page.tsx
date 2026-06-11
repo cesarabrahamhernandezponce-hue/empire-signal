@@ -68,6 +68,7 @@ const UI = {
     sending:             'Sending...',
     onTheList:           "You're on the list.",
     didYouMean:          'Did you mean',
+    loadingMessages:     ['Analyzing...', 'Consulting etymology...', 'Building examples...'],
   },
   es: {
     insightLabel:        'Perspectiva Empire',
@@ -101,6 +102,7 @@ const UI = {
     sending:             'Enviando...',
     onTheList:           '¡Ya estás en la lista!',
     didYouMean:          '¿Quisiste decir',
+    loadingMessages:     ['Analizando...', 'Consultando etimología...', 'Construyendo ejemplos...'],
   },
 } as const;
 
@@ -258,6 +260,44 @@ function HelpModal({ title, language, onClose }: { title: string; language: 'en'
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function LoadingView({ word, messages }: { word: string; messages: readonly string[] }) {
+  const [msgIdx, setMsgIdx] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setMsgIdx((i) => (i + 1) % messages.length), 4000);
+    return () => clearInterval(id);
+  }, [messages.length]);
+
+  return (
+    <div className="min-h-screen bg-bg">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12">
+        <div className="mb-10 text-center">
+          <h1
+            className="text-[3.25rem] sm:text-[3.75rem] tracking-tight text-ink leading-none"
+            style={{ fontFamily: 'var(--font-dm-serif)' }}
+          >
+            {word}
+          </h1>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {([96, 72, 112] as const).map((h, i) => (
+            <div
+              key={i}
+              className="animate-pulse rounded-[12px] border border-line p-6"
+              style={{ background: 'var(--surface)', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
+            >
+              <div className="rounded-md" style={{ background: 'var(--surface-muted)', height: h }} />
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-8 text-center text-sm text-ink-muted">{messages[msgIdx]}</p>
       </div>
     </div>
   );
@@ -595,16 +635,7 @@ export default function Home() {
 
   // ── Loading ──────────────────────────────────────────────────────────────
   if (pageState.status === 'loading') {
-    return (
-      <>
-        <div className="min-h-screen bg-bg flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-5 h-5 border-2 border-line border-t-accent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-sm text-ink-muted">{t.analyzing}</p>
-          </div>
-        </div>
-      </>
-    );
+    return <LoadingView word={word} messages={t.loadingMessages} />;
   }
 
   // ── Result ───────────────────────────────────────────────────────────────
