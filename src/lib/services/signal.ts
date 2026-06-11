@@ -130,7 +130,8 @@ export async function analyzeWord(params: {
     ? buildAnalyzePromptES(word, null)
     : buildAnalyzePromptEN(word, null);
 
-  const aiResult = await generateContent(prompt);
+  const logLabel = `${word} | lang=${language}`; // TEMP: model winner instrumentation
+  const aiResult = await generateContent(prompt, 'application/json', logLabel); // TEMP
   if (!aiResult.ok) {
     return { ok: false, error: aiResult.error };
   }
@@ -152,7 +153,7 @@ export async function analyzeWord(params: {
   if (firstParse.ok) {
     analysis = firstParse.data;
   } else {
-    const aiRetry = await generateContent(prompt);
+    const aiRetry = await generateContent(prompt, 'application/json', logLabel); // TEMP
     if (!aiRetry.ok) {
       return { ok: false, error: 'Could not generate a valid analysis. Please try again.' };
     }
