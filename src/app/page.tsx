@@ -179,7 +179,7 @@ function HelpModal({ title, onClose }: { title: string; onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        style={{ background: '#FAFAF8', borderRadius: '16px', border: '1px solid #EAEAE6', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', padding: '28px 32px', maxWidth: '480px', width: '100%', position: 'relative' }}
+        style={{ background: 'var(--surface)', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', padding: '28px 32px', maxWidth: '480px', width: '100%', position: 'relative' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
@@ -467,8 +467,8 @@ export default function Home() {
             position: 'absolute',
             top: 'calc(100% + 6px)',
             right: 0,
-            background: '#FFFFFF',
-            border: '1px solid #EAEAE6',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
             borderRadius: '12px',
             boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
             padding: '16px',
@@ -571,6 +571,7 @@ export default function Home() {
           }}
           user={user}
           onSignOut={handleSignOut}
+          hasHistory={history.length > 0}
         />
       </>
     );
@@ -608,7 +609,7 @@ export default function Home() {
                     <button
                       type="submit"
                       disabled={waitlistStatus === 'loading' || waitlistEmail.trim().length === 0}
-                      className="w-full py-2.5 rounded-lg text-sm font-medium text-white bg-accent hover:bg-accent-hover transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 bg-accent text-white enabled:hover:bg-accent-hover disabled:bg-[var(--surface-muted)] disabled:text-ink-faint disabled:cursor-not-allowed"
                     >
                       {waitlistStatus === 'loading' ? (
                         <span className="flex items-center justify-center gap-1.5">
@@ -870,10 +871,10 @@ export default function Home() {
             <button
               onClick={handleAnalyze}
               disabled={!canAnalyze}
-              className={`w-full py-3 rounded-lg text-sm font-medium text-white transition-colors duration-150 ${
+              className={`w-full py-3 rounded-lg text-sm font-medium transition-colors duration-150 ${
                 canAnalyze
-                  ? 'bg-accent hover:bg-accent-hover cursor-pointer'
-                  : 'bg-accent opacity-40 cursor-not-allowed'
+                  ? 'bg-accent hover:bg-accent-hover text-white cursor-pointer'
+                  : 'bg-[var(--surface-muted)] text-ink-faint cursor-not-allowed'
               }`}
             >
               {t.analyze}

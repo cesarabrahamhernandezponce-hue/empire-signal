@@ -22,6 +22,7 @@ interface Props {
   onAnalyzeWord?: (word: string) => void;
   user?: User | null;
   onSignOut?: () => void;
+  hasHistory?: boolean;
 }
 
 const cardBase: React.CSSProperties = {
@@ -166,6 +167,7 @@ const LANG_CODE: Record<string, string> = { es: 'es-ES', en: 'en-US' };
 const LABELS = {
   en: {
     newSearch:       'New search',
+    back:            '← Back',
     listen:          'Listen',
     stop:            'Stop',
     share:           'Share',
@@ -204,6 +206,7 @@ const LABELS = {
   },
   es: {
     newSearch:       'Nueva búsqueda',
+    back:            '← Volver',
     listen:          'Escuchar',
     stop:            'Detener',
     share:           'Compartir',
@@ -393,7 +396,7 @@ function pickVoice(lang: string): SpeechSynthesisVoice | null {
   );
 }
 
-export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWord, user, onSignOut }: Props) {
+export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWord, user, onSignOut, hasHistory }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [wordCopied, setWordCopied] = useState(false);
@@ -540,7 +543,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             className="flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors duration-150 shrink-0"
           >
             <IconBack />
-            {l.newSearch}
+            {hasHistory ? l.back : l.newSearch}
           </button>
 
           {user === null && (
@@ -701,7 +704,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             <button
               onClick={handleValidate}
               disabled={sentence.trim().length === 0 || validation.status === 'loading'}
-              className="mt-3 w-full py-3 rounded-lg text-sm font-medium text-white bg-accent hover:bg-accent-hover transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-3 w-full py-3 rounded-lg text-sm font-medium transition-colors duration-150 bg-accent text-white enabled:hover:bg-accent-hover disabled:bg-[var(--surface-muted)] disabled:text-ink-faint disabled:cursor-not-allowed"
             >
               {validation.status === 'loading' ? (
                 <span className="flex items-center justify-center gap-1.5">
@@ -758,7 +761,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
           {essential.contextNote && (
             <section style={{ ...cardBase, background: 'var(--surface-blue)', borderLeft: '3px solid var(--accent)' }}>
               <SectionLabel serif>{l.inYourContext}</SectionLabel>
-              <p className="text-base leading-relaxed" style={{ color: '#1A1A1A' }}>
+              <p className="text-base leading-relaxed" style={{ color: 'var(--text-primary)' }}>
                 {essential.contextNote}
               </p>
             </section>
@@ -978,7 +981,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
               <button
                 onClick={handleAsk}
                 disabled={question.trim().length === 0 || askLoading}
-                className="shrink-0 px-4 py-2.5 rounded-[6px] text-xs font-medium border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="shrink-0 px-4 py-2.5 rounded-[6px] text-xs font-medium border border-line text-ink-muted enabled:hover:text-ink enabled:hover:border-ink-muted transition-all duration-150 disabled:bg-[var(--surface-muted)] disabled:text-ink-faint disabled:cursor-not-allowed"
               >
                 {askLoading ? (
                   <span className="flex items-center gap-1.5">
