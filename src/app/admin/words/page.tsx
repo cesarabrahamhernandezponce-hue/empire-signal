@@ -15,8 +15,8 @@ function WordTable({ title, rows, sortDir }: { title: string; rows: WordRow[]; s
           <p className="text-sm text-ink-muted">No searches yet.</p>
         </div>
       ) : (
-        <div className="bg-surface border border-line rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-xl border border-line">
+          <table className="w-full text-sm min-w-[240px] bg-surface">
             <thead>
               <tr className="border-b border-line">
                 <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">

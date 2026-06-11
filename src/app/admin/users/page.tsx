@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { prisma } from '@/lib/db/prisma';
 
 export default async function UsersPage() {
@@ -23,8 +24,8 @@ export default async function UsersPage() {
           <p className="text-sm text-ink-muted">No users yet.</p>
         </div>
       ) : (
-        <div className="bg-surface border border-line rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-xl border border-line">
+          <table className="w-full text-sm min-w-[520px] bg-surface">
             <thead>
               <tr className="border-b border-line">
                 <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">
@@ -39,11 +40,12 @@ export default async function UsersPage() {
                 <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">
                   Plan
                 </th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
               {users.map((user, i) => (
-                <tr key={user.id} className={i > 0 ? 'border-t border-line' : ''}>
+                <tr key={user.id} className={`hover:bg-bg transition-colors ${i > 0 ? 'border-t border-line' : ''}`}>
                   <td className="px-4 py-3 text-ink-muted tabular-nums whitespace-nowrap">
                     {user.createdAt.toLocaleDateString('en-US', {
                       year: 'numeric',
@@ -63,6 +65,14 @@ export default async function UsersPage() {
                     >
                       {user.plan}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <Link
+                      href={`/admin/users/${user.id}`}
+                      className="text-xs text-ink-muted hover:text-accent transition-colors"
+                    >
+                      View →
+                    </Link>
                   </td>
                 </tr>
               ))}
