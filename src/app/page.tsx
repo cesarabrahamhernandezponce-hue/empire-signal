@@ -39,7 +39,7 @@ const UI = {
   en: {
     insightLabel:        'Empire Insight',
     tagline:             'Linguistic intelligence',
-    placeholder:         'Type a word...',
+    placeholder:         "Try a word — like 'ephemeral'…",
     contextHint:         "e.g. I'm reading a 19th-century medical text...",
     addContext:          '+ Add context (optional)',
     hideContext:         '− Hide context',
@@ -73,7 +73,7 @@ const UI = {
   es: {
     insightLabel:        'Perspectiva Empire',
     tagline:             'Inteligencia lingüística',
-    placeholder:         'Escribe una palabra...',
+    placeholder:         "Prueba una palabra — como 'efímero'…",
     contextHint:         'ej. Estoy leyendo un texto médico del siglo XIX...',
     addContext:          '+ Agregar contexto (opcional)',
     hideContext:         '− Ocultar contexto',
@@ -598,31 +598,6 @@ export default function Home() {
             zIndex: 50,
           }}
         >
-          {/* Language */}
-          <div className="mb-4">
-            <p
-              className="mb-2 text-[0.7rem] font-semibold uppercase"
-              style={{ color: '#3A3D8F', letterSpacing: '0.05em' }}
-            >
-              {t.langLabel}
-            </p>
-            <div className="flex gap-1.5">
-              {(['en', 'es'] as const).map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => { setLanguage(lang); setSettingsOpen(false); }}
-                  className={`px-3 py-1 rounded-[6px] text-xs font-medium border transition-all duration-150 ${
-                    language === lang
-                      ? 'bg-accent text-white border-accent'
-                      : 'bg-bg text-ink-muted border-line hover:text-ink hover:border-ink-muted'
-                  }`}
-                >
-                  {lang === 'en' ? 'English' : 'Español'}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Theme */}
           <div className="flex items-center justify-between gap-4">
             <p
@@ -764,246 +739,289 @@ export default function Home() {
     <>
       {authBar}
       {settingsButton}
-      <main className="min-h-screen bg-bg flex flex-col items-center justify-center px-4 py-16">
+      {showHelp && <HelpModal title={t.howToUseTitle} language={language} onClose={() => setShowHelp(false)} />}
 
-        {/* Brand */}
-        <div className="text-center mb-10">
+      <main className="min-h-screen bg-bg flex flex-col items-center px-4 pt-14 pb-16 sm:pt-20">
+        <div className="w-full max-w-[600px]">
+
+          {/* 1. Wordmark */}
+          <div className="text-center mb-6">
+            <span
+              className="text-[2.75rem] tracking-tight text-ink leading-none"
+              style={{ fontFamily: 'var(--font-dm-serif)', fontStyle: 'italic' }}
+            >
+              Empire
+            </span>
+          </div>
+
+          {/* 2. Headline */}
           <h1
-            className="text-[2.75rem] tracking-tight text-ink leading-none"
-            style={{ fontFamily: 'var(--font-dm-serif)', fontStyle: 'italic' }}
+            className="text-[1.875rem] sm:text-[2.5rem] tracking-tight text-ink leading-[1.15] text-center mb-4"
+            style={{ fontFamily: 'var(--font-dm-serif)' }}
           >
-            Empire
+            You know the word. But do you know how to use it?
           </h1>
-          <p className="mt-2.5 text-sm font-medium" style={{ letterSpacing: '0.12em', color: '#3A3D8F' }}>
-            {t.tagline}
-          </p>
-        </div>
 
-        {/* Curiosity */}
-        <div
-          className={`w-full max-w-[600px] mb-5 transition-opacity duration-500 ${
-            curiosityVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
-        >
-          <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-accent mb-1.5">
-            {t.insightLabel}
+          {/* 3. Subheadline */}
+          <p className="text-sm text-ink-muted leading-relaxed text-center mb-8 max-w-[480px] mx-auto">
+            Empire Signal shows you the register, the collocations, and the context that turn vocabulary you recognize into vocabulary you can actually use.
           </p>
-          <p className="text-sm text-ink-muted leading-relaxed" suppressHydrationWarning>
-            {curiosity}
-          </p>
-        </div>
 
-        {/* Session history chips */}
-        {sessionHistory.length > 0 && word.length === 0 && (
-          <div className="w-full max-w-[600px] mb-4">
-            <p className="text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-ink-faint mb-2">
-              {t.recent}
-            </p>
-            <div className="flex gap-1.5 flex-wrap">
-              {sessionHistory.map((w) => (
-                <button
-                  key={w}
-                  onClick={() => {
-                    setWord(w);
-                    setCuriosityVisible(false);
-                    handleAnalyzeWithWord(w);
-                  }}
-                  className="text-xs text-ink-muted border border-line bg-surface rounded-full hover:border-accent hover:text-accent transition-colors duration-150 px-3 py-1"
-                >
-                  {w}
-                </button>
-              ))}
+          {/* 4. Search card */}
+          <div className="w-full bg-surface border border-line rounded-[12px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden">
+
+            {/* Language toggle */}
+            <div className="flex items-center justify-between px-7 pt-5">
+              <span className="text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-ink-faint select-none">
+                Language
+              </span>
+              <div className="flex gap-1.5">
+                {(['en', 'es'] as const).map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => setLanguage(lang)}
+                    className={`px-3 py-1 rounded-[6px] text-xs font-medium border transition-all duration-150 ${
+                      language === lang
+                        ? 'bg-accent text-white border-accent'
+                        : 'bg-bg text-ink-muted border-line hover:text-ink hover:border-ink-muted'
+                    }`}
+                  >
+                    {lang === 'en' ? 'EN' : 'ES'}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
 
-        {showHelp && <HelpModal title={t.howToUseTitle} language={language} onClose={() => setShowHelp(false)} />}
-
-        {/* Search card */}
-        <div className="w-full max-w-[600px] bg-surface border border-line rounded-[12px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden">
-
-          {/* Input — protagonist */}
-          <div className="px-7 pt-7 pb-6">
-            <input
-              type="text"
-              value={word}
-              onChange={handleWordChange}
-              onKeyDown={(e) => e.key === 'Enter' && canAnalyze && handleAnalyze()}
-              placeholder={t.placeholder}
-              autoComplete="off"
-              spellCheck={false}
-              maxLength={40}
-              className="w-full bg-transparent text-[1.5rem] font-medium text-ink placeholder:text-ink-faint outline-none border-b-2 border-line focus:border-accent transition-colors duration-200 pb-1"
-            />
-            {word.length >= 25 && (
-              <p
-                className="text-right text-[10px] mt-0.5"
-                style={{ color: word.length === 40 ? '#E53935' : undefined }}
-              >
-                <span className={word.length < 40 ? 'text-ink-faint' : ''}>
-                  {word.length}/40
-                </span>
-              </p>
-            )}
-            {spellingError && (
-              <div style={{ marginTop: '4px', animation: 'fadeIn 0.25s ease' }}>
-                <p style={{ color: '#E53935', fontSize: '0.75rem' }}>{spellingError}</p>
-                {spellingSuggestion && (
-                  <button
-                    onClick={() => {
-                      setSpellingError(null);
-                      setSpellingSuggestion(null);
-                      setWord(spellingSuggestion);
-                      handleAnalyzeWithWord(spellingSuggestion);
-                    }}
-                    style={{
-                      color: '#3A3D8F',
-                      fontSize: '0.75rem',
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      textDecoration: 'underline',
-                      marginTop: '2px',
-                      display: 'block',
-                    }}
-                  >
-                    {t.didYouMean} &ldquo;{spellingSuggestion}&rdquo;?
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Inline translator */}
-          {canAnalyze && !spellingError && (
-            <div className="px-7 pb-5 border-t border-line pt-4">
-              <div className="flex items-center gap-2">
-                {translateExpanded && (
-                  <div className="flex gap-1.5 flex-wrap flex-1">
-                    {TRANSLATE_LANGS.map((l) => (
-                      <button
-                        key={l.id}
-                        onClick={() => handleTranslate(l.id)}
-                        disabled={translationState.status === 'loading'}
-                        className={`px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed ${
-                          targetLang === l.id
-                            ? 'bg-accent text-white border-accent'
-                            : 'bg-bg text-ink-muted border-line hover:text-ink hover:border-ink-muted'
-                        }`}
-                      >
-                        {l.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <button
-                  onClick={() => {
-                    if (translateExpanded) {
-                      setTranslateExpanded(false);
-                    } else {
-                      setTranslateExpanded(true);
-                    }
-                    setTargetLang(null);
-                    setTranslationState({ status: 'idle' });
-                  }}
-                  disabled={translationState.status === 'loading'}
-                  className="shrink-0 px-3 py-1 rounded-[6px] text-xs font-medium border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+            {/* Input — protagonist */}
+            <div className="px-7 pt-4 pb-6">
+              <input
+                type="text"
+                value={word}
+                onChange={handleWordChange}
+                onKeyDown={(e) => e.key === 'Enter' && canAnalyze && handleAnalyze()}
+                placeholder={t.placeholder}
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={40}
+                className="w-full bg-transparent text-[1.5rem] font-medium text-ink placeholder:text-ink-faint outline-none border-b-2 border-line focus:border-accent transition-colors duration-200 pb-1"
+              />
+              {word.length >= 25 && (
+                <p
+                  className="text-right text-[10px] mt-0.5"
+                  style={{ color: word.length === 40 ? '#E53935' : undefined }}
                 >
-                  {translationState.status === 'loading' ? (
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-3 h-3 border border-line border-t-accent rounded-full animate-spin" />
-                      {t.translating}
-                    </span>
-                  ) : t.translate}
-                </button>
-              </div>
-
-              {translationState.status === 'result' && (
-                <div className="mt-4 flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[1.5rem] font-bold tracking-tight leading-none" style={{ color: '#1A1A1A' }}>
-                      {translationState.text}
-                    </p>
-                    <p
-                      className="mt-1.5 text-[0.65rem] font-semibold uppercase"
-                      style={{ color: '#9A9A96', letterSpacing: '0.08em' }}
-                    >
-                      {TRANSLATE_LANGS.find((l) => l.id === translationState.lang)?.label}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => navigator.clipboard.writeText((translationState as { status: 'result'; text: string }).text)}
-                    className="mt-1 shrink-0 text-ink-faint hover:text-ink transition-colors duration-150"
-                    title="Copy"
-                  >
-                    <IconCopy />
-                  </button>
-                </div>
-              )}
-
-              {translationState.status === 'error' && (
-                <p className="mt-3 text-xs" style={{ color: '#B91C1C' }}>
-                  {translationState.message}
+                  <span className={word.length < 40 ? 'text-ink-faint' : ''}>
+                    {word.length}/40
+                  </span>
                 </p>
               )}
+              {spellingError && (
+                <div style={{ marginTop: '4px', animation: 'fadeIn 0.25s ease' }}>
+                  <p style={{ color: '#E53935', fontSize: '0.75rem' }}>{spellingError}</p>
+                  {spellingSuggestion && (
+                    <button
+                      onClick={() => {
+                        setSpellingError(null);
+                        setSpellingSuggestion(null);
+                        setWord(spellingSuggestion);
+                        handleAnalyzeWithWord(spellingSuggestion);
+                      }}
+                      style={{
+                        color: '#3A3D8F',
+                        fontSize: '0.75rem',
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        marginTop: '2px',
+                        display: 'block',
+                      }}
+                    >
+                      {t.didYouMean} &ldquo;{spellingSuggestion}&rdquo;?
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Inline translator */}
+            {canAnalyze && !spellingError && (
+              <div className="px-7 pb-5 border-t border-line pt-4">
+                <div className="flex items-center gap-2">
+                  {translateExpanded && (
+                    <div className="flex gap-1.5 flex-wrap flex-1">
+                      {TRANSLATE_LANGS.map((l) => (
+                        <button
+                          key={l.id}
+                          onClick={() => handleTranslate(l.id)}
+                          disabled={translationState.status === 'loading'}
+                          className={`px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed ${
+                            targetLang === l.id
+                              ? 'bg-accent text-white border-accent'
+                              : 'bg-bg text-ink-muted border-line hover:text-ink hover:border-ink-muted'
+                          }`}
+                        >
+                          {l.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (translateExpanded) {
+                        setTranslateExpanded(false);
+                      } else {
+                        setTranslateExpanded(true);
+                      }
+                      setTargetLang(null);
+                      setTranslationState({ status: 'idle' });
+                    }}
+                    disabled={translationState.status === 'loading'}
+                    className="shrink-0 px-3 py-1 rounded-[6px] text-xs font-medium border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {translationState.status === 'loading' ? (
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 border border-line border-t-accent rounded-full animate-spin" />
+                        {t.translating}
+                      </span>
+                    ) : t.translate}
+                  </button>
+                </div>
+
+                {translationState.status === 'result' && (
+                  <div className="mt-4 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[1.5rem] font-bold tracking-tight leading-none" style={{ color: '#1A1A1A' }}>
+                        {translationState.text}
+                      </p>
+                      <p
+                        className="mt-1.5 text-[0.65rem] font-semibold uppercase"
+                        style={{ color: '#9A9A96', letterSpacing: '0.08em' }}
+                      >
+                        {TRANSLATE_LANGS.find((l) => l.id === translationState.lang)?.label}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard.writeText((translationState as { status: 'result'; text: string }).text)}
+                      className="mt-1 shrink-0 text-ink-faint hover:text-ink transition-colors duration-150"
+                      title="Copy"
+                    >
+                      <IconCopy />
+                    </button>
+                  </div>
+                )}
+
+                {translationState.status === 'error' && (
+                  <p className="mt-3 text-xs" style={{ color: '#B91C1C' }}>
+                    {translationState.message}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Section divider */}
+            <div className="h-px bg-line" />
+
+            {/* Options */}
+            <div className="px-7 py-6 space-y-5">
+
+              {/* Context toggle */}
+              <div>
+                <button
+                  onClick={() => setShowContext((v) => !v)}
+                  className="text-sm text-ink-faint hover:text-ink-muted transition-colors duration-150"
+                >
+                  {showContext ? t.hideContext : t.addContext}
+                </button>
+                <div
+                  className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+                    showContext ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <textarea
+                      value={context}
+                      onChange={(e) => setContext(e.target.value)}
+                      placeholder={t.contextHint}
+                      rows={3}
+                      className="mt-3 w-full bg-bg border border-line rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-faint outline-none focus:border-accent resize-none transition-colors duration-150"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Analyze button */}
+              <button
+                onClick={handleAnalyze}
+                disabled={!canAnalyze}
+                className={`w-full py-3 rounded-lg text-sm font-medium transition-colors duration-150 ${
+                  canAnalyze
+                    ? 'bg-accent hover:bg-accent-hover text-white cursor-pointer'
+                    : 'bg-[var(--surface-muted)] text-ink-faint cursor-not-allowed'
+                }`}
+              >
+                {t.analyze}
+              </button>
+            </div>
+          </div>
+
+          {/* Session history chips */}
+          {sessionHistory.length > 0 && word.length === 0 && (
+            <div className="mt-5">
+              <p className="text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-ink-faint mb-2">
+                {t.recent}
+              </p>
+              <div className="flex gap-1.5 flex-wrap">
+                {sessionHistory.map((w) => (
+                  <button
+                    key={w}
+                    onClick={() => {
+                      setWord(w);
+                      setCuriosityVisible(false);
+                      handleAnalyzeWithWord(w);
+                    }}
+                    className="text-xs text-ink-muted border border-line bg-surface rounded-full hover:border-accent hover:text-accent transition-colors duration-150 px-3 py-1"
+                  >
+                    {w}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Section divider */}
-          <div className="h-px bg-line" />
+          {/* Curiosidades — debajo de la búsqueda, secundarias */}
+          <div
+            className={`mt-6 transition-opacity duration-500 ${
+              curiosityVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-accent mb-1.5">
+              {t.insightLabel}
+            </p>
+            <p className="text-sm text-ink-muted leading-relaxed" suppressHydrationWarning>
+              {curiosity}
+            </p>
+          </div>
 
-          {/* Options */}
-          <div className="px-7 py-6 space-y-5">
+          {/* Feature row */}
+          <div className="mt-8 flex flex-wrap justify-center gap-x-4 gap-y-1.5">
+            {(['Etymology & origin', 'Register & collocations', 'Common errors'] as const).map((f) => (
+              <span key={f} className="text-[0.7rem] text-ink-faint">{f}</span>
+            ))}
+          </div>
 
-            {/* Context toggle */}
-            <div>
-              <button
-                onClick={() => setShowContext((v) => !v)}
-                className="text-sm text-ink-faint hover:text-ink-muted transition-colors duration-150"
-              >
-                {showContext ? t.hideContext : t.addContext}
-              </button>
-              <div
-                className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-                  showContext ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-                }`}
-              >
-                <div className="overflow-hidden">
-                  <textarea
-                    value={context}
-                    onChange={(e) => setContext(e.target.value)}
-                    placeholder={t.contextHint}
-                    rows={3}
-                    className="mt-3 w-full bg-bg border border-line rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-faint outline-none focus:border-accent resize-none transition-colors duration-150"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Analyze button */}
+          {/* How to use link */}
+          <div className="mt-5 text-center">
             <button
-              onClick={handleAnalyze}
-              disabled={!canAnalyze}
-              className={`w-full py-3 rounded-lg text-sm font-medium transition-colors duration-150 ${
-                canAnalyze
-                  ? 'bg-accent hover:bg-accent-hover text-white cursor-pointer'
-                  : 'bg-[var(--surface-muted)] text-ink-faint cursor-not-allowed'
-              }`}
+              onClick={() => setShowHelp(true)}
+              className="text-xs text-ink-faint hover:text-ink-muted transition-colors duration-150"
             >
-              {t.analyze}
+              {t.howToUse}
             </button>
           </div>
+
         </div>
-
-        {/* How to use link */}
-        <button
-          onClick={() => setShowHelp(true)}
-          className="mt-5 text-xs text-ink-faint hover:text-ink-muted transition-colors duration-150"
-        >
-          {t.howToUse}
-        </button>
-
       </main>
     </>
   );
