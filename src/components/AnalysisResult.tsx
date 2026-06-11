@@ -34,10 +34,10 @@ const cardBase: React.CSSProperties = {
   boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
 };
 
-function SectionLabel({ children, serif }: { children: React.ReactNode; serif?: boolean }) {
+function SectionLabel({ children, serif, larger }: { children: React.ReactNode; serif?: boolean; larger?: boolean }) {
   return (
     <p
-      className="mb-3 text-[0.75rem] font-semibold uppercase"
+      className={`mb-3 font-semibold uppercase ${larger ? 'text-[0.85rem]' : 'text-[0.75rem]'}`}
       style={{ color: '#3A3D8F', letterSpacing: '0.12em', fontFamily: serif ? 'var(--font-dm-serif)' : undefined }}
     >
       {children}
@@ -134,22 +134,68 @@ const CEFR_STYLES: Record<string, { background: string; color: string }> = {
   C2: { background: '#EEF0FF', color: '#3A3D8F' },
 };
 
-function CefrBadge({ level }: { level: string }) {
+function CefrBadge({ level, tooltip }: { level: string; tooltip: string }) {
   const s = CEFR_STYLES[level] ?? { background: '#F0F0EE', color: '#1A1A1A' };
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handle(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [open]);
+
   return (
-    <span
-      style={{
-        background: s.background,
-        color: s.color,
-        fontSize: '0.7rem',
-        fontWeight: 700,
-        padding: '2px 8px',
-        borderRadius: 4,
-        letterSpacing: '0.06em',
-        fontFamily: 'var(--font-geist-mono)',
-      }}
-    >
-      {level}
+    <span ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+      <span
+        role="button"
+        tabIndex={0}
+        onClick={() => setOpen((v) => !v)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setOpen((v) => !v); }}
+        style={{
+          background: s.background,
+          color: s.color,
+          fontSize: '0.7rem',
+          fontWeight: 700,
+          padding: '2px 8px',
+          borderRadius: 4,
+          letterSpacing: '0.06em',
+          fontFamily: 'var(--font-geist-mono)',
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}
+      >
+        {level}
+      </span>
+      {open && (
+        <span
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 6px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '220px',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: '8px',
+            padding: '10px 12px',
+            fontSize: '0.73rem',
+            lineHeight: 1.5,
+            color: 'var(--text-secondary)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.10)',
+            zIndex: 20,
+            display: 'block',
+            textAlign: 'left',
+            fontWeight: 400,
+            fontFamily: 'var(--font-geist-sans)',
+          }}
+        >
+          {tooltip}
+        </span>
+      )}
     </span>
   );
 }
@@ -169,6 +215,7 @@ const LABELS = {
   en: {
     newSearch:       'New search',
     back:            '← Back',
+    cefrTooltip:     'CEFR level: European language proficiency scale from A1 (beginner) to C2 (native-like).',
     logIn:           'Log in',
     signUp:          'Sign up',
     logOut:          'Log out',
@@ -211,6 +258,7 @@ const LABELS = {
   es: {
     newSearch:       'Nueva búsqueda',
     back:            '← Volver',
+    cefrTooltip:     'Nivel CEFR: escala europea de dominio del idioma, de A1 (principiante) a C2 (casi nativo).',
     logIn:           'Iniciar sesión',
     signUp:          'Registrarse',
     logOut:          'Cerrar sesión',
@@ -634,7 +682,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             <p className="flex items-center justify-center gap-2 text-lg text-ink-faint" style={{ fontFamily: 'var(--font-geist-mono)' }}>
               {heroPhonetic && <span>{heroPhonetic}</span>}
               {heroPhonetic && essential.cefr && <span className="select-none">·</span>}
-              {essential.cefr && <CefrBadge level={essential.cefr} />}
+              {essential.cefr && <CefrBadge level={essential.cefr} tooltip={l.cefrTooltip} />}
             </p>
           )}
 
@@ -736,8 +784,8 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
           )}
 
           {/* Validate your sentence */}
-          <section style={{ ...cardBase, background: 'var(--surface-blue)' }}>
-            <SectionLabel serif>{l.validateSection}</SectionLabel>
+          <section style={{ ...cardBase, background: 'var(--surface-blue)', border: '2px solid var(--accent)' }}>
+            <SectionLabel serif larger>{l.validateSection}</SectionLabel>
             <p className="text-sm text-ink-muted mb-4 -mt-1 leading-relaxed">{l.validateHint}</p>
             <textarea
               value={sentence}

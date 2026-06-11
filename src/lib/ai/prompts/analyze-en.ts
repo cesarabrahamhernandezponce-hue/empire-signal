@@ -77,7 +77,7 @@ Rules:
 - antonyms: up to 3 items. Include ONLY words attested in standard dictionaries. If the word has no real antonyms, use an empty array [].
 - commonErrors: 1 or 2 items.
 - cefr: assign the CEFR level (A1/A2/B1/B2/C1/C2) that best represents this word's difficulty for English learners. Return only the level code, nothing else.
-- meanings: if the word is polysemous (multiple distinct meanings across different parts of speech or usage contexts — e.g. "type", "run", "set", "bank", "get"), populate "meanings" as an array of ALL relevant meanings ordered by frequency of use. Each entry: definition, partOfSpeech, and optionally a short example sentence. If the word has one clear primary meaning ("ephemeral", "ocean", "table"), return a single-element array with that meaning only.
+- meanings: lists the word's distinct senses — NOT a repeat of meaningInContext. IMPORTANT: meaningInContext already covers the primary use; do NOT copy it here. For polysemous words ("type", "run", "bank"), populate with secondary and figurative senses not covered by meaningInContext, ordered by frequency of use. Each entry: definition, partOfSpeech, and optionally a short example sentence. For monosemous words ("ephemeral", "ocean", "table"), return an empty array [] or include one secondary sense only if a meaningfully distinct one exists.
 - pronunciation.phonetic: ONLY the compact IPA between slashes (e.g. /həˈloʊ/), 30 characters max. NEVER a sentence, never prose — all explanation goes in guide.
 - All content in English. Keys always in English.
 - No invented etymologies or false facts. If uncertain, be conservative.

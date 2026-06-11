@@ -30,7 +30,7 @@ export const analysisSchema = z.object({
       definition:  z.string().min(1),
       partOfSpeech: z.string().min(1),
       example:     z.string().optional(),
-    })).min(1).optional(),
+    })).min(0).optional(),
   }),
   advanced: z.object({
     etymology: z.string(),

@@ -80,7 +80,7 @@ Reglas:
 - antonyms: hasta 3 elementos. Incluye SOLO palabras atestiguadas en diccionarios estándar. Si la palabra no tiene antónimos reales, usa un array vacío [].
 - commonErrors: 1 o 2 elementos.
 - cefr: asigna el nivel CEFR (A1/A2/B1/B2/C1/C2) que mejor representa la dificultad de esta palabra para estudiantes de español. Devuelve solo el código del nivel, nada más.
-- meanings: si la palabra es polisémica (tiene varios significados distintos según la parte del discurso o el contexto — ej. "banco", "tipo", "pico", "cura"), rellena "meanings" con TODOS los significados relevantes ordenados por frecuencia de uso. Cada entrada: definition, partOfSpeech y opcionalmente un ejemplo corto. Si la palabra tiene un único significado claro ("efímero", "océano", "mesa"), devuelve un array con un solo elemento.
+- meanings: lista los sentidos distintos de la palabra — NO debe repetir meaningInContext. IMPORTANTE: meaningInContext ya cubre el uso principal; no lo copies aquí. Para palabras polisémicas ("banco", "tipo", "cura"), incluye los sentidos secundarios y figurados no cubiertos por meaningInContext, ordenados por frecuencia de uso. Cada entrada: definition, partOfSpeech y opcionalmente un ejemplo corto. Para palabras monosémicas ("efímero", "océano", "mesa"), devuelve un array vacío [] o incluye un único sentido secundario solo si existe uno claramente distinto.
 - pronunciation.phonetic: SOLO la IPA compacta entre barras (p.ej. /eˈlo/), máximo 30 caracteres. NUNCA una oración ni prosa — toda la explicación va en guide.
 - Todo el contenido en español. Las claves siempre en inglés.
 - No inventes etimologías ni hechos falsos. Si no estás seguro, sé conservador.
