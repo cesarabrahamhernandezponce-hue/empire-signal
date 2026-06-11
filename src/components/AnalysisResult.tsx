@@ -809,19 +809,11 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
           {/* Collocations */}
           <section style={cardBase}>
             <SectionLabel serif>{l.collocations}</SectionLabel>
-            <div>
+            <div className="space-y-4">
               {essential.collocations.map((col, i) => (
-                <div
-                  key={i}
-                  className="flex gap-4"
-                  style={{ background: i % 2 !== 0 ? 'var(--bg)' : 'transparent', padding: '6px 4px', borderRadius: '4px' }}
-                >
-                  <span className="shrink-0 text-sm font-medium w-40" style={{ color: 'var(--text-primary)' }}>
-                    {col.phrase}
-                  </span>
-                  <span className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
-                    {col.meaning}
-                  </span>
+                <div key={i}>
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{col.phrase}</p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>{col.meaning}</p>
                 </div>
               ))}
             </div>
@@ -868,15 +860,13 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
 
                 <section style={cardBase}>
                   <SectionLabel>{l.synonyms}</SectionLabel>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {advanced.synonyms.map((syn, i) => (
-                      <div key={i} className="flex gap-4">
-                        <span className="shrink-0 text-sm font-medium w-28" style={{ color: 'var(--text-primary)' }}>
+                      <div key={i}>
+                        <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                           <ClickableWord word={syn.word} onAnalyze={onAnalyzeWord} />
-                        </span>
-                        <span className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
-                          {syn.nuance}
-                        </span>
+                        </p>
+                        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>{syn.nuance}</p>
                       </div>
                     ))}
                   </div>
@@ -885,15 +875,13 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                 {advanced.antonyms.length > 0 && (
                   <section style={cardBase}>
                     <SectionLabel>{l.antonyms}</SectionLabel>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {advanced.antonyms.map((ant, i) => (
-                        <div key={i} className="flex gap-4">
-                          <span className="shrink-0 text-sm font-medium w-28" style={{ color: 'var(--text-primary)' }}>
+                        <div key={i}>
+                          <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                             <ClickableWord word={ant.word} onAnalyze={onAnalyzeWord} />
-                          </span>
-                          <span className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
-                            {ant.context}
-                          </span>
+                          </p>
+                          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>{ant.context}</p>
                         </div>
                       ))}
                     </div>
@@ -933,15 +921,13 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
 
                 <section style={cardBase}>
                   <SectionLabel>{l.wordFamily}</SectionLabel>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {advanced.wordFamily.map((wf, i) => (
-                      <div key={i} className="flex gap-4">
-                        <span className="shrink-0 text-sm font-medium w-28" style={{ color: 'var(--text-primary)' }}>
+                      <div key={i}>
+                        <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                           <ClickableWord word={wf.word} onAnalyze={onAnalyzeWord} />
-                        </span>
-                        <span className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
-                          {wf.relation}
-                        </span>
+                        </p>
+                        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>{wf.relation}</p>
                       </div>
                     ))}
                   </div>
