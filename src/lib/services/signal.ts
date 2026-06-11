@@ -77,6 +77,37 @@ async function enrichWithContext(
   }
 }
 
+// ── Synonym quality filter ────────────────────────────────────────────────────
+// Drops AI synonyms that are hypernyms (parent categories) or that describe
+// generic-category concepts. Runs after parsing, before the DB write on cache
+// misses (so the filtered version is what gets cached) and before returning on
+// cache hits (to clean up records written before this filter existed).
+// Extend SYNONYM_HYPERNYMS or GENERIC_NUANCE_RE as new patterns are observed.
+
+const SYNONYM_HYPERNYMS = new Set([
+  // Spanish
+  'fruta', 'animal', 'cosa', 'objeto', 'planta', 'comida', 'verdura',
+  'ser', 'ente', 'elemento', 'sustancia', 'material',
+  // English
+  'fruit', 'animal', 'thing', 'object', 'plant', 'food', 'being',
+  'entity', 'substance', 'material', 'item',
+]);
+
+const GENERIC_NUANCE_RE =
+  /genérico|engloba|cualquier|categoría|tipo de|generic|any kind of|umbrella term|class of|category of/i;
+
+function filterSynonyms(analysis: Analysis): Analysis {
+  const kept = analysis.advanced.synonyms.filter(
+    (syn) =>
+      !SYNONYM_HYPERNYMS.has(syn.word.toLowerCase()) &&
+      !GENERIC_NUANCE_RE.test(syn.nuance),
+  );
+  if (kept.length === analysis.advanced.synonyms.length) return analysis;
+  return { ...analysis, advanced: { ...analysis.advanced, synonyms: kept } };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function analyzeWord(params: {
   word: string;
   context: string | null;
@@ -121,7 +152,7 @@ export async function analyzeWord(params: {
       },
     }).catch((err) => console.error('[analyzeWord] SearchEvent (cache hit) failed:', err));
 
-    const record = await enrichWithContext(cached, word, context, language);
+    const record = await enrichWithContext({ ...cached, analysis: filterSynonyms(cached.analysis) }, word, context, language);
     return { ok: true, record, cacheHit: true };
   }
 
@@ -130,8 +161,7 @@ export async function analyzeWord(params: {
     ? buildAnalyzePromptES(word, null)
     : buildAnalyzePromptEN(word, null);
 
-  const logLabel = `${word} | lang=${language}`; // TEMP: model winner instrumentation
-  const aiResult = await generateContent(prompt, 'application/json', logLabel); // TEMP
+  const aiResult = await generateContent(prompt);
   if (!aiResult.ok) {
     return { ok: false, error: aiResult.error };
   }
@@ -153,7 +183,7 @@ export async function analyzeWord(params: {
   if (firstParse.ok) {
     analysis = firstParse.data;
   } else {
-    const aiRetry = await generateContent(prompt, 'application/json', logLabel); // TEMP
+    const aiRetry = await generateContent(prompt);
     if (!aiRetry.ok) {
       return { ok: false, error: 'Could not generate a valid analysis. Please try again.' };
     }
@@ -163,6 +193,9 @@ export async function analyzeWord(params: {
     }
     analysis = secondParse.data;
   }
+
+  // Filter before DB write so the cached version is already clean
+  analysis = filterSynonyms(analysis);
 
   try {
     const record = await prisma.searchRecord.create({
@@ -206,7 +239,7 @@ export async function analyzeWord(params: {
           word:     existing.word,
           context:  existing.context,
           language: existing.language,
-          analysis: existing.analysisJson as unknown as Analysis,
+          analysis: filterSynonyms(existing.analysisJson as unknown as Analysis),
           shareId:  existing.shareId,
         };
         const enriched = await enrichWithContext(baseRecord, word, context, language);

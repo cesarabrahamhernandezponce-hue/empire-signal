@@ -26,7 +26,6 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  console.log('[ANALYZE] handler reached'); // TEMP: deployment check
   try {
     let body: unknown;
     try {

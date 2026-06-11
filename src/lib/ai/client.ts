@@ -26,14 +26,11 @@ export type AIResult =
   | { ok: true; text: string }
   | { ok: false; error: string };
 
-// TEMP: instrumentation wrapper — carries the winning model name alongside the text
-type RaceResult = { text: string; winner: string };
-
 function raceModels(
   models: string[],
   prompt: string,
   isJson: boolean,
-): { promise: Promise<RaceResult>; cleanup: () => void } {
+): { promise: Promise<string>; cleanup: () => void } {
   const controllers = models.map(() => new AbortController());
   const timers: ReturnType<typeof setTimeout>[] = [];
 
@@ -43,7 +40,7 @@ function raceModels(
   }
 
   const attempts = models.map((model, i) =>
-    new Promise<RaceResult>((resolve, reject) => {
+    new Promise<string>((resolve, reject) => {
       const timer = setTimeout(() => {
         controllers[i].abort();
         reject(new Error('timeout'));
@@ -71,7 +68,7 @@ function raceModels(
         const data = await res.json() as { choices?: { message?: { content?: string } }[] };
         const raw = data.choices?.[0]?.message?.content;
         if (!raw) { reject(new Error('empty')); return; }
-        resolve({ text: isJson ? stripCodeFences(raw) : raw, winner: model }); // TEMP
+        resolve(isJson ? stripCodeFences(raw) : raw);
       }).catch((e: unknown) => {
         clearTimeout(timer);
         reject(e);
@@ -85,16 +82,13 @@ function raceModels(
 export async function generateContent(
   prompt: string,
   mimeType: string = 'application/json',
-  // TEMP: pass "word | lang=XX" to log which model won; omit to skip logging
-  logLabel?: string,
 ): Promise<AIResult> {
   const isJson = mimeType === 'application/json';
 
   const first = raceModels(MODELS, prompt, isJson);
   try {
-    const { text, winner } = await first.promise; // TEMP
+    const text = await first.promise;
     first.cleanup();
-    if (logLabel) console.log(`[MODEL_WINNER] ${logLabel} | model=${winner} | race=primary`); // TEMP
     return { ok: true, text };
   } catch {
     first.cleanup();
@@ -102,9 +96,8 @@ export async function generateContent(
 
   const retry = raceModels(RETRY_MODELS, prompt, isJson);
   try {
-    const { text, winner } = await retry.promise; // TEMP
+    const text = await retry.promise;
     retry.cleanup();
-    if (logLabel) console.log(`[MODEL_WINNER] ${logLabel} | model=${winner} | race=retry`); // TEMP
     return { ok: true, text };
   } catch {
     retry.cleanup();
