@@ -7,22 +7,24 @@ import { createClient } from '@/lib/supabase/client';
 
 const LANG = {
   en: {
-    heading:       'Sign in',
-    emailLabel:    'Email',
-    passwordLabel: 'Password',
-    signingIn:     'Signing in...',
-    submit:        'Sign in',
-    noAccount:     'No account?',
-    createOne:     'Create one',
+    heading:            'Sign in',
+    emailLabel:         'Email',
+    passwordLabel:      'Password',
+    signingIn:          'Signing in...',
+    submit:             'Sign in',
+    noAccount:          'No account?',
+    createOne:          'Create one',
+    authNotConfigured:  'Auth is not configured.',
   },
   es: {
-    heading:       'Iniciar sesión',
-    emailLabel:    'Email',
-    passwordLabel: 'Contraseña',
-    signingIn:     'Iniciando sesión...',
-    submit:        'Iniciar sesión',
-    noAccount:     '¿Sin cuenta?',
-    createOne:     'Crear una',
+    heading:            'Iniciar sesión',
+    emailLabel:         'Email',
+    passwordLabel:      'Contraseña',
+    signingIn:          'Iniciando sesión...',
+    submit:             'Iniciar sesión',
+    noAccount:          '¿Sin cuenta?',
+    createOne:          'Crear una',
+    authNotConfigured:  'La autenticación no está configurada.',
   },
 } as const;
 
@@ -48,7 +50,7 @@ export default function LoginPage() {
 
     const supabase = createClient();
     if (!supabase) {
-      setError('Auth is not configured.');
+      setError(l.authNotConfigured);
       setLoading(false);
       return;
     }

@@ -6,32 +6,34 @@ import { createClient } from '@/lib/supabase/client';
 
 const LANG = {
   en: {
-    heading:         'Create an account',
-    emailLabel:      'Email',
-    passwordLabel:   'Password',
-    passwordHint:    'Min. 8 characters',
-    creating:        'Creating account...',
-    submit:          'Create account',
-    haveAccount:     'Already have an account?',
-    signIn:          'Sign in',
-    checkEmail:      'Check your email',
-    confirmSent:     'We sent a confirmation link to',
-    confirmAction:   'Click it to activate your account.',
-    backToSignIn:    'Back to sign in',
+    heading:            'Create an account',
+    emailLabel:         'Email',
+    passwordLabel:      'Password',
+    passwordHint:       'Min. 8 characters',
+    creating:           'Creating account...',
+    submit:             'Create account',
+    haveAccount:        'Already have an account?',
+    signIn:             'Sign in',
+    checkEmail:         'Check your email',
+    confirmSent:        'We sent a confirmation link to',
+    confirmAction:      'Click it to activate your account.',
+    backToSignIn:       'Back to sign in',
+    authNotConfigured:  'Auth is not configured.',
   },
   es: {
-    heading:         'Crear una cuenta',
-    emailLabel:      'Email',
-    passwordLabel:   'Contraseña',
-    passwordHint:    'Mín. 8 caracteres',
-    creating:        'Creando cuenta...',
-    submit:          'Crear cuenta',
-    haveAccount:     '¿Ya tienes cuenta?',
-    signIn:          'Iniciar sesión',
-    checkEmail:      'Revisa tu email',
-    confirmSent:     'Enviamos un enlace de confirmación a',
-    confirmAction:   'Haz clic en él para activar tu cuenta.',
-    backToSignIn:    'Volver al inicio de sesión',
+    heading:            'Crear una cuenta',
+    emailLabel:         'Email',
+    passwordLabel:      'Contraseña',
+    passwordHint:       'Mín. 8 caracteres',
+    creating:           'Creando cuenta...',
+    submit:             'Crear cuenta',
+    haveAccount:        '¿Ya tienes cuenta?',
+    signIn:             'Iniciar sesión',
+    checkEmail:         'Revisa tu email',
+    confirmSent:        'Enviamos un enlace de confirmación a',
+    confirmAction:      'Haz clic en él para activar tu cuenta.',
+    backToSignIn:       'Volver al inicio de sesión',
+    authNotConfigured:  'La autenticación no está configurada.',
   },
 } as const;
 
@@ -57,7 +59,7 @@ export default function SignupPage() {
 
     const supabase = createClient();
     if (!supabase) {
-      setError('Auth is not configured.');
+      setError(l.authNotConfigured);
       setLoading(false);
       return;
     }

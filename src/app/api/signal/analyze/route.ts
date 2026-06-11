@@ -7,6 +7,7 @@ import type { Analysis } from '@/lib/ai/schemas/analysis';
 import { generateContent } from '@/lib/ai/client';
 import { prisma } from '@/lib/db/prisma';
 import { getClientIp, hashIp, checkInMemoryLimit } from '@/lib/rate-limit';
+import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 
 const DAILY_LIMIT = 10;
 
@@ -84,6 +85,12 @@ export async function POST(request: Request) {
       }
     }
 
+    // Kick off auth check in parallel with the expensive work below.
+    // By the time analyzeWord completes, this Promise has long resolved.
+    const authCheckPromise = createSupabaseClient()
+      .then((sb) => sb?.auth.getUser() ?? Promise.resolve(null))
+      .catch(() => null);
+
     // Owner bypass: unlimited access for the owner via secret header
     const ownerKey = request.headers.get('x-owner-key');
     const bypassKey = process.env.OWNER_BYPASS_KEY;
@@ -157,6 +164,29 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Esta palabra no existe en español estándar.', suggestion: null }, { status: 422 });
       }
       return NextResponse.json({ error: result.error }, { status: 503 });
+    }
+
+    // Fire-and-forget: write user search history for authenticated users.
+    // Never blocks or fails the response.
+    if (result.record.id) {
+      void authCheckPromise.then(async (authData) => {
+        const user = authData?.data?.user;
+        if (!user) return;
+        try {
+          await prisma.user.upsert({
+            where:  { id: user.id },
+            create: { id: user.id, email: user.email ?? '' },
+            update: {},
+          });
+          await prisma.userSearchHistory.upsert({
+            where:  { userId_searchRecordId: { userId: user.id, searchRecordId: result.record.id } },
+            create: { userId: user.id, searchRecordId: result.record.id },
+            update: { viewedAt: new Date() },
+          });
+        } catch (err) {
+          console.error('[POST /api/signal/analyze] History write failed:', err);
+        }
+      });
     }
 
     return NextResponse.json({ record: result.record, cacheHit: result.cacheHit }, { status: 200 });

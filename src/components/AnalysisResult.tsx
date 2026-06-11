@@ -448,7 +448,7 @@ const REGISTER_ES: Record<string, string> = {
   everyday:   'cotidiano',
   colloquial: 'coloquial',
   neutral:    'neutro',
-  slang:      'argot',
+  slang:      'jerga',
   literary:   'literario',
 };
 
@@ -463,14 +463,6 @@ const CATEGORY_ES: Record<string, string> = {
   pronoun:      'pronombre',
 };
 
-const LEVEL_ES: Record<string, string> = {
-  formal:     'formal',
-  technical:  'técnico',
-  colloquial: 'coloquial',
-  vulgar:     'vulgar',
-  informal:   'informal',
-  neutral:    'neutro',
-};
 
 function xlat(value: string, uiLang: 'en' | 'es', map: Record<string, string>): string {
   if (uiLang !== 'es') return value;
@@ -991,7 +983,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                       className="text-xs font-medium px-2 py-0.5 rounded-[4px]"
                       style={{ background: '#F0F0EE', color: '#1A1A1A', border: '1px solid #EAEAE6' }}
                     >
-                      {xlat(advanced.registerLevel.level, uiLang, LEVEL_ES)}
+                      {xlat(advanced.registerLevel.level, uiLang, REGISTER_ES)}
                     </span>
                   </div>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>

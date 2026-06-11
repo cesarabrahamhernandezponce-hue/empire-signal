@@ -341,11 +341,40 @@ export default function Home() {
     const supabase = createClient();
     if (!supabase) { setUser(null); return; }
     supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
+      if (event === 'SIGNED_OUT') {
+        setPageState({ status: 'idle' });
+        setSessionHistory([]);
+        setHistory([]);
+        setWord('');
+        setContext('');
+        setShowContext(false);
+        setCuriosityVisible(true);
+        setTranslateExpanded(false);
+        setTargetLang(null);
+        setTranslationState({ status: 'idle' });
+        setSpellingError(null);
+        setSpellingSuggestion(null);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Fetch persistent history for authenticated users; falls back to session-only for anonymous.
+  useEffect(() => {
+    if (!user) return;  // null = anonymous, undefined = auth not yet resolved
+    let active = true;
+    fetch('/api/signal/history')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { history: Array<{ word: string }> } | null) => {
+        if (active && data?.history) {
+          setSessionHistory(data.history.map((h) => h.word));
+        }
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [user]);
 
   useEffect(() => {
     const pool = CURIOSITIES[language];
@@ -457,7 +486,7 @@ export default function Home() {
       setPageState({ status: 'result', record, cacheHit });
       setSessionHistory((prev) => {
         const filtered = prev.filter((w) => w !== record.word);
-        return [record.word, ...filtered].slice(0, 5);
+        return [record.word, ...filtered].slice(0, 20);
       });
     } catch {
       setPageState({ status: 'error', message: 'Could not connect to the server. Check your connection.' });
