@@ -40,13 +40,13 @@ export const analysisSchema = z.object({
         word:   z.string().min(1),
         nuance: z.string().min(1),
       }),
-    ).min(1).max(6),
+    ).min(0).max(6),
     antonyms: z.array(
       z.object({
         word:    z.string().min(1),
         context: z.string().min(1),
       }),
-    ).max(6),
+    ).min(0).max(6),
     registerLevel: z.object({
       level:    z.string().min(1),
       guidance: z.string().min(1),
@@ -62,7 +62,7 @@ export const analysisSchema = z.object({
         word:     z.string().min(1),
         relation: z.string().min(1),
       }),
-    ).min(1).max(6),
+    ).min(0).max(6),
   }),
 });
 

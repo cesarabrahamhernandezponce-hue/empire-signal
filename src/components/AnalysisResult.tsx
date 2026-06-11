@@ -861,19 +861,21 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                   </section>
                 )}
 
-                <section style={cardBase}>
-                  <SectionLabel>{l.synonyms}</SectionLabel>
-                  <div className="space-y-4">
-                    {advanced.synonyms.map((syn, i) => (
-                      <div key={i}>
-                        <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                          <ClickableWord word={syn.word} onAnalyze={onAnalyzeWord} />
-                        </p>
-                        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>{syn.nuance}</p>
-                      </div>
-                    ))}
-                  </div>
-                </section>
+                {advanced.synonyms.length > 0 && (
+                  <section style={cardBase}>
+                    <SectionLabel>{l.synonyms}</SectionLabel>
+                    <div className="space-y-4">
+                      {advanced.synonyms.map((syn, i) => (
+                        <div key={i}>
+                          <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                            <ClickableWord word={syn.word} onAnalyze={onAnalyzeWord} />
+                          </p>
+                          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>{syn.nuance}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
                 {advanced.antonyms.length > 0 && (
                   <section style={cardBase}>
@@ -922,19 +924,21 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                   </div>
                 </section>
 
-                <section style={cardBase}>
-                  <SectionLabel>{l.wordFamily}</SectionLabel>
-                  <div className="space-y-4">
-                    {advanced.wordFamily.map((wf, i) => (
-                      <div key={i}>
-                        <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                          <ClickableWord word={wf.word} onAnalyze={onAnalyzeWord} />
-                        </p>
-                        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>{wf.relation}</p>
-                      </div>
-                    ))}
-                  </div>
-                </section>
+                {advanced.wordFamily.length > 0 && (
+                  <section style={cardBase}>
+                    <SectionLabel>{l.wordFamily}</SectionLabel>
+                    <div className="space-y-4">
+                      {advanced.wordFamily.map((wf, i) => (
+                        <div key={i}>
+                          <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                            <ClickableWord word={wf.word} onAnalyze={onAnalyzeWord} />
+                          </p>
+                          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>{wf.relation}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
               </div>
             </div>

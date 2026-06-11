@@ -50,9 +50,9 @@ Required JSON structure (fill every field with real content — no placeholder t
       { "word": "<synonym>", "nuance": "<explain what this word means and when to use it, in ONE sentence — focus on the word itself, do NOT compare it to the searched word, do NOT reference the original word at all>" }
     ],
     "antonyms": [
-      { "word": "<antonym>", "context": "<in what context it is an antonym>" },
-      { "word": "<antonym>", "context": "<in what context it is an antonym>" },
-      { "word": "<antonym>", "context": "<in what context it is an antonym>" }
+      { "word": "<antonym — ONLY if attested in standard dictionaries>", "context": "<in what context it is an antonym>" },
+      { "word": "<antonym — ONLY if attested in standard dictionaries>", "context": "<in what context it is an antonym>" },
+      { "word": "<antonym — ONLY if attested in standard dictionaries>", "context": "<in what context it is an antonym>" }
     ],
     "registerLevel": {
       "level": "<one of: formal|technical|colloquial|vulgar>",
@@ -62,19 +62,19 @@ Required JSON structure (fill every field with real content — no placeholder t
       { "error": "<typical mistake>", "correction": "<correct form and why>" }
     ],
     "wordFamily": [
-      { "word": "<derivative>", "relation": "<morphological relation to the main word>" },
-      { "word": "<derivative>", "relation": "<morphological relation to the main word>" },
-      { "word": "<derivative>", "relation": "<morphological relation to the main word>" },
-      { "word": "<derivative>", "relation": "<morphological relation to the main word>" }
+      { "word": "<derivative — ONLY if attested in standard dictionaries>", "relation": "<morphological relation to the main word>" },
+      { "word": "<derivative — ONLY if attested in standard dictionaries>", "relation": "<morphological relation to the main word>" },
+      { "word": "<derivative — ONLY if attested in standard dictionaries>", "relation": "<morphological relation to the main word>" },
+      { "word": "<derivative — ONLY if attested in standard dictionaries>", "relation": "<morphological relation to the main word>" }
     ]
   }
 }
 
 Rules:
-- collocations: exactly 5 items. Each phrase must be a natural expression where the word is used in real context (e.g. "run a marathon", "run out of time", "run a business"). Never generate collocations that are just a noun compounded with the analyzed word (e.g. NOT "marathon run", "business run"). The word must appear as it naturally does in fluent speech or writing.
-- synonyms: exactly 4 items.
-- wordFamily: exactly 4 items.
-- antonyms: exactly 3 items. If the word has no real antonyms, use an empty array [].
+- collocations: exactly 5 items. Each phrase must be a frequent multi-word pattern natives actually use (e.g. "run a marathon", "run out of time", "run a business"). Never generate collocations that are just a noun compounded with the analyzed word. The word must appear as it naturally does in fluent speech or writing. Exclude programming jargon (e.g. "hello world") and standalone punctuated interjections (e.g. "hello?").
+- synonyms: up to 4 items. Include ONLY words attested in standard dictionaries. NEVER derive or invent forms morphologically. If the word has few true synonyms, return fewer items. Two real words are infinitely better than five invented ones.
+- wordFamily: up to 4 items. Include ONLY words attested in standard dictionaries. NEVER derive or invent forms morphologically (e.g. do NOT add -ing/-ed to interjections or invent noun/verb forms that don't exist). If the word has few or no derived forms, return fewer items or an empty array [].
+- antonyms: up to 3 items. Include ONLY words attested in standard dictionaries. If the word has no real antonyms, use an empty array [].
 - commonErrors: 1 or 2 items.
 - cefr: assign the CEFR level (A1/A2/B1/B2/C1/C2) that best represents this word's difficulty for English learners. Return only the level code, nothing else.
 - meanings: if the word is polysemous (multiple distinct meanings across different parts of speech or usage contexts — e.g. "type", "run", "set", "bank", "get"), populate "meanings" as an array of ALL relevant meanings ordered by frequency of use. Each entry: definition, partOfSpeech, and optionally a short example sentence. If the word has one clear primary meaning ("ephemeral", "ocean", "table"), return a single-element array with that meaning only.

@@ -53,9 +53,9 @@ Estructura JSON requerida (rellena cada campo con contenido real — sin texto d
       { "word": "<sinónimo>", "nuance": "<explica qué significa esta palabra y cuándo usarla, en UNA oración — céntrate en la palabra en sí, NO la compares con la palabra buscada, NO hagas ninguna referencia a la palabra original>" }
     ],
     "antonyms": [
-      { "word": "<antónimo>", "context": "<en qué contexto es antónimo>" },
-      { "word": "<antónimo>", "context": "<en qué contexto es antónimo>" },
-      { "word": "<antónimo>", "context": "<en qué contexto es antónimo>" }
+      { "word": "<antónimo — SOLO si está atestiguado en diccionarios estándar>", "context": "<en qué contexto es antónimo>" },
+      { "word": "<antónimo — SOLO si está atestiguado en diccionarios estándar>", "context": "<en qué contexto es antónimo>" },
+      { "word": "<antónimo — SOLO si está atestiguado en diccionarios estándar>", "context": "<en qué contexto es antónimo>" }
     ],
     "registerLevel": {
       "level": "<uno de: formal|technical|colloquial|vulgar>",
@@ -65,19 +65,19 @@ Estructura JSON requerida (rellena cada campo con contenido real — sin texto d
       { "error": "<error típico>", "correction": "<forma correcta y por qué>" }
     ],
     "wordFamily": [
-      { "word": "<derivado>", "relation": "<relación morfológica con la palabra principal>" },
-      { "word": "<derivado>", "relation": "<relación morfológica con la palabra principal>" },
-      { "word": "<derivado>", "relation": "<relación morfológica con la palabra principal>" },
-      { "word": "<derivado>", "relation": "<relación morfológica con la palabra principal>" }
+      { "word": "<derivado — SOLO si está atestiguado en diccionarios estándar>", "relation": "<relación morfológica con la palabra principal>" },
+      { "word": "<derivado — SOLO si está atestiguado en diccionarios estándar>", "relation": "<relación morfológica con la palabra principal>" },
+      { "word": "<derivado — SOLO si está atestiguado en diccionarios estándar>", "relation": "<relación morfológica con la palabra principal>" },
+      { "word": "<derivado — SOLO si está atestiguado en diccionarios estándar>", "relation": "<relación morfológica con la palabra principal>" }
     ]
   }
 }
 
 Reglas:
-- collocations: exactamente 5 elementos. Cada frase debe ser una expresión natural donde la palabra aparece en contexto real (p.ej. "correr un maratón", "correr un riesgo", "correr a casa"). Nunca generes colocaciones que sean simplemente un sustantivo compuesto con la palabra analizada (p.ej. NO "maratón correr"). La palabra debe aparecer tal como se usa de forma natural en el habla o escritura fluida.
-- synonyms: exactamente 4 elementos.
-- wordFamily: exactamente 4 elementos.
-- antonyms: exactamente 3 elementos. Si la palabra no tiene antónimos reales, usa un array vacío [].
+- collocations: exactamente 5 elementos. Cada frase debe ser un patrón frecuente que los nativos realmente usan (p.ej. "correr un maratón", "correr un riesgo", "correr a casa"). Nunca generes colocaciones que sean simplemente un sustantivo compuesto con la palabra analizada. La palabra debe aparecer tal como se usa de forma natural en el habla o escritura fluida. Excluye jerga de programación y exclamaciones puntuadas aisladas.
+- synonyms: hasta 4 elementos. Incluye SOLO palabras atestiguadas en diccionarios estándar. NUNCA derives ni inventes formas morfológicamente. Si la palabra tiene pocos sinónimos reales, devuelve menos elementos. Dos palabras reales son infinitamente mejores que cinco inventadas.
+- wordFamily: hasta 4 elementos. Incluye SOLO palabras atestiguadas en diccionarios estándar. NUNCA derives ni inventes formas morfológicamente (p.ej. NO añadas terminaciones a interjecciones ni inventes formas verbales/nominales inexistentes). Si la palabra tiene pocas formas derivadas o ninguna, devuelve menos elementos o un array vacío [].
+- antonyms: hasta 3 elementos. Incluye SOLO palabras atestiguadas en diccionarios estándar. Si la palabra no tiene antónimos reales, usa un array vacío [].
 - commonErrors: 1 o 2 elementos.
 - cefr: asigna el nivel CEFR (A1/A2/B1/B2/C1/C2) que mejor representa la dificultad de esta palabra para estudiantes de español. Devuelve solo el código del nivel, nada más.
 - meanings: si la palabra es polisémica (tiene varios significados distintos según la parte del discurso o el contexto — ej. "banco", "tipo", "pico", "cura"), rellena "meanings" con TODOS los significados relevantes ordenados por frecuencia de uso. Cada entrada: definition, partOfSpeech y opcionalmente un ejemplo corto. Si la palabra tiene un único significado claro ("efímero", "océano", "mesa"), devuelve un array con un solo elemento.
