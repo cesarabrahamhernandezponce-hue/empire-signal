@@ -6,6 +6,8 @@ export function buildAnalyzePromptES(
 
   return `Analiza la palabra en español que aparece abajo y devuelve un análisis lingüístico como objeto JSON.
 
+IMPORTANTE: TODO el contenido del análisis debe estar redactado íntegramente en español. Ninguna frase ni palabra en inglés, salvo que la palabra analizada sea inglesa.
+
 IMPORTANTE: Si la palabra no existe en español estándar y no es un nombre propio reconocido, devuelve EXACTAMENTE este JSON y nada más:
 { "error": "WORD_NOT_FOUND", "suggestion": null }
 
@@ -75,10 +77,10 @@ Estructura JSON requerida (rellena cada campo con contenido real — sin texto d
 
 Reglas:
 - collocations: exactamente 5 elementos. Cada frase debe ser un patrón frecuente que los nativos realmente usan (p.ej. "correr un maratón", "correr un riesgo", "correr a casa"). Nunca generes colocaciones que sean simplemente un sustantivo compuesto con la palabra analizada. La palabra debe aparecer tal como se usa de forma natural en el habla o escritura fluida. Excluye jerga de programación y exclamaciones puntuadas aisladas.
-- synonyms: hasta 4 elementos. Incluye SOLO palabras atestiguadas en diccionarios estándar. NUNCA derives ni inventes formas morfológicamente. Si la palabra tiene pocos sinónimos reales, devuelve menos elementos. Dos palabras reales son infinitamente mejores que cinco inventadas.
+- synonyms: hasta 4 elementos. Incluye SOLO palabras atestiguadas en diccionarios estándar. NUNCA derives ni inventes formas morfológicamente. Si la palabra tiene pocos sinónimos reales, devuelve menos elementos. Dos palabras reales son infinitamente mejores que cinco inventadas. Un sinónimo debe poder sustituir a la palabra en una oración con significado similar — los conceptos hermanos de la misma categoría (otras frutas para una fruta, otros animales para un animal) NO son sinónimos. Para sustantivos concretos sin verdaderos sinónimos, devuelve variantes regionales o dialectales del mismo referente si existen; de lo contrario, devuelve un array vacío [].
 - wordFamily: hasta 4 elementos. Incluye SOLO palabras atestiguadas en diccionarios estándar. NUNCA derives ni inventes formas morfológicamente (p.ej. NO añadas terminaciones a interjecciones ni inventes formas verbales/nominales inexistentes). Si la palabra tiene pocas formas derivadas o ninguna, devuelve menos elementos o un array vacío [].
 - antonyms: hasta 3 elementos. Incluye SOLO palabras atestiguadas en diccionarios estándar. Si la palabra no tiene antónimos reales, usa un array vacío [].
-- commonErrors: 1 o 2 elementos.
+- commonErrors: 1 o 2 elementos. Los errores deben ser equivocaciones que los estudiantes reales cometen de forma plausible: falsos amigos, confusión de género o número, interferencia de pronunciación, uso incorrecto del registro, ortografía. NUNCA uses la plantilla genérica "usar la palabra como otra categoría gramatical" a menos que esa confusión esté genuinamente documentada para esta palabra específica.
 - cefr: asigna el nivel CEFR (A1/A2/B1/B2/C1/C2) que mejor representa la dificultad de esta palabra para estudiantes de español. Devuelve solo el código del nivel, nada más.
 - meanings: lista los sentidos distintos de la palabra — NO debe repetir meaningInContext. IMPORTANTE: meaningInContext ya cubre el uso principal; no lo copies aquí. Para palabras polisémicas ("banco", "tipo", "cura"), incluye los sentidos secundarios y figurados no cubiertos por meaningInContext, ordenados por frecuencia de uso. Cada entrada: definition, partOfSpeech y opcionalmente un ejemplo corto. Para palabras monosémicas ("efímero", "océano", "mesa"), devuelve un array vacío [] o incluye un único sentido secundario solo si existe uno claramente distinto.
 - pronunciation.phonetic: SOLO la IPA compacta entre barras (p.ej. /eˈlo/), máximo 30 caracteres. NUNCA una oración ni prosa — toda la explicación va en guide.
