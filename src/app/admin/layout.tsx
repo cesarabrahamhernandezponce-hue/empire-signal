@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { isAdmin } from '@/lib/admin';
+import AdminNav from './AdminNav';
 
 async function signOut() {
   'use server';
@@ -8,12 +9,6 @@ async function signOut() {
   if (supabase) await supabase.auth.signOut();
   redirect('/');
 }
-
-const NAV_ITEMS = [
-  { label: 'Users',       href: '/admin/users' },
-  { label: 'Words',       href: '/admin/words' },
-  { label: 'Rate limits', href: '/admin/rate-limits' },
-];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const admin = await isAdmin();
@@ -34,17 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </header>
 
       <div className="flex flex-1">
-        <nav className="w-48 shrink-0 border-r border-line bg-surface px-4 py-6 flex flex-col gap-1">
-          {NAV_ITEMS.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="px-3 py-2 rounded-md text-sm text-ink-muted hover:bg-bg hover:text-ink transition-colors"
-            >
-              {item.label}
-            </a>
-          ))}
-        </nav>
+        <AdminNav />
 
         <main className="flex-1 px-8 py-8">
           {children}
