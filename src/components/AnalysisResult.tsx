@@ -23,6 +23,7 @@ interface Props {
   user?: User | null;
   onSignOut?: () => void;
   hasHistory?: boolean;
+  uiLang?: 'en' | 'es';
 }
 
 const cardBase: React.CSSProperties = {
@@ -168,6 +169,9 @@ const LABELS = {
   en: {
     newSearch:       'New search',
     back:            '← Back',
+    logIn:           'Log in',
+    signUp:          'Sign up',
+    logOut:          'Log out',
     listen:          'Listen',
     stop:            'Stop',
     share:           'Share',
@@ -207,6 +211,9 @@ const LABELS = {
   es: {
     newSearch:       'Nueva búsqueda',
     back:            '← Volver',
+    logIn:           'Iniciar sesión',
+    signUp:          'Registrarse',
+    logOut:          'Cerrar sesión',
     listen:          'Escuchar',
     stop:            'Detener',
     share:           'Compartir',
@@ -386,6 +393,42 @@ function generateCard(word: string, essential: Analysis['essential'], etymology:
   }, 'image/png');
 }
 
+const REGISTER_ES: Record<string, string> = {
+  formal:     'formal',
+  informal:   'informal',
+  technical:  'técnico',
+  everyday:   'cotidiano',
+  colloquial: 'coloquial',
+  neutral:    'neutro',
+  slang:      'argot',
+  literary:   'literario',
+};
+
+const CATEGORY_ES: Record<string, string> = {
+  noun:         'sustantivo',
+  verb:         'verbo',
+  adjective:    'adjetivo',
+  adverb:       'adverbio',
+  preposition:  'preposición',
+  conjunction:  'conjunción',
+  interjection: 'interjección',
+  pronoun:      'pronombre',
+};
+
+const LEVEL_ES: Record<string, string> = {
+  formal:     'formal',
+  technical:  'técnico',
+  colloquial: 'coloquial',
+  vulgar:     'vulgar',
+  informal:   'informal',
+  neutral:    'neutro',
+};
+
+function xlat(value: string, uiLang: 'en' | 'es', map: Record<string, string>): string {
+  if (uiLang !== 'es') return value;
+  return map[value.toLowerCase()] ?? value.toLowerCase();
+}
+
 function pickVoice(lang: string): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
   const prefix = lang.split('-')[0];
@@ -396,7 +439,7 @@ function pickVoice(lang: string): SpeechSynthesisVoice | null {
   );
 }
 
-export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWord, user, onSignOut, hasHistory }: Props) {
+export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWord, user, onSignOut, hasHistory, uiLang = 'en' }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [wordCopied, setWordCopied] = useState(false);
@@ -528,8 +571,8 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
     finally { setAskLoading(false); }
   }
 
-  const lang = record.language.toLowerCase() as 'en' | 'es';
-  const l = LABELS[lang] ?? LABELS.en;
+  const lang = record.language.toLowerCase() as 'en' | 'es';  // speech synthesis + content placeholders
+  const l = LABELS[uiLang] ?? LABELS.en;
   const { essential, advanced } = analysis;
   const heroPhonetic = essential.pronunciation.phonetic.length <= 45
     ? essential.pronunciation.phonetic
@@ -552,13 +595,13 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
           {user === null && (
             <div className="flex items-center gap-3 shrink-0">
               <Link href="/auth/login" className="text-xs text-ink-muted hover:text-ink transition-colors duration-150">
-                Log in
+                {l.logIn}
               </Link>
               <Link
                 href="/auth/signup"
                 className="text-xs px-3 py-1 rounded-[6px] border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150"
               >
-                Sign up
+                {l.signUp}
               </Link>
             </div>
           )}
@@ -570,7 +613,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                 onClick={onSignOut}
                 className="text-xs text-ink-muted hover:text-ink transition-colors duration-150 shrink-0"
               >
-                Log out
+                {l.logOut}
               </button>
             </div>
           )}
@@ -699,7 +742,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             <textarea
               value={sentence}
               onChange={(e) => { setSentence(e.target.value); setValidation({ status: 'idle' }); }}
-              placeholder={lang === 'en' ? `Write a sentence using "${word}"...` : `Escribe una oración usando "${word}"...`}
+              placeholder={uiLang === 'en' ? `Write a sentence using "${word}"...` : `Escribe una oración usando "${word}"...`}
               rows={2}
               maxLength={300}
               className="w-full bg-bg border border-line rounded-lg px-4 py-3 text-sm text-ink placeholder:text-ink-faint outline-none focus:border-accent resize-none transition-colors duration-150"
@@ -778,7 +821,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                 className="text-xs font-medium px-2 py-0.5 rounded-[4px]"
                 style={{ background: 'var(--badge-bg)', color: 'var(--accent)', border: '1px solid var(--badge-border)' }}
               >
-                {essential.wordType.category}
+                {xlat(essential.wordType.category, uiLang, CATEGORY_ES)}
               </span>
             </div>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
@@ -802,7 +845,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             <div className="space-y-4">
               {essential.usageExamples.map((ex, i) => (
                 <div key={i} className="flex items-start gap-3">
-                  <RegisterBadge label={ex.register} />
+                  <RegisterBadge label={xlat(ex.register, uiLang, REGISTER_ES)} />
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>{ex.example}</p>
                 </div>
               ))}
@@ -900,7 +943,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                       className="text-xs font-medium px-2 py-0.5 rounded-[4px]"
                       style={{ background: '#F0F0EE', color: '#1A1A1A', border: '1px solid #EAEAE6' }}
                     >
-                      {advanced.registerLevel.level}
+                      {xlat(advanced.registerLevel.level, uiLang, LEVEL_ES)}
                     </span>
                   </div>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
@@ -967,7 +1010,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAsk(); } }}
-                placeholder={lang === 'en' ? `Ask anything about "${word}"...` : `Pregunta lo que quieras sobre "${word}"...`}
+                placeholder={uiLang === 'en' ? `Ask anything about "${word}"...` : `Pregunta lo que quieras sobre "${word}"...`}
                 maxLength={500}
                 className="flex-1 min-w-0 bg-bg border border-line rounded-lg px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint outline-none focus:border-accent transition-colors duration-150"
               />

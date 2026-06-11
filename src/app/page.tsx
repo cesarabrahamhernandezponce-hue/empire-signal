@@ -37,46 +37,70 @@ const CURIOSITIES: Record<'en' | 'es', string[]> = {
 
 const UI = {
   en: {
-    insightLabel:    'Empire Insight',
-    tagline:         'Linguistic intelligence',
-    placeholder:     'Type a word...',
-    contextHint:     "e.g. I'm reading a 19th-century medical text...",
-    addContext:      '+ Add context (optional)',
-    hideContext:     '− Hide context',
-    translate:       'Translate',
-    translating:     'Translating',
-    analyze:         'Analyze',
-    analyzing:       'Analyzing...',
-    errorTitle:      'Something went wrong',
-    tryAgain:        '← Try again',
-    langLabel:       'Language',
-    themeLabel:      'Theme',
-    light:           'Light',
-    dark:            'Dark',
-    howToUse:        'How to use Empire Signal',
-    howToUseTitle:   'What you can do',
-    close:           'Close',
+    insightLabel:        'Empire Insight',
+    tagline:             'Linguistic intelligence',
+    placeholder:         'Type a word...',
+    contextHint:         "e.g. I'm reading a 19th-century medical text...",
+    addContext:          '+ Add context (optional)',
+    hideContext:         '− Hide context',
+    translate:           'Translate',
+    translating:         'Translating',
+    analyze:             'Analyze',
+    analyzing:           'Analyzing...',
+    errorTitle:          'Something went wrong',
+    tryAgain:            '← Try again',
+    langLabel:           'Language',
+    themeLabel:          'Theme',
+    light:               'Light',
+    dark:                'Dark',
+    howToUse:            'How to use Empire Signal',
+    howToUseTitle:       'What you can do',
+    close:               'Close',
+    recent:              'Recent',
+    logIn:               'Log in',
+    signUp:              'Sign up',
+    logOut:              'Log out',
+    rateLimitTitle:      "You've reached today's limit",
+    rateLimitSub:        'Come back tomorrow, or leave your email to be notified when accounts launch.',
+    waitlistPlaceholder: 'you@example.com',
+    alreadyOnList:       'Already on the list.',
+    notifyBtn:           'Notify me when accounts launch',
+    sending:             'Sending...',
+    onTheList:           "You're on the list.",
+    didYouMean:          'Did you mean',
   },
   es: {
-    insightLabel:    'Perspectiva Empire',
-    tagline:         'Inteligencia lingüística',
-    placeholder:     'Escribe una palabra...',
-    contextHint:     'ej. Estoy leyendo un texto médico del siglo XIX...',
-    addContext:      '+ Agregar contexto (opcional)',
-    hideContext:     '− Ocultar contexto',
-    translate:       'Traducir',
-    translating:     'Traduciendo',
-    analyze:         'Analizar',
-    analyzing:       'Analizando...',
-    errorTitle:      'Algo salió mal',
-    tryAgain:        '← Intentar de nuevo',
-    langLabel:       'Idioma',
-    themeLabel:      'Tema',
-    light:           'Claro',
-    dark:            'Oscuro',
-    howToUse:        'Cómo usar Empire Signal',
-    howToUseTitle:   'Qué puedes hacer',
-    close:           'Cerrar',
+    insightLabel:        'Perspectiva Empire',
+    tagline:             'Inteligencia lingüística',
+    placeholder:         'Escribe una palabra...',
+    contextHint:         'ej. Estoy leyendo un texto médico del siglo XIX...',
+    addContext:          '+ Agregar contexto (opcional)',
+    hideContext:         '− Ocultar contexto',
+    translate:           'Traducir',
+    translating:         'Traduciendo',
+    analyze:             'Analizar',
+    analyzing:           'Analizando...',
+    errorTitle:          'Algo salió mal',
+    tryAgain:            '← Intentar de nuevo',
+    langLabel:           'Idioma',
+    themeLabel:          'Tema',
+    light:               'Claro',
+    dark:                'Oscuro',
+    howToUse:            'Cómo usar Empire Signal',
+    howToUseTitle:       'Qué puedes hacer',
+    close:               'Cerrar',
+    recent:              'Recientes',
+    logIn:               'Iniciar sesión',
+    signUp:              'Registrarse',
+    logOut:              'Cerrar sesión',
+    rateLimitTitle:      'Alcanzaste el límite de hoy',
+    rateLimitSub:        'Vuelve mañana, o deja tu email para que te avisemos cuando las cuentas estén disponibles.',
+    waitlistPlaceholder: 'tu@correo.com',
+    alreadyOnList:       'Ya estás en la lista.',
+    notifyBtn:           'Avisarme cuando lancen las cuentas',
+    sending:             'Enviando...',
+    onTheList:           '¡Ya estás en la lista!',
+    didYouMean:          '¿Quisiste decir',
   },
 } as const;
 
@@ -137,24 +161,44 @@ function IconGear() {
   );
 }
 
-const FEATURES = [
-  {
-    title: 'Deep word analysis',
-    body: 'Type any word — like "ephemeral" — and get etymology, CEFR level, collocations, mnemonic, usage examples, and more.',
-  },
-  {
-    title: 'Personal context',
-    body: 'Add the sentence where you found the word and receive a note specific to that exact usage.',
-  },
-  {
-    title: 'Sentence validator',
-    body: 'Write your own sentence using the word, get a score from 0 to 100, and a corrected version if needed.',
-  },
-  {
-    title: 'Follow-up questions',
-    body: 'After the analysis, ask anything about the word directly from the results page.',
-  },
-];
+const FEATURES: Record<'en' | 'es', { title: string; body: string }[]> = {
+  en: [
+    {
+      title: 'Deep word analysis',
+      body: 'Type any word — like "ephemeral" — and get etymology, CEFR level, collocations, usage examples, and more.',
+    },
+    {
+      title: 'Personal context',
+      body: 'Add the sentence where you found the word and receive a note specific to that exact usage.',
+    },
+    {
+      title: 'Sentence validator',
+      body: 'Write your own sentence using the word, get a score from 0 to 100, and a corrected version if needed.',
+    },
+    {
+      title: 'Follow-up questions',
+      body: 'After the analysis, ask anything about the word directly from the results page.',
+    },
+  ],
+  es: [
+    {
+      title: 'Análisis profundo de palabras',
+      body: 'Escribe cualquier palabra —como "efímero"— y obtén etimología, nivel CEFR, colocaciones, ejemplos de uso y más.',
+    },
+    {
+      title: 'Contexto personal',
+      body: 'Añade la oración donde encontraste la palabra y recibe una nota específica para ese uso exacto.',
+    },
+    {
+      title: 'Validador de oraciones',
+      body: 'Escribe tu propia oración con la palabra, obtén una puntuación del 0 al 100 y una versión corregida si la necesitas.',
+    },
+    {
+      title: 'Preguntas de seguimiento',
+      body: 'Después del análisis, pregunta lo que quieras sobre la palabra directamente desde los resultados.',
+    },
+  ],
+};
 
 function IconClose() {
   return (
@@ -164,7 +208,7 @@ function IconClose() {
   );
 }
 
-function HelpModal({ title, onClose }: { title: string; onClose: () => void }) {
+function HelpModal({ title, language, onClose }: { title: string; language: 'en' | 'es'; onClose: () => void }) {
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
@@ -196,7 +240,7 @@ function HelpModal({ title, onClose }: { title: string; onClose: () => void }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {FEATURES.map((f, i) => (
+          {FEATURES[language].map((f, i) => (
             <div key={i} style={{ display: 'flex', gap: '14px' }}>
               <span
                 style={{ flexShrink: 0, width: '20px', height: '20px', borderRadius: '50%', background: '#EEF0FF', color: '#3A3D8F', fontSize: '0.6rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1px' }}
@@ -225,7 +269,12 @@ export default function Home() {
   const [word, setWord]                         = useState('');
   const [context, setContext]                   = useState('');
   const [showContext, setShowContext]           = useState(false);
-  const [language, setLanguage]                 = useState<Language>('en');
+  const [language, setLanguage]                 = useState<Language>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('language') as Language) ?? 'en';
+    }
+    return 'en';
+  });
   const [theme, setTheme]                       = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('theme') as 'light' | 'dark') ?? 'light';
@@ -267,6 +316,10 @@ export default function Home() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('language', language);
+  }, [language]);
 
   useEffect(() => {
     if (!settingsOpen) return;
@@ -427,13 +480,13 @@ export default function Home() {
       {user === null ? (
         <div className="flex items-center gap-3">
           <Link href="/auth/login" className="text-xs text-ink-muted hover:text-ink transition-colors duration-150">
-            Log in
+            {t.logIn}
           </Link>
           <Link
             href="/auth/signup"
             className="text-xs px-3 py-1 rounded-[6px] border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150"
           >
-            Sign up
+            {t.signUp}
           </Link>
         </div>
       ) : (
@@ -443,7 +496,7 @@ export default function Home() {
             onClick={handleSignOut}
             className="text-xs text-ink-muted hover:text-ink transition-colors duration-150"
           >
-            Log out
+            {t.logOut}
           </button>
         </div>
       )}
@@ -572,6 +625,7 @@ export default function Home() {
           user={user}
           onSignOut={handleSignOut}
           hasHistory={history.length > 0}
+          uiLang={language}
         />
       </>
     );
@@ -587,24 +641,24 @@ export default function Home() {
           <div className="max-w-sm w-full">
             {pageState.rateLimited ? (
               <div className="text-center">
-                <p className="text-sm font-medium text-ink mb-1">{"You've reached today's limit"}</p>
+                <p className="text-sm font-medium text-ink mb-1">{t.rateLimitTitle}</p>
                 <p className="text-xs text-ink-muted mb-6 leading-relaxed">
-                  Come back tomorrow, or leave your email to be notified when accounts launch.
+                  {t.rateLimitSub}
                 </p>
                 {waitlistStatus === 'success' ? (
-                  <p className="text-sm text-ink-muted">{"You're on the list."}</p>
+                  <p className="text-sm text-ink-muted">{t.onTheList}</p>
                 ) : (
                   <form onSubmit={(e) => { e.preventDefault(); handleWaitlist(); }} className="flex flex-col gap-2">
                     <input
                       type="email"
                       value={waitlistEmail}
                       onChange={(e) => setWaitlistEmail(e.target.value)}
-                      placeholder="you@example.com"
+                      placeholder={t.waitlistPlaceholder}
                       required
                       className="w-full bg-bg border border-line rounded-lg px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint outline-none focus:border-accent transition-colors duration-150"
                     />
                     {waitlistStatus === 'duplicate' && (
-                      <p className="text-xs text-ink-muted text-left">Already on the list.</p>
+                      <p className="text-xs text-ink-muted text-left">{t.alreadyOnList}</p>
                     )}
                     <button
                       type="submit"
@@ -614,9 +668,9 @@ export default function Home() {
                       {waitlistStatus === 'loading' ? (
                         <span className="flex items-center justify-center gap-1.5">
                           <span className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin" />
-                          Sending...
+                          {t.sending}
                         </span>
-                      ) : 'Notify me when accounts launch'}
+                      ) : t.notifyBtn}
                     </button>
                   </form>
                 )}
@@ -683,7 +737,7 @@ export default function Home() {
         {sessionHistory.length > 0 && word.length === 0 && (
           <div className="w-full max-w-[600px] mb-4">
             <p className="text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-ink-faint mb-2">
-              Recent
+              {t.recent}
             </p>
             <div className="flex gap-1.5 flex-wrap">
               {sessionHistory.map((w) => (
@@ -703,7 +757,7 @@ export default function Home() {
           </div>
         )}
 
-        {showHelp && <HelpModal title={t.howToUseTitle} onClose={() => setShowHelp(false)} />}
+        {showHelp && <HelpModal title={t.howToUseTitle} language={language} onClose={() => setShowHelp(false)} />}
 
         {/* Search card */}
         <div className="w-full max-w-[600px] bg-surface border border-line rounded-[12px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden">
@@ -754,7 +808,7 @@ export default function Home() {
                       display: 'block',
                     }}
                   >
-                    Did you mean &ldquo;{spellingSuggestion}&rdquo;?
+                    {t.didYouMean} &ldquo;{spellingSuggestion}&rdquo;?
                   </button>
                 )}
               </div>

@@ -4,12 +4,51 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
+const LANG = {
+  en: {
+    heading:         'Create an account',
+    emailLabel:      'Email',
+    passwordLabel:   'Password',
+    passwordHint:    'Min. 8 characters',
+    creating:        'Creating account...',
+    submit:          'Create account',
+    haveAccount:     'Already have an account?',
+    signIn:          'Sign in',
+    checkEmail:      'Check your email',
+    confirmSent:     'We sent a confirmation link to',
+    confirmAction:   'Click it to activate your account.',
+    backToSignIn:    'Back to sign in',
+  },
+  es: {
+    heading:         'Crear una cuenta',
+    emailLabel:      'Email',
+    passwordLabel:   'Contraseña',
+    passwordHint:    'Mín. 8 caracteres',
+    creating:        'Creando cuenta...',
+    submit:          'Crear cuenta',
+    haveAccount:     '¿Ya tienes cuenta?',
+    signIn:          'Iniciar sesión',
+    checkEmail:      'Revisa tu email',
+    confirmSent:     'Enviamos un enlace de confirmación a',
+    confirmAction:   'Haz clic en él para activar tu cuenta.',
+    backToSignIn:    'Volver al inicio de sesión',
+  },
+} as const;
+
 export default function SignupPage() {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [error, setError]       = useState<string | null>(null);
   const [loading, setLoading]   = useState(false);
   const [done, setDone]         = useState(false);
+
+  const uiLang = ((): 'en' | 'es' => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('language') as 'en' | 'es') ?? 'en';
+    }
+    return 'en';
+  })();
+  const l = LANG[uiLang];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,26 +96,26 @@ export default function SignupPage() {
         <div className="bg-surface border border-line rounded-[12px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] px-7 py-8">
           {done ? (
             <div className="text-center py-4">
-              <p className="text-sm font-medium text-ink mb-2">Check your email</p>
+              <p className="text-sm font-medium text-ink mb-2">{l.checkEmail}</p>
               <p className="text-xs text-ink-muted leading-relaxed">
-                We sent a confirmation link to <span className="text-ink">{email}</span>.
-                Click it to activate your account.
+                {l.confirmSent} <span className="text-ink">{email}</span>.{' '}
+                {l.confirmAction}
               </p>
               <Link
                 href="/auth/login"
                 className="mt-6 inline-block text-xs text-accent hover:text-accent-hover transition-colors duration-150"
               >
-                Back to sign in
+                {l.backToSignIn}
               </Link>
             </div>
           ) : (
             <>
-              <h2 className="text-base font-semibold text-ink mb-6">Create an account</h2>
+              <h2 className="text-base font-semibold text-ink mb-6">{l.heading}</h2>
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div>
                   <label className="block text-xs font-medium text-ink-muted mb-1.5" htmlFor="email">
-                    Email
+                    {l.emailLabel}
                   </label>
                   <input
                     id="email"
@@ -92,14 +131,14 @@ export default function SignupPage() {
 
                 <div>
                   <label className="block text-xs font-medium text-ink-muted mb-1.5" htmlFor="password">
-                    Password
+                    {l.passwordLabel}
                   </label>
                   <input
                     id="password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Min. 8 characters"
+                    placeholder={l.passwordHint}
                     required
                     minLength={8}
                     autoComplete="new-password"
@@ -114,21 +153,21 @@ export default function SignupPage() {
                 <button
                   type="submit"
                   disabled={loading || !email || password.length < 8}
-                  className="w-full py-2.5 rounded-lg text-sm font-medium text-white bg-accent hover:bg-accent-hover transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 bg-accent text-white enabled:hover:bg-accent-hover disabled:bg-[var(--surface-muted)] disabled:text-ink-faint disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-1.5">
                       <span className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin" />
-                      Creating account...
+                      {l.creating}
                     </span>
-                  ) : 'Create account'}
+                  ) : l.submit}
                 </button>
               </form>
 
               <p className="mt-5 text-center text-xs text-ink-faint">
-                Already have an account?{' '}
+                {l.haveAccount}{' '}
                 <Link href="/auth/login" className="text-accent hover:text-accent-hover transition-colors duration-150">
-                  Sign in
+                  {l.signIn}
                 </Link>
               </p>
             </>
