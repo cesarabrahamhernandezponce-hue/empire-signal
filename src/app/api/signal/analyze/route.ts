@@ -6,10 +6,8 @@ import { analyzeWord, type AnalyzeRecord } from '@/lib/services/signal';
 import type { Analysis } from '@/lib/ai/schemas/analysis';
 import { generateContent } from '@/lib/ai/client';
 import { prisma } from '@/lib/db/prisma';
-import { getClientIp, hashIp, checkInMemoryLimit } from '@/lib/rate-limit';
+import { getClientIp, hashIp, checkAnonymousLimit, checkUserLimit } from '@/lib/rate-limit';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
-
-const DAILY_LIMIT = 10;
 
 const LANGUAGE_DB: Record<string, DbLanguage> = {
   es: DbLanguage.ES,
@@ -85,12 +83,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // Kick off auth check in parallel with the expensive work below.
-    // By the time analyzeWord completes, this Promise has long resolved.
-    const authCheckPromise = createSupabaseClient()
-      .then((sb) => sb?.auth.getUser() ?? Promise.resolve(null))
-      .catch(() => null);
-
     // Owner bypass: unlimited access for the owner via secret header
     const ownerKey = request.headers.get('x-owner-key');
     const bypassKey = process.env.OWNER_BYPASS_KEY;
@@ -103,61 +95,63 @@ export async function POST(request: Request) {
     // so the cache lookup key matches the stored key exactly.
     const normalizedContext = context?.trim() || null;
 
-    // Always check the cache first — this benefits everyone including the owner.
-    // prefetched=undefined signals analyzeWord to do its own lookup (fallback).
-    let prefetched: AnalyzeRecord | null | undefined = undefined;
-    try {
-      const cacheHit = await prisma.searchRecord.findFirst({
-        where: { word, language: dbLanguage },
-      });
-      // Set explicitly: null = cache miss confirmed, non-null = hit.
-      prefetched = cacheHit ? {
-        id:       cacheHit.id,
-        word:     cacheHit.word,
-        context:  cacheHit.context,
-        language: cacheHit.language,
-        analysis: cacheHit.analysisJson as unknown as Analysis,
-        shareId:  cacheHit.shareId,
+    // Run auth check and cache lookup in parallel — auth resolves while the DB
+    // round-trip happens, so it adds no extra latency on the critical path.
+    const [authData, cacheResult] = await Promise.all([
+      createSupabaseClient()
+        .then(sb => sb?.auth.getUser() ?? null)
+        .catch(() => null),
+      prisma.searchRecord.findFirst({ where: { word, language: dbLanguage } })
+        .then(r => ({ ok: true as const, value: r }))
+        .catch((err) => {
+          console.error('[POST /api/signal/analyze] Cache lookup failed:', err);
+          return { ok: false as const };
+        }),
+    ]);
+
+    const userId: string | null = authData?.data?.user?.id ?? null;
+
+    // ok=false (DB error) → prefetched=undefined signals analyzeWord to retry the lookup.
+    // ok=true, value=null → confirmed cache miss.
+    // ok=true, value=record → cache hit.
+    let prefetched: AnalyzeRecord | null | undefined;
+    if (cacheResult.ok) {
+      const r = cacheResult.value;
+      prefetched = r ? {
+        id:       r.id,
+        word:     r.word,
+        context:  r.context,
+        language: r.language,
+        analysis: r.analysisJson as unknown as Analysis,
+        shareId:  r.shareId,
       } : null;
-    } catch (err) {
-      // DB error during cache lookup — leave prefetched=undefined so analyzeWord
-      // retries the lookup itself rather than skipping it entirely.
-      console.error('[POST /api/signal/analyze] Cache lookup failed:', err);
+    } else {
+      prefetched = undefined;
     }
 
-    if (!isOwner && !prefetched) { // !undefined and !null are both true → rate-limit on uncertainty
-      // In-memory check: atomic within this process, eliminates same-process race conditions.
-      if (!checkInMemoryLimit(`analyze:${ipHash}`, DAILY_LIMIT)) {
-        return NextResponse.json(
-          { error: 'Daily limit reached. Come back tomorrow.', rateLimited: true },
-          { status: 429 },
-        );
-      }
-      // DB check: authoritative across processes/instances.
-      // Wrapped in try/catch — if the DB is unreachable, skip and rely on the
-      // in-memory check above rather than returning a 500 to the user.
-      try {
-        const todayUtc = new Date();
-        todayUtc.setUTCHours(0, 0, 0, 0);
-        const usageCount = await prisma.searchEvent.count({
-          where: {
-            ipHash,
-            cacheHit: false,
-            createdAt: { gte: todayUtc },
-          },
-        });
-        if (usageCount >= DAILY_LIMIT) {
+    // Cache hits are never rate-limited (same as today). Only AI calls count.
+    // !undefined and !null are both truthy → rate-limit on cache miss AND on DB uncertainty.
+    if (!isOwner && !prefetched) {
+      if (userId) {
+        const limitResult = await checkUserLimit(userId);
+        if (!limitResult.allowed) {
           return NextResponse.json(
-            { error: 'Daily limit reached. Come back tomorrow.', rateLimited: true },
+            { error: 'limit_reached', tier: 'registered', limit: limitResult.limit, resetAt: 'monthly' },
             { status: 429 },
           );
         }
-      } catch (err) {
-        console.error('[POST /api/signal/analyze] Rate-limit DB check failed:', err);
+      } else {
+        const limitResult = await checkAnonymousLimit(ipHash);
+        if (!limitResult.allowed) {
+          return NextResponse.json(
+            { error: 'limit_reached', tier: 'anonymous', limit: limitResult.limit, resetAt: 'daily' },
+            { status: 429 },
+          );
+        }
       }
     }
 
-    const result = await analyzeWord({ word, context: normalizedContext, language, userId: null, ipHash, prefetched });
+    const result = await analyzeWord({ word, context: normalizedContext, language, userId, ipHash, prefetched });
 
     if (!result.ok) {
       if (result.error === 'WORD_NOT_FOUND') {
@@ -168,25 +162,23 @@ export async function POST(request: Request) {
 
     // Fire-and-forget: write user search history for authenticated users.
     // Never blocks or fails the response.
-    if (result.record.id) {
-      void authCheckPromise.then(async (authData) => {
-        const user = authData?.data?.user;
-        if (!user) return;
+    if (result.record.id && userId) {
+      void (async () => {
         try {
           await prisma.user.upsert({
-            where:  { id: user.id },
-            create: { id: user.id, email: user.email ?? '' },
+            where:  { id: userId },
+            create: { id: userId, email: authData?.data?.user?.email ?? '' },
             update: {},
           });
           await prisma.userSearchHistory.upsert({
-            where:  { userId_searchRecordId: { userId: user.id, searchRecordId: result.record.id } },
-            create: { userId: user.id, searchRecordId: result.record.id },
+            where:  { userId_searchRecordId: { userId, searchRecordId: result.record.id } },
+            create: { userId, searchRecordId: result.record.id },
             update: { viewedAt: new Date() },
           });
         } catch (err) {
           console.error('[POST /api/signal/analyze] History write failed:', err);
         }
-      });
+      })();
     }
 
     return NextResponse.json({ record: result.record, cacheHit: result.cacheHit }, { status: 200 });
