@@ -737,15 +737,102 @@ export default function Home() {
   // ── Idle ─────────────────────────────────────────────────────────────────
   return (
     <>
-      {authBar}
-      {settingsButton}
       {showHelp && <HelpModal title={t.howToUseTitle} language={language} onClose={() => setShowHelp(false)} />}
 
-      <main className="min-h-screen bg-bg flex flex-col items-center px-4 pt-14 pb-16 sm:pt-20">
+      <main className="min-h-screen bg-bg flex flex-col items-center px-4 pt-4 pb-16">
         <div className="w-full max-w-[600px]">
 
+          {/* Top bar — static, scrolls with content (no fixed-over-text overlap) */}
+          <div className="flex items-center justify-between py-2 mb-4 sm:mb-8">
+            <div className="flex items-center gap-3">
+              {user === null && (
+                <>
+                  <Link href="/auth/login" className="text-xs text-ink-muted hover:text-ink transition-colors duration-150">
+                    {t.logIn}
+                  </Link>
+                  <Link
+                    href="/auth/signup"
+                    className="text-xs px-3 py-1 rounded-[6px] border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150"
+                  >
+                    {t.signUp}
+                  </Link>
+                </>
+              )}
+              {user != null && (
+                <>
+                  <span className="text-xs text-ink-faint hidden sm:inline">{user.email}</span>
+                  <button
+                    onClick={handleSignOut}
+                    className="text-xs text-ink-muted hover:text-ink transition-colors duration-150"
+                  >
+                    {t.logOut}
+                  </button>
+                </>
+              )}
+            </div>
+            <div ref={settingsRef} className="relative">
+              <button
+                onClick={() => setSettingsOpen((v) => !v)}
+                className="p-1.5 text-ink-faint hover:text-ink transition-colors duration-150"
+                aria-label="Settings"
+              >
+                <IconGear />
+              </button>
+              {settingsOpen && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 6px)',
+                    right: 0,
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                    padding: '16px',
+                    minWidth: '192px',
+                    zIndex: 50,
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <p
+                      className="text-[0.7rem] font-semibold uppercase"
+                      style={{ color: '#3A3D8F', letterSpacing: '0.05em' }}
+                    >
+                      {t.themeLabel}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-ink-muted">
+                        {theme === 'light' ? t.light : t.dark}
+                      </span>
+                      <button
+                        onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
+                        className="relative flex-shrink-0 flex items-center rounded-full border border-line transition-colors duration-200"
+                        style={{
+                          width: '36px',
+                          height: '20px',
+                          background: theme === 'dark' ? '#3A3D8F' : '#F0F0EE',
+                          borderColor: theme === 'dark' ? '#3A3D8F' : '#EAEAE6',
+                        }}
+                        aria-label="Toggle theme"
+                      >
+                        <span
+                          className="absolute rounded-full bg-white shadow-sm transition-transform duration-200"
+                          style={{
+                            width: '14px',
+                            height: '14px',
+                            transform: theme === 'dark' ? 'translateX(19px)' : 'translateX(3px)',
+                          }}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* 1. Wordmark */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-2 sm:mb-5">
             <span
               className="text-[2.75rem] tracking-tight text-ink leading-none"
               style={{ fontFamily: 'var(--font-dm-serif)', fontStyle: 'italic' }}
@@ -756,14 +843,14 @@ export default function Home() {
 
           {/* 2. Headline */}
           <h1
-            className="text-[1.875rem] sm:text-[2.5rem] tracking-tight text-ink leading-[1.15] text-center mb-4"
+            className="text-[clamp(1.25rem,5.2vw,2.5rem)] tracking-tight text-ink leading-[1.15] text-center mb-3"
             style={{ fontFamily: 'var(--font-dm-serif)' }}
           >
             You know the word. But do you know how to use it?
           </h1>
 
           {/* 3. Subheadline */}
-          <p className="text-sm text-ink-muted leading-relaxed text-center mb-8 max-w-[480px] mx-auto">
+          <p className="text-sm text-ink-muted leading-relaxed text-center mb-5 sm:mb-8 max-w-[480px] mx-auto">
             Empire Signal shows you the register, the collocations, and the context that turn vocabulary you recognize into vocabulary you can actually use.
           </p>
 
