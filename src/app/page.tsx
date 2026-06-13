@@ -40,6 +40,7 @@ const UI = {
     insightLabel:        'Empire Insight',
     tagline:             'Linguistic intelligence',
     placeholder:         "Try a word — like 'ephemeral'…",
+    placeholderShort:    'Try a word…',
     contextHint:         "e.g. I'm reading a 19th-century medical text...",
     addContext:          '+ Add context (optional)',
     hideContext:         '− Hide context',
@@ -74,6 +75,7 @@ const UI = {
     insightLabel:        'Perspectiva Empire',
     tagline:             'Inteligencia lingüística',
     placeholder:         "Prueba una palabra — como 'efímero'…",
+    placeholderShort:    'Prueba una palabra…',
     contextHint:         'ej. Estoy leyendo un texto médico del siglo XIX...',
     addContext:          '+ Agregar contexto (opcional)',
     hideContext:         '− Ocultar contexto',
@@ -162,6 +164,23 @@ function IconGear() {
     </svg>
   );
 }
+
+function IconHelp() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <circle cx="8" cy="8" r="6.4" stroke="currentColor" strokeWidth="1.2" />
+      <path
+        d="M6.3 6.1c0-1 .8-1.6 1.7-1.6.9 0 1.6.6 1.6 1.5 0 .8-.5 1.1-1.1 1.5-.5.3-.7.6-.7 1.2"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+      <circle cx="8" cy="11.2" r="0.7" fill="currentColor" />
+    </svg>
+  );
+}
+
+const BRAND_GRADIENT = 'linear-gradient(90deg, #3A3D8F 0%, #5B5FCF 100%)';
 
 const FEATURES: Record<'en' | 'es', { title: string; body: string }[]> = {
   en: [
@@ -335,7 +354,16 @@ export default function Home() {
   const [translateExpanded, setTranslateExpanded] = useState(false);
   const [targetLang, setTargetLang]               = useState<TranslateLang | null>(null);
   const [translationState, setTranslationState]   = useState<TranslationState>({ status: 'idle' });
+  const [isDesktop, setIsDesktop]                 = useState(false);
   const settingsRef                             = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 640px)');
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -770,7 +798,16 @@ export default function Home() {
                 </>
               )}
             </div>
-            <div ref={settingsRef} className="relative">
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setShowHelp(true)}
+                className="p-1.5 text-ink-faint hover:text-accent transition-colors duration-150"
+                aria-label={t.howToUse}
+                title={t.howToUse}
+              >
+                <IconHelp />
+              </button>
+              <div ref={settingsRef} className="relative">
               <button
                 onClick={() => setSettingsOpen((v) => !v)}
                 className="p-1.5 text-ink-faint hover:text-ink transition-colors duration-150"
@@ -828,14 +865,23 @@ export default function Home() {
                   </div>
                 </div>
               )}
+              </div>
             </div>
           </div>
 
           {/* 1. Wordmark */}
-          <div className="text-center mb-2 sm:mb-5">
+          <div className="text-center mb-5 sm:mb-6">
             <span
-              className="text-[2.75rem] tracking-tight text-ink leading-none"
-              style={{ fontFamily: 'var(--font-dm-serif)', fontStyle: 'italic' }}
+              className="text-[2.25rem] sm:text-[2.75rem] tracking-tight leading-none"
+              style={{
+                fontFamily: 'var(--font-dm-serif)',
+                fontStyle: 'italic',
+                backgroundImage: BRAND_GRADIENT,
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                color: 'transparent',
+              }}
             >
               Empire
             </span>
@@ -843,14 +889,14 @@ export default function Home() {
 
           {/* 2. Headline */}
           <h1
-            className="text-[clamp(1.25rem,5.2vw,2.5rem)] tracking-tight text-ink leading-[1.15] text-center mb-3"
+            className="text-[1.2rem] sm:text-[clamp(1.5rem,3vw,2.5rem)] tracking-tight text-ink leading-[1.2] sm:leading-[1.15] text-center mb-2.5 sm:mb-3"
             style={{ fontFamily: 'var(--font-dm-serif)' }}
           >
             You know the word. But do you know how to use it?
           </h1>
 
           {/* 3. Subheadline */}
-          <p className="text-sm text-ink-muted leading-relaxed text-center mb-5 sm:mb-8 max-w-[480px] mx-auto">
+          <p className="text-xs sm:text-sm text-ink-faint sm:text-ink-muted leading-relaxed text-center mb-4 sm:mb-8 max-w-[420px] sm:max-w-[480px] mx-auto">
             Empire Signal shows you the register, the collocations, and the context that turn vocabulary you recognize into vocabulary you can actually use.
           </p>
 
@@ -858,7 +904,7 @@ export default function Home() {
           <div className="w-full bg-surface border border-line rounded-[12px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden">
 
             {/* Language toggle */}
-            <div className="flex items-center justify-between px-7 pt-5">
+            <div className="flex items-center justify-between px-5 sm:px-7 pt-4 sm:pt-5">
               <span className="text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-ink-faint select-none">
                 Language
               </span>
@@ -880,13 +926,13 @@ export default function Home() {
             </div>
 
             {/* Input — protagonist */}
-            <div className="px-7 pt-4 pb-6">
+            <div className="px-5 sm:px-7 pt-4 pb-5 sm:pb-6">
               <input
                 type="text"
                 value={word}
                 onChange={handleWordChange}
                 onKeyDown={(e) => e.key === 'Enter' && canAnalyze && handleAnalyze()}
-                placeholder={t.placeholder}
+                placeholder={isDesktop ? t.placeholder : t.placeholderShort}
                 autoComplete="off"
                 spellCheck={false}
                 maxLength={40}
@@ -934,7 +980,7 @@ export default function Home() {
 
             {/* Inline translator */}
             {canAnalyze && !spellingError && (
-              <div className="px-7 pb-5 border-t border-line pt-4">
+              <div className="px-5 sm:px-7 pb-5 border-t border-line pt-4">
                 <div className="flex items-center gap-2">
                   {translateExpanded && (
                     <div className="flex gap-1.5 flex-wrap flex-1">
@@ -1011,7 +1057,7 @@ export default function Home() {
             <div className="h-px bg-line" />
 
             {/* Options */}
-            <div className="px-7 py-6 space-y-5">
+            <div className="px-5 sm:px-7 py-5 sm:py-6 space-y-4 sm:space-y-5">
 
               {/* Context toggle */}
               <div>
@@ -1042,11 +1088,8 @@ export default function Home() {
               <button
                 onClick={handleAnalyze}
                 disabled={!canAnalyze}
-                className={`w-full py-3 rounded-lg text-sm font-medium transition-colors duration-150 ${
-                  canAnalyze
-                    ? 'bg-accent hover:bg-accent-hover text-white cursor-pointer'
-                    : 'bg-[var(--surface-muted)] text-ink-faint cursor-not-allowed'
-                }`}
+                style={{ backgroundImage: BRAND_GRADIENT }}
+                className="w-full py-3.5 rounded-lg text-sm font-semibold tracking-wide text-white shadow-md transition-all duration-150 enabled:cursor-pointer enabled:hover:shadow-lg enabled:hover:brightness-110 enabled:active:scale-[0.99] enabled:active:shadow disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed"
               >
                 {t.analyze}
               </button>
@@ -1077,9 +1120,19 @@ export default function Home() {
             </div>
           )}
 
-          {/* Curiosidades — debajo de la búsqueda, secundarias */}
+          {/* Differentiators — the core pitch, right under the search card */}
+          <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2">
+            {(['Etymology & origin', 'Register & collocations', 'Common errors'] as const).map((f) => (
+              <span key={f} className="flex items-center gap-1.5 text-[0.72rem] text-ink-muted">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                {f}
+              </span>
+            ))}
+          </div>
+
+          {/* Empire Insight — branded content module */}
           <div
-            className={`mt-6 transition-opacity duration-500 ${
+            className={`mt-6 rounded-[12px] border border-line border-l-2 border-l-accent bg-[var(--surface-muted)] px-4 py-3.5 transition-opacity duration-500 ${
               curiosityVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
           >
@@ -1089,23 +1142,6 @@ export default function Home() {
             <p className="text-sm text-ink-muted leading-relaxed" suppressHydrationWarning>
               {curiosity}
             </p>
-          </div>
-
-          {/* Feature row */}
-          <div className="mt-8 flex flex-wrap justify-center gap-x-4 gap-y-1.5">
-            {(['Etymology & origin', 'Register & collocations', 'Common errors'] as const).map((f) => (
-              <span key={f} className="text-[0.7rem] text-ink-faint">{f}</span>
-            ))}
-          </div>
-
-          {/* How to use link */}
-          <div className="mt-5 text-center">
-            <button
-              onClick={() => setShowHelp(true)}
-              className="text-xs text-ink-faint hover:text-ink-muted transition-colors duration-150"
-            >
-              {t.howToUse}
-            </button>
           </div>
 
         </div>
