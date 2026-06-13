@@ -39,6 +39,8 @@ const UI = {
   en: {
     insightLabel:        'Empire Insight',
     tagline:             'Linguistic intelligence',
+    headline:            'You know the word. But do you know how to use it?',
+    subheadline:         'Empire Signal shows you the register, the collocations, and the context that turn vocabulary you recognize into vocabulary you can actually use.',
     placeholder:         "Try a word — like 'ephemeral'…",
     placeholderShort:    'Try a word…',
     contextHint:         "e.g. I'm reading a 19th-century medical text...",
@@ -74,6 +76,8 @@ const UI = {
   es: {
     insightLabel:        'Perspectiva Empire',
     tagline:             'Inteligencia lingüística',
+    headline:            'Conoces la palabra. ¿Pero sabes cómo usarla?',
+    subheadline:         'Empire Signal te muestra el registro, las colocaciones y el contexto que convierten el vocabulario que reconoces en vocabulario que de verdad puedes usar.',
     placeholder:         "Prueba una palabra — como 'efímero'…",
     placeholderShort:    'Prueba una palabra…',
     contextHint:         'ej. Estoy leyendo un texto médico del siglo XIX...',
@@ -872,7 +876,7 @@ export default function Home() {
           {/* 1. Wordmark */}
           <div className="text-center mb-5 sm:mb-6">
             <span
-              className="text-[2.25rem] sm:text-[2.75rem] tracking-tight leading-none"
+              className="inline-block text-[2.25rem] sm:text-[2.75rem] tracking-tight leading-none"
               style={{
                 fontFamily: 'var(--font-dm-serif)',
                 fontStyle: 'italic',
@@ -881,6 +885,10 @@ export default function Home() {
                 backgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 color: 'transparent',
+                // El glifo itálico de la 'e' final se inclina fuera de la caja
+                // de texto y el background-clip lo recorta; un padding derecho
+                // le da aire sin afectar el centrado.
+                paddingRight: '0.12em',
               }}
             >
               Empire
@@ -892,12 +900,12 @@ export default function Home() {
             className="text-[1.2rem] sm:text-[clamp(1.5rem,3vw,2.5rem)] tracking-tight text-ink leading-[1.2] sm:leading-[1.15] text-center mb-2.5 sm:mb-3"
             style={{ fontFamily: 'var(--font-dm-serif)' }}
           >
-            You know the word. But do you know how to use it?
+            {t.headline}
           </h1>
 
           {/* 3. Subheadline */}
           <p className="text-xs sm:text-sm text-ink-faint sm:text-ink-muted leading-relaxed text-center mb-4 sm:mb-8 max-w-[420px] sm:max-w-[480px] mx-auto">
-            Empire Signal shows you the register, the collocations, and the context that turn vocabulary you recognize into vocabulary you can actually use.
+            {t.subheadline}
           </p>
 
           {/* 4. Search card */}
