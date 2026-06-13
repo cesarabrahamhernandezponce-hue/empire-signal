@@ -71,6 +71,7 @@ const UI = {
     sending:             'Sending...',
     onTheList:           "You're on the list.",
     didYouMean:          'Did you mean',
+    otherLangCta:        'Analyze in Spanish instead',
     loadingMessages:     ['Analyzing...', 'Consulting etymology...', 'Building examples...'],
   },
   es: {
@@ -108,6 +109,7 @@ const UI = {
     sending:             'Enviando...',
     onTheList:           '¡Ya estás en la lista!',
     didYouMean:          '¿Quisiste decir',
+    otherLangCta:        'Analizar en inglés',
     loadingMessages:     ['Analizando...', 'Consultando etimología...', 'Construyendo ejemplos...'],
   },
 } as const;
@@ -473,9 +475,11 @@ export default function Home() {
     }
   };
 
-  const handleAnalyzeWithWord = async (w: string) => {
+  const handleAnalyzeWithWord = async (w: string, langOverride?: Language) => {
     const trimmed = w.trim();
     if (!trimmed) return;
+
+    const lang = langOverride ?? language;
 
     setPageState({ status: 'loading' });
 
@@ -486,7 +490,7 @@ export default function Home() {
         body: JSON.stringify({
           word: trimmed,
           context: context.trim() || null,
-          language,
+          language: lang,
         }),
       });
 
@@ -514,7 +518,7 @@ export default function Home() {
 
       const record = (data as { record: AnalyzeRecord }).record;
       const cacheHit = (data as { cacheHit?: boolean }).cacheHit ?? false;
-      track('word_analyzed', { word: record.word, language, cacheHit });
+      track('word_analyzed', { word: record.word, language: lang, cacheHit });
       setPageState({ status: 'result', record, cacheHit });
       setSessionHistory((prev) => {
         const filtered = prev.filter((w) => w !== record.word);
@@ -958,7 +962,7 @@ export default function Home() {
               )}
               {spellingError && (
                 <div style={{ marginTop: '4px', animation: 'fadeIn 0.25s ease' }}>
-                  <p style={{ color: '#E53935', fontSize: '0.75rem' }}>{spellingError}</p>
+                  <p style={{ color: 'var(--danger)', fontSize: '0.75rem' }}>{spellingError}</p>
                   {spellingSuggestion && (
                     <button
                       onClick={() => {
@@ -968,7 +972,7 @@ export default function Home() {
                         handleAnalyzeWithWord(spellingSuggestion);
                       }}
                       style={{
-                        color: '#3A3D8F',
+                        color: 'var(--accent)',
                         fontSize: '0.75rem',
                         background: 'none',
                         border: 'none',
@@ -982,6 +986,28 @@ export default function Home() {
                       {t.didYouMean} &ldquo;{spellingSuggestion}&rdquo;?
                     </button>
                   )}
+                  <button
+                    onClick={() => {
+                      const other: Language = language === 'es' ? 'en' : 'es';
+                      setSpellingError(null);
+                      setSpellingSuggestion(null);
+                      setLanguage(other);
+                      handleAnalyzeWithWord(word, other);
+                    }}
+                    style={{
+                      color: 'var(--accent)',
+                      fontSize: '0.75rem',
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      marginTop: '2px',
+                      display: 'block',
+                    }}
+                  >
+                    {t.otherLangCta}
+                  </button>
                 </div>
               )}
             </div>
