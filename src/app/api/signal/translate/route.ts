@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { translateWord } from '@/lib/services/signal';
-import { getClientIp, hashIp, checkInMemoryLimit } from '@/lib/rate-limit';
+import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
 
 const DAILY_LIMIT = 30;
 
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
     if (!isOwner) {
       const ipHash = hashIp(getClientIp(request));
-      if (!checkInMemoryLimit(`translate:${ipHash}`, DAILY_LIMIT)) {
+      if (!(await checkDbLimit('translate', ipHash, DAILY_LIMIT))) {
         return NextResponse.json({ error: 'Daily limit reached. Come back tomorrow.' }, { status: 429 });
       }
     }

@@ -26,7 +26,6 @@ export default function PostHogProvider({ children }: { children: React.ReactNod
       capture_pageview: false,
       capture_pageleave: true,
     });
-    console.log('PostHog initialized');
   }, []);
 
   return (

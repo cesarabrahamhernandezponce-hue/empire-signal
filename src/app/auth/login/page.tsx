@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -28,6 +28,15 @@ const LANG = {
   },
 } as const;
 
+const emptySubscribe = () => () => {};
+function useStoredLang(): 'en' | 'es' {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => (localStorage.getItem('language') === 'es' ? 'es' : 'en'),
+    () => 'en',
+  );
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail]       = useState('');
@@ -35,12 +44,10 @@ export default function LoginPage() {
   const [error, setError]       = useState<string | null>(null);
   const [loading, setLoading]   = useState(false);
 
-  const uiLang = ((): 'en' | 'es' => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('language') as 'en' | 'es') ?? 'en';
-    }
-    return 'en';
-  })();
+  // Reads the saved language from localStorage. Server snapshot is always 'en'
+  // so SSR and the first client render match (no hydration mismatch); React
+  // then re-renders with the real client value.
+  const uiLang = useStoredLang();
   const l = LANG[uiLang];
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -24,6 +24,10 @@ interface Props {
   onSignOut?: () => void;
   hasHistory?: boolean;
   uiLang?: 'en' | 'es';
+  // When false, hides the metered AI features (Validate / Ask). Used on the
+  // public share page so anonymous viewers can't spend AI quota on someone
+  // else's analysis.
+  interactive?: boolean;
 }
 
 const cardBase: React.CSSProperties = {
@@ -38,7 +42,7 @@ function SectionLabel({ children, serif, larger }: { children: React.ReactNode; 
   return (
     <p
       className={`mb-3 font-semibold uppercase ${larger ? 'text-[0.85rem]' : 'text-[0.75rem]'}`}
-      style={{ color: '#3A3D8F', letterSpacing: '0.12em', fontFamily: serif ? 'var(--font-dm-serif)' : undefined }}
+      style={{ color: 'var(--accent)', letterSpacing: '0.12em', fontFamily: serif ? 'var(--font-dm-serif)' : undefined }}
     >
       {children}
     </p>
@@ -426,7 +430,8 @@ function generateCard(word: string, essential: Analysis['essential'], etymology:
   ctx.fillStyle    = '#C9A84C';
   ctx.letterSpacing = '2px';
   ctx.font = '400 13px system-ui, -apple-system, sans-serif';
-  ctx.fillText('empire-signal.vercel.app', SIZE / 2, SIZE - PAD);
+  const cardHost = typeof window !== 'undefined' ? window.location.host : 'empire-signal.vercel.app';
+  ctx.fillText(cardHost, SIZE / 2, SIZE - PAD);
   ctx.letterSpacing = '0px';
 
   // Download PNG
@@ -479,7 +484,7 @@ function pickVoice(lang: string): SpeechSynthesisVoice | null {
   );
 }
 
-export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWord, user, onSignOut, hasHistory, uiLang = 'en' }: Props) {
+export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWord, user, onSignOut, hasHistory, uiLang = 'en', interactive = true }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [wordCopied, setWordCopied] = useState(false);
@@ -665,7 +670,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
         {/* Word hero */}
         <div className="mb-4 text-center">
           <h1
-            className="text-[3.25rem] sm:text-[3.75rem] tracking-tight text-ink leading-none mb-3"
+            className="text-[3.25rem] sm:text-[3.75rem] tracking-tight text-ink leading-none mb-3 break-words"
             style={{ fontFamily: 'var(--font-dm-serif)' }}
           >
             {word}
@@ -679,26 +684,27 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
           )}
 
           {cacheHit && (
-            <p className="mt-2 text-[0.65rem] font-medium tracking-widest uppercase" style={{ color: '#2E7D32' }}>
+            <p className="mt-2 text-[0.65rem] font-medium tracking-widest uppercase" style={{ color: 'var(--success)' }}>
               cached
             </p>
           )}
 
-          {/* Action buttons */}
-          <div className="flex items-center justify-center gap-1 mt-5">
+          {/* Action buttons — icon-only on mobile (labels overflow in Spanish), labelled from sm up */}
+          <div className="flex items-center justify-center gap-2 sm:gap-1 mt-5">
             <button
               className="flex items-center gap-1.5 text-sm py-2.5 px-3 text-ink-muted hover:text-accent transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
               onClick={handleListen}
               disabled={!speechSupported}
-              title={speechSupported ? undefined : l.notSupported}
+              title={speechSupported ? (isSpeaking ? l.stop : l.listen) : l.notSupported}
             >
               {isSpeaking ? <IconStop /> : <IconSpeaker />}
-              {isSpeaking ? l.stop : l.listen}
+              <span className="hidden sm:inline">{isSpeaking ? l.stop : l.listen}</span>
             </button>
-            <span className="text-ink-faint select-none">·</span>
+            <span className="hidden sm:inline text-ink-faint select-none">·</span>
             <button
               className="flex items-center gap-1.5 text-sm py-2.5 px-3 text-ink-muted hover:text-accent transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
               disabled={!record.shareId}
+              title={shareCopied ? l.copied : l.share}
               onClick={() => {
                 const url = `${window.location.origin}/share/${record.shareId}`;
                 navigator.clipboard.writeText(url).then(() => {
@@ -708,11 +714,12 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
               }}
             >
               <IconShare />
-              {shareCopied ? l.copied : l.share}
+              <span className="hidden sm:inline">{shareCopied ? l.copied : l.share}</span>
             </button>
-            <span className="text-ink-faint select-none">·</span>
+            <span className="hidden sm:inline text-ink-faint select-none">·</span>
             <button
               className="flex items-center gap-1.5 text-sm py-2.5 px-3 text-ink-muted hover:text-accent transition-colors duration-150"
+              title={wordCopied ? l.copied : l.copy}
               onClick={() => {
                 navigator.clipboard.writeText(word).then(() => {
                   setWordCopied(true);
@@ -721,11 +728,12 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
               }}
             >
               <IconCopy />
-              {wordCopied ? l.copied : l.copy}
+              <span className="hidden sm:inline">{wordCopied ? l.copied : l.copy}</span>
             </button>
-            <span className="text-ink-faint select-none">·</span>
+            <span className="hidden sm:inline text-ink-faint select-none">·</span>
             <button
               className="flex items-center gap-1.5 text-sm py-2.5 px-3 text-ink-muted hover:text-accent transition-colors duration-150"
+              title={cardSaved ? l.cardSaved : l.saveCard}
               onClick={() => {
                 track('share_card_saved', { word });
                 generateCard(word, essential, advanced.etymology);
@@ -734,7 +742,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
               }}
             >
               <IconDownload />
-              {cardSaved ? l.cardSaved : l.saveCard}
+              <span className="hidden sm:inline">{cardSaved ? l.cardSaved : l.saveCard}</span>
             </button>
           </div>
         </div>
@@ -776,6 +784,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
           )}
 
           {/* Validate your sentence */}
+          {interactive && (
           <section style={{ ...cardBase, background: 'var(--surface-blue)', border: '2px solid var(--accent)' }}>
             <SectionLabel serif larger>{l.validateSection}</SectionLabel>
             <p className="text-sm text-ink-muted mb-4 -mt-1 leading-relaxed">{l.validateHint}</p>
@@ -805,7 +814,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                 <div className="flex items-baseline gap-2">
                   <span
                     className="text-2xl font-semibold"
-                    style={{ color: validation.natural ? '#2E7D32' : '#E65100' }}
+                    style={{ color: validation.natural ? 'var(--success)' : 'var(--warning)' }}
                   >
                     {validation.score}/100
                   </span>
@@ -842,6 +851,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
               <p className="mt-3 text-xs text-ink-muted">{validation.message}</p>
             )}
           </section>
+          )}
 
           {/* In your context — only when contextNote is present */}
           {essential.contextNote && (
@@ -981,7 +991,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                   <div className="flex items-center gap-2 mb-2">
                     <span
                       className="text-xs font-medium px-2 py-0.5 rounded-[4px]"
-                      style={{ background: '#F0F0EE', color: '#1A1A1A', border: '1px solid #EAEAE6' }}
+                      style={{ background: 'var(--surface-muted)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
                     >
                       {xlat(advanced.registerLevel.level, uiLang, REGISTER_ES)}
                     </span>
@@ -996,7 +1006,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                   <div className="space-y-5">
                     {advanced.commonErrors.map((ce, i) => (
                       <div key={i}>
-                        <p className="text-sm mb-1.5" style={{ color: '#C0392B' }}>
+                        <p className="text-sm mb-1.5" style={{ color: 'var(--danger)' }}>
                           {ce.error}
                         </p>
                         <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
@@ -1029,7 +1039,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
         </div>
 
         {/* Follow-up questions */}
-        {record.id && (
+        {interactive && record.id && (
           <section className="mt-4" style={cardBase}>
             <SectionLabel serif>{l.askSection}</SectionLabel>
 
@@ -1037,7 +1047,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
               <div className="mb-4 space-y-5">
                 {askHistory.map((item, i) => (
                   <div key={i}>
-                    <p className="text-xs font-semibold mb-1.5" style={{ color: '#3A3D8F' }}>{item.question}</p>
+                    <p className="text-xs font-semibold mb-1.5" style={{ color: 'var(--accent)' }}>{item.question}</p>
                     <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>{item.answer}</p>
                   </div>
                 ))}

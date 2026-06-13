@@ -5,7 +5,7 @@ import { Language as DbLanguage } from '@prisma/client';
 import { askFollowUp } from '@/lib/services/signal';
 import { prisma } from '@/lib/db/prisma';
 import type { Language } from '@/lib/ai/prompts/types';
-import { getClientIp, hashIp, checkInMemoryLimit } from '@/lib/rate-limit';
+import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
 
 const DAILY_LIMIT = 20;
 
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
 
     if (!isOwner) {
       const ipHash = hashIp(getClientIp(request));
-      if (!checkInMemoryLimit(`ask:${ipHash}`, DAILY_LIMIT)) {
+      if (!(await checkDbLimit('ask', ipHash, DAILY_LIMIT))) {
         return NextResponse.json({ error: 'Daily limit reached. Come back tomorrow.' }, { status: 429 });
       }
     }

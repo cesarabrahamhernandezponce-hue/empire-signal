@@ -21,6 +21,9 @@
   --surface-error: #FFF8F8;
   --badge-bg: #EEF0FF;
   --badge-border: #D0D3FF;
+  --success: #2E7D32;
+  --warning: #E65100;
+  --danger: #C0392B;
 }
 
 [data-theme="dark"] {
@@ -39,6 +42,9 @@
   --surface-error: #2A1818;
   --badge-bg: #1E2048;
   --badge-border: #3A3D80;
+  --success: #4ADE80;
+  --warning: #FB923C;
+  --danger: #F87171;
 }
 
 body {

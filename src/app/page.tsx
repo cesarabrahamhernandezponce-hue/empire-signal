@@ -248,12 +248,12 @@ function HelpModal({ title, language, onClose }: { title: string; language: 'en'
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-          <p style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#3A3D8F' }}>
+          <p style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent)' }}>
             {title}
           </p>
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9A9A96', padding: '2px', display: 'flex', alignItems: 'center' }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-subtle)', padding: '2px', display: 'flex', alignItems: 'center' }}
             aria-label="Close"
           >
             <IconClose />
@@ -264,15 +264,15 @@ function HelpModal({ title, language, onClose }: { title: string; language: 'en'
           {FEATURES[language].map((f, i) => (
             <div key={i} style={{ display: 'flex', gap: '14px' }}>
               <span
-                style={{ flexShrink: 0, width: '20px', height: '20px', borderRadius: '50%', background: '#EEF0FF', color: '#3A3D8F', fontSize: '0.6rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1px' }}
+                style={{ flexShrink: 0, width: '20px', height: '20px', borderRadius: '50%', background: 'var(--badge-bg)', color: 'var(--accent)', fontSize: '0.6rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1px' }}
               >
                 {i + 1}
               </span>
               <div>
-                <p style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1A1A1A', marginBottom: '3px' }}>
+                <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '3px' }}>
                   {f.title}
                 </p>
-                <p style={{ fontSize: '0.8rem', color: '#6B6B67', lineHeight: 1.6 }}>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
                   {f.body}
                 </p>
               </div>
@@ -906,7 +906,7 @@ export default function Home() {
             {/* Language toggle */}
             <div className="flex items-center justify-between px-5 sm:px-7 pt-4 sm:pt-5">
               <span className="text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-ink-faint select-none">
-                Language
+                {t.langLabel}
               </span>
               <div className="flex gap-1.5">
                 {(['en', 'es'] as const).map((lang) => (
@@ -1025,12 +1025,12 @@ export default function Home() {
                 {translationState.status === 'result' && (
                   <div className="mt-4 flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-[1.5rem] font-bold tracking-tight leading-none" style={{ color: '#1A1A1A' }}>
+                      <p className="text-[1.5rem] font-bold tracking-tight leading-none" style={{ color: 'var(--text-primary)' }}>
                         {translationState.text}
                       </p>
                       <p
                         className="mt-1.5 text-[0.65rem] font-semibold uppercase"
-                        style={{ color: '#9A9A96', letterSpacing: '0.08em' }}
+                        style={{ color: 'var(--text-subtle)', letterSpacing: '0.08em' }}
                       >
                         {TRANSLATE_LANGS.find((l) => l.id === translationState.lang)?.label}
                       </p>
@@ -1046,7 +1046,7 @@ export default function Home() {
                 )}
 
                 {translationState.status === 'error' && (
-                  <p className="mt-3 text-xs" style={{ color: '#B91C1C' }}>
+                  <p className="mt-3 text-xs" style={{ color: 'var(--danger)' }}>
                     {translationState.message}
                   </p>
                 )}

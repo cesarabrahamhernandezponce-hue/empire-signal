@@ -78,6 +78,7 @@ export default function SharePage() {
       record={state.record}
       onReset={() => router.push('/')}
       uiLang={state.record.language.toLowerCase() as 'en' | 'es'}
+      interactive={false}
     />
   );
 }

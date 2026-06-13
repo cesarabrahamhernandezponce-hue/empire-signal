@@ -162,12 +162,13 @@ export async function POST(request: Request) {
 
     // Fire-and-forget: write user search history for authenticated users.
     // Never blocks or fails the response.
-    if (result.record.id && userId) {
+    const userEmail = authData?.data?.user?.email;
+    if (result.record.id && userId && userEmail) {
       void (async () => {
         try {
           await prisma.user.upsert({
             where:  { id: userId },
-            create: { id: userId, email: authData?.data?.user?.email ?? '' },
+            create: { id: userId, email: userEmail },
             update: {},
           });
           await prisma.userSearchHistory.upsert({

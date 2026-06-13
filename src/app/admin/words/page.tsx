@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db/prisma';
 import type { Language } from '@prisma/client';
+import { requireAdmin } from '@/lib/admin';
 
 type WordRow = { word: string; language: Language; _count: { id: number } };
 
@@ -49,6 +50,7 @@ export default async function WordsPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  await requireAdmin();
   const { sort } = await searchParams;
   const sortDir: 'asc' | 'desc' = sort === 'asc' ? 'asc' : 'desc';
 

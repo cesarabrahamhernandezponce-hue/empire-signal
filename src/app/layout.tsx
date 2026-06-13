@@ -14,10 +14,34 @@ const geistMono = Geist_Mono({
 });
 
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://empire-signal.vercel.app';
+
 export const metadata: Metadata = {
-  title: 'Empire Signal',
-  description: 'Deep linguistic analysis powered by AI',
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: 'Empire Signal',
+    template: '%s · Empire Signal',
+  },
+  description: 'Deep linguistic analysis powered by AI.',
+  applicationName: 'Empire Signal',
+  openGraph: {
+    type: 'website',
+    siteName: 'Empire Signal',
+    title: 'Empire Signal',
+    description: 'Deep linguistic analysis powered by AI.',
+    url: siteUrl,
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Empire Signal',
+    description: 'Deep linguistic analysis powered by AI.',
+  },
 };
+
+// Apply the saved theme before first paint so dark mode doesn't flash light
+// (and so non-home pages, which never ran the home page's theme effect, still
+// honor the user's choice). Reads the same 'theme' key the app writes.
+const themeBootstrap = `(function(){try{if(localStorage.getItem('theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -25,7 +49,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable}`}
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
+      </head>
       <body>
         <PostHogProvider>{children}</PostHogProvider>
       </body>

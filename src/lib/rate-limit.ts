@@ -6,11 +6,15 @@ export function hashIp(ip: string): string {
 }
 
 export function getClientIp(request: Request): string {
-  // x-real-ip is set by Vercel to the actual client IP (not spoofable by client).
-  // x-forwarded-for leftmost entry is client-controlled; take rightmost as fallback.
+  // On Vercel, `x-real-ip` is set by the platform to the real client IP and any
+  // inbound value the client sends is overwritten — so it's the authoritative
+  // source. Only fall back to the *leftmost* `x-forwarded-for` entry (the
+  // original client) when `x-real-ip` is absent. NOTE: this assumes the app runs
+  // behind Vercel's proxy; on a bare deployment these headers are client-spoofable
+  // and rate limiting must not be relied upon as a hard security boundary.
   return (
     request.headers.get('x-real-ip') ??
-    request.headers.get('x-forwarded-for')?.split(',').at(-1)?.trim() ??
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
     'unknown'
   );
 }
@@ -71,6 +75,34 @@ export async function checkAnonymousLimit(ipHash: string): Promise<LimitResult> 
     // DB unreachable — in-memory check already passed, fail open.
     console.error('[rate-limit] Anonymous DB count failed, relying on in-memory check:', err);
     return { allowed: true, remaining: ANON_DAILY_LIMIT - 1, limit: ANON_DAILY_LIMIT };
+  }
+}
+
+// Durable, cross-instance limiter for the AI endpoints (ask/translate/validate).
+// Records one row per metered request and counts within a rolling window, so the
+// cap survives serverless cold starts (unlike checkInMemoryLimit alone). The
+// in-memory check is kept only as a cheap per-instance pre-filter against floods.
+export async function checkDbLimit(
+  scope: string,
+  ipHash: string,
+  limit: number,
+  windowMs: number = 86_400_000,
+): Promise<boolean> {
+  // Cheap fast path: short-circuit obvious per-instance floods without a DB hit.
+  if (!checkInMemoryLimit(`${scope}:${ipHash}`, limit)) return false;
+  try {
+    const since = new Date(Date.now() - windowMs);
+    const count = await prisma.rateLimitEvent.count({
+      where: { scope, ipHash, createdAt: { gte: since } },
+    });
+    if (count >= limit) return false;
+    await prisma.rateLimitEvent.create({ data: { scope, ipHash } });
+    return true;
+  } catch (err) {
+    // Table missing (pre-migration) or DB unreachable — the in-memory check
+    // already passed, so fail open rather than block legitimate users.
+    console.error(`[rate-limit] DB limit check failed for scope=${scope}, relying on in-memory:`, err);
+    return true;
   }
 }
 

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db/prisma';
+import { requireAdmin } from '@/lib/admin';
 
 const DAILY_LIMIT = 10;
 const DAYS = 14;
@@ -12,6 +13,7 @@ type RateLimitRow = {
 };
 
 export default async function RateLimitsPage() {
+  await requireAdmin();
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - DAYS);
   cutoff.setUTCHours(0, 0, 0, 0);

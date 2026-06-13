@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
 export async function isAdmin(): Promise<boolean> {
@@ -7,8 +8,19 @@ export async function isAdmin(): Promise<boolean> {
   const supabase = await createClient();
   if (!supabase) return false;
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user?.email) return false;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.email) return false;
+    return user.email.toLowerCase() === adminEmail.toLowerCase();
+  } catch (err) {
+    // Never grant admin on an auth error — fail closed.
+    console.error('[admin] getUser failed, denying admin access:', err);
+    return false;
+  }
+}
 
-  return user.email.toLowerCase() === adminEmail.toLowerCase();
+// Defense-in-depth: call at the top of every admin server component so a page
+// is never rendered for a non-admin even if the layout guard is bypassed.
+export async function requireAdmin(): Promise<void> {
+  if (!(await isAdmin())) redirect('/');
 }

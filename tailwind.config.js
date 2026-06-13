@@ -5,6 +5,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        'dm-serif': ['var(--font-dm-serif)', 'Georgia', 'serif'],
+      },
       colors: {
         bg: 'var(--bg)',
         surface: 'var(--surface)',

@@ -197,3 +197,17 @@ model WaitlistEmail {
 
   @@map("waitlist_emails")
 }
+
+// ───────────── RATE LIMITING (durable, cross-instance) ─────────────
+// One row per metered request. Counted per (scope, ipHash) within a time
+// window to enforce limits that survive serverless cold starts.
+
+model RateLimitEvent {
+  id        String   @id @default(uuid())
+  scope     String
+  ipHash    String
+  createdAt DateTime @default(now())
+
+  @@index([scope, ipHash, createdAt])
+  @@map("rate_limit_events")
+}
