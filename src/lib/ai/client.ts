@@ -1,44 +1,59 @@
-const BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
-// Free OpenRouter models routinely take 30-60s to emit the full analysis JSON.
-// A short timeout just forced a wasteful "abort at 30s → restart" waterfall that
-// added latency without improving success. Give one pass enough room to finish.
+// Free models can take a while to emit the full analysis JSON. A short timeout
+// just forced a wasteful "abort then restart" waterfall that added latency
+// without improving success. Give one pass enough room to finish.
 const TIMEOUT_MS = 45000;
-// Free models reject bursts with HTTP 429 + a Retry-After hint. Wait and retry
+// Free tiers reject bursts with HTTP 429 + a Retry-After hint. Wait and retry
 // the same model once (capped) instead of discarding it — recovers the per-minute
-// rate limit without firing yet another model and burning more daily quota.
+// rate limit without firing another model and burning more daily quota.
 const RETRY_AFTER_CAP_MS = 6000;
 // The full analysis JSON runs ~700-1000 completion tokens, and some models add
-// reasoning tokens on top. 1200 truncated the output mid-string → unterminated
-// JSON → parse failure on every cache-miss. Give enough headroom to finish.
+// reasoning tokens on top. A low cap truncated the output mid-string →
+// unterminated JSON → parse failure on every cache-miss. Give it headroom.
 const MAX_TOKENS = 4000;
+
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+// OpenRouter free models — only non-reasoning instruct models. Reasoning models
+// (e.g. nemotron-3-nano) spend most of the token budget "thinking" and return a
+// truncated fragment that wins the race but fails to parse.
+const OPENROUTER_MODELS = [
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'qwen/qwen3-next-80b-a3b-instruct:free',
+  'openai/gpt-oss-20b:free',
+];
+const OPENROUTER_RETRY_MODELS = [
+  'google/gemma-4-31b-it:free',
+  'openai/gpt-oss-120b:free',
+];
+
+type Pass = { provider: string; baseUrl: string; apiKey: string; models: string[] };
+
+// Ordered fallback chain. All endpoints are OpenAI-compatible, so one fetch path
+// serves every provider. Gemini first: its free tier (flash-lite ~1000/day,
+// flash ~250/day) dwarfs OpenRouter's ~50/day and responds in ~5s vs ~30s.
+// OpenRouter is the last-resort backup and is reachable from networks where
+// Gemini/Groq are geo-blocked.
+function buildPasses(): Pass[] {
+  const gemini = process.env.GEMINI_API_KEY;
+  const openrouter = process.env.OPENROUTER_API_KEY;
+  const passes: Pass[] = [];
+  if (gemini) {
+    passes.push({ provider: 'gemini', baseUrl: GEMINI_URL, apiKey: gemini, models: ['gemini-2.5-flash-lite'] });
+    passes.push({ provider: 'gemini', baseUrl: GEMINI_URL, apiKey: gemini, models: ['gemini-2.5-flash'] });
+  }
+  if (openrouter) {
+    passes.push({ provider: 'openrouter', baseUrl: OPENROUTER_URL, apiKey: openrouter, models: OPENROUTER_MODELS });
+    passes.push({ provider: 'openrouter', baseUrl: OPENROUTER_URL, apiKey: openrouter, models: OPENROUTER_RETRY_MODELS });
+  }
+  return passes;
+}
 
 function stripCodeFences(text: string): string {
   const match = text.match(/```(?:json)?\s*([\s\S]+)\s*```/);
   if (match) return match[1].trim();
   return text.trim();
 }
-
-// Models launched simultaneously; first response with VALID JSON wins.
-// Only non-reasoning instruct models — reasoning models (e.g. nemotron-3-nano)
-// spend most of the token budget "thinking" and return a truncated fragment
-// that wins the race but fails to parse, breaking every cache-miss analysis.
-//
-// Kept deliberately small (3, not 5). On the free tier the binding constraint is
-// the daily request cap, not model speed: every model fired counts against it, so
-// a wide fan-out exhausts the quota ~2x faster and self-inflicts 429s under load.
-// Three reliable models give enough redundancy while tripling daily capacity.
-const MODELS = [
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'qwen/qwen3-next-80b-a3b-instruct:free',
-  'openai/gpt-oss-20b:free',
-];
-
-// Fallback pass only if all primary models fail — different models to dodge a
-// provider-specific outage or rate-limit.
-const RETRY_MODELS = [
-  'google/gemma-4-31b-it:free',
-  'openai/gpt-oss-120b:free',
-];
 
 export type AIResult =
   | { ok: true; text: string }
@@ -53,11 +68,11 @@ function describeAggregate(err: unknown): string {
 }
 
 function raceModels(
-  models: string[],
+  pass: Pass,
   prompt: string,
   isJson: boolean,
 ): { promise: Promise<string>; cleanup: () => void } {
-  const controllers = models.map(() => new AbortController());
+  const controllers = pass.models.map(() => new AbortController());
   const timers: ReturnType<typeof setTimeout>[] = [];
 
   function cleanup() {
@@ -65,7 +80,7 @@ function raceModels(
     controllers.forEach((c) => { try { c.abort(); } catch { /* already aborted */ } });
   }
 
-  const attempts = models.map((model, i) => {
+  const attempts = pass.models.map((model, i) => {
     const controller = controllers[i];
     const deadline = Date.now() + TIMEOUT_MS;
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -78,10 +93,10 @@ function raceModels(
       // a hard rate-limit take the full timeout to surface as a failure.
       let retried429 = false;
       for (;;) {
-        const res = await fetch(BASE_URL, {
+        const res = await fetch(pass.baseUrl, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            Authorization: `Bearer ${pass.apiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -133,35 +148,28 @@ export async function generateContent(
 ): Promise<AIResult> {
   const isJson = mimeType === 'application/json';
 
-  if (!process.env.OPENROUTER_API_KEY) {
+  const passes = buildPasses();
+  if (passes.length === 0) {
     // Misconfiguration, not a transient outage — log loudly so it's obvious in
-    // deploy logs instead of silently sending `Bearer undefined` to every model.
-    console.error('[ai/client] OPENROUTER_API_KEY is not set — every AI request will fail.');
+    // deploy logs instead of silently failing every request.
+    console.error('[ai/client] No AI provider key set (GEMINI_API_KEY / OPENROUTER_API_KEY).');
     return { ok: false, error: 'The AI service is not configured.' };
   }
 
-  const first = raceModels(MODELS, prompt, isJson);
-  try {
-    const text = await first.promise;
-    first.cleanup();
-    return { ok: true, text };
-  } catch (firstErr) {
-    first.cleanup();
-
-    const retry = raceModels(RETRY_MODELS, prompt, isJson);
+  const errors: string[] = [];
+  for (const pass of passes) {
+    const race = raceModels(pass, prompt, isJson);
     try {
-      const text = await retry.promise;
-      retry.cleanup();
+      const text = await race.promise;
+      race.cleanup();
       return { ok: true, text };
-    } catch (retryErr) {
-      retry.cleanup();
-      // Both passes exhausted — surface why so failures aren't a black box.
-      // Promise.any rejects with an AggregateError carrying every model's error.
-      console.error('[ai/client] All models failed.', {
-        first:  describeAggregate(firstErr),
-        retry:  describeAggregate(retryErr),
-      });
-      return { ok: false, error: 'The AI service is temporarily busy. Please try again in a moment.' };
+    } catch (err) {
+      race.cleanup();
+      errors.push(`${pass.provider}[${pass.models.join('/')}]: ${describeAggregate(err)}`);
     }
   }
+
+  // Every provider exhausted — surface why so failures aren't a black box.
+  console.error('[ai/client] All providers failed.', errors);
+  return { ok: false, error: 'The AI service is temporarily busy. Please try again in a moment.' };
 }
