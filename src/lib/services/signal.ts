@@ -18,6 +18,44 @@ const LANGUAGE_MAP: Record<Language, DbLanguage> = {
   en: DbLanguage.EN,
 };
 
+// Mirror of the JS NFD-strip below, for the Postgres `translate()` in the cache
+// lookup. Covers Spanish/Latin diacritics (incl. ñ→n, ü→u); same order in both.
+const LOOKUP_ACCENTS_FROM = 'áàäâãéèëêíìïîóòöôõúùüûçñ';
+const LOOKUP_ACCENTS_TO   = 'aaaaaeeeeiiiiooooouuuucn';
+
+// Accent-insensitive, lowercased cache key so "anonimo" and "anónimo" resolve
+// to the SAME record. NFD-decompose then drop combining marks.
+export function toLookupKey(word: string): string {
+  return word.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+// Looks up a cached record accent-insensitively: the stored canonical word
+// ("anónimo") is accent-stripped in SQL and compared against the lookup key, so
+// an accent-less query ("anonimo") still hits it. Returns the canonical record.
+// Two-step (raw id probe → findUnique) keeps the JSON mapping in Prisma.
+export async function findCachedByKey(
+  lookupKey: string,
+  language: DbLanguage,
+): Promise<AnalyzeRecord | null> {
+  const rows = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT id FROM search_records
+    WHERE language = ${language}::"Language"
+      AND translate(lower(word), ${LOOKUP_ACCENTS_FROM}, ${LOOKUP_ACCENTS_TO}) = ${lookupKey}
+    LIMIT 1
+  `;
+  if (rows.length === 0) return null;
+  const found = await prisma.searchRecord.findUnique({ where: { id: rows[0].id } });
+  if (!found) return null;
+  return {
+    id:       found.id,
+    word:     found.word,
+    context:  found.context,
+    language: found.language,
+    analysis: found.analysisJson as unknown as Analysis,
+    shareId:  found.shareId,
+  };
+}
+
 export type AnalyzeRecord = {
   id: string;
   word: string;
@@ -121,23 +159,12 @@ export async function analyzeWord(params: {
   const context = params.context?.trim() || null;
   const dbLanguage = LANGUAGE_MAP[language];
 
-  // Cache key: word + language only — context generates an ephemeral contextNote separately
+  // Cache key: accent-insensitive word + language — context generates an
+  // ephemeral contextNote separately. "anonimo" and "anónimo" share one record.
   let cached: AnalyzeRecord | null = params.prefetched !== undefined ? params.prefetched : null;
   if (params.prefetched === undefined) {
     try {
-      const found = await prisma.searchRecord.findFirst({
-        where: { word, language: dbLanguage },
-      });
-      if (found) {
-        cached = {
-          id:       found.id,
-          word:     found.word,
-          context:  found.context,
-          language: found.language,
-          analysis: found.analysisJson as unknown as Analysis,
-          shareId:  found.shareId,
-        };
-      }
+      cached = await findCachedByKey(toLookupKey(word), dbLanguage);
     } catch (err) {
       console.error('[analyzeWord] Cache lookup failed:', err);
       // DB unreachable — fall through to AI call rather than blocking the user
@@ -152,7 +179,7 @@ export async function analyzeWord(params: {
       },
     }).catch((err) => console.error('[analyzeWord] SearchEvent (cache hit) failed:', err));
 
-    const record = await enrichWithContext({ ...cached, analysis: filterSynonyms(cached.analysis) }, word, context, language);
+    const record = await enrichWithContext({ ...cached, analysis: filterSynonyms(cached.analysis) }, cached.word, context, language);
     return { ok: true, record, cacheHit: true };
   }
 
@@ -197,9 +224,20 @@ export async function analyzeWord(params: {
   // Filter before DB write so the cached version is already clean
   analysis = filterSynonyms(analysis);
 
+  // The AI returns the corrected canonical spelling (diacritics/ñ restored) in
+  // analysis.word; fall back to the user's normalized input if it's missing.
+  // This canonical form is what we store and display. correctedFrom keeps the
+  // user's typed form only when the correction actually changed it.
+  const canonical = analysis.word?.trim().toLowerCase() || word;
+  analysis = {
+    ...analysis,
+    word: canonical,
+    ...(canonical !== word ? { correctedFrom: word } : {}),
+  };
+
   try {
     const record = await prisma.searchRecord.create({
-      data: { word, language: dbLanguage, analysisJson: analysis },
+      data: { word: canonical, language: dbLanguage, analysisJson: analysis },
     });
 
     prisma.searchEvent.create({
@@ -217,14 +255,14 @@ export async function analyzeWord(params: {
       analysis,
       shareId:  record.shareId,
     };
-    const enriched = await enrichWithContext(baseRecord, word, context, language);
+    const enriched = await enrichWithContext(baseRecord, baseRecord.word, context, language);
     return { ok: true, record: enriched, cacheHit: false };
   } catch (err) {
     // Two concurrent requests for the same word+language hit the unique constraint (P2002);
     // recover by returning the record the first request already created.
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       const existing = await prisma.searchRecord.findFirst({
-        where: { word, language: dbLanguage },
+        where: { word: canonical, language: dbLanguage },
       });
       if (existing) {
         prisma.searchEvent.create({
@@ -242,15 +280,15 @@ export async function analyzeWord(params: {
           analysis: filterSynonyms(existing.analysisJson as unknown as Analysis),
           shareId:  existing.shareId,
         };
-        const enriched = await enrichWithContext(baseRecord, word, context, language);
+        const enriched = await enrichWithContext(baseRecord, baseRecord.word, context, language);
         return { ok: true, record: enriched, cacheHit: false };
       }
     }
     console.error('[analyzeWord] DB write failed:', err);
     // Return the analysis anyway — persistence failed but the user gets a result
     const enriched = await enrichWithContext(
-      { id: '', word, context: null, language: dbLanguage, analysis, shareId: '' },
-      word, context, language,
+      { id: '', word: canonical, context: null, language: dbLanguage, analysis, shareId: '' },
+      canonical, context, language,
     );
     return { ok: true, record: enriched, cacheHit: false };
   }

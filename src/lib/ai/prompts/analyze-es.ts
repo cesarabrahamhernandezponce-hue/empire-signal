@@ -8,6 +8,8 @@ export function buildAnalyzePromptES(
 
 IMPORTANTE: TODO el contenido del análisis debe estar redactado íntegramente en español. Ninguna frase ni palabra en inglés, salvo que la palabra analizada sea inglesa.
 
+IMPORTANTE — FORMA CANÓNICA: Antes de analizar, normaliza la palabra de entrada a su forma canónica correcta en español, restaurando las tildes y la ñ que falten o estén mal escritas (p.ej. "anonimo" → "anónimo", "corazon" → "corazón", "nino" → "niño", "pequena" → "pequeña", "rapido" → "rápido"). Analiza SIEMPRE esa forma corregida, nunca la entrada literal mal escrita: el campo "word" y todo el contenido (significado, ejemplos, etc.) deben referirse a la forma canónica. Devuelve esa forma canónica en minúsculas, con sus tildes/ñ, en el campo "word".
+
 IMPORTANTE: Si la palabra no existe en español estándar y no es un nombre propio reconocido, devuelve EXACTAMENTE este JSON y nada más:
 { "error": "WORD_NOT_FOUND", "suggestion": null }
 
@@ -18,6 +20,7 @@ Estructura JSON requerida (rellena cada campo con contenido real — sin texto d
 
 {
   "version": 1,
+  "word": "<forma canónica correcta de la palabra, en minúsculas y con tildes/ñ restauradas>",
   "essential": {
     "cefr": "<código de nivel CEFR — uno de: A1, A2, B1, B2, C1, C2>",
     "meaningInContext": "<significado preciso en el contexto>",

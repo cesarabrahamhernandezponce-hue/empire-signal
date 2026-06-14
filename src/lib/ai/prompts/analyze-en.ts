@@ -6,6 +6,8 @@ export function buildAnalyzePromptEN(
 
   return `Analyze the English word below and return a linguistic analysis as a JSON object.
 
+IMPORTANT — CANONICAL FORM: Before analyzing, normalize the input to its correct canonical English spelling, restoring diacritics ONLY when the standard spelling genuinely uses them and the intended word is unambiguous (e.g. "cafe" → "café", "naive" → "naïve", "resume" stays "resume"). Never invent diacritics for ordinary words. Analyze that canonical form and return it (lowercase) in the "word" field.
+
 Word: "${word}"
 Context: ${contextText}
 
@@ -13,6 +15,7 @@ Required JSON structure (fill every field with real content — no placeholder t
 
 {
   "version": 1,
+  "word": "<canonical spelling of the word, lowercase, diacritics restored only if standard>",
   "essential": {
     "cefr": "<CEFR level code — one of: A1, A2, B1, B2, C1, C2>",
     "meaningInContext": "<precise meaning in context>",

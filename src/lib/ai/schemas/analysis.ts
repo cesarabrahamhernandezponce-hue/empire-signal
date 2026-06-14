@@ -2,6 +2,12 @@ import { z } from 'zod';
 
 export const analysisSchema = z.object({
   version: z.literal(1),
+  // Canonical spelling returned by the AI (diacritics/ñ restored). Optional so
+  // records cached before this field existed still parse.
+  word: z.string().min(1).optional(),
+  // Set by the service (never the AI) when the canonical word differs from what
+  // the user typed, e.g. input "anonimo" → correctedFrom "anonimo", word "anónimo".
+  correctedFrom: z.string().min(1).optional(),
   essential: z.object({
     meaningInContext: z.string().min(1),
     wordType: z.object({

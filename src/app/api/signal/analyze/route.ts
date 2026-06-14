@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { Language as DbLanguage } from '@prisma/client';
 
-import { analyzeWord, type AnalyzeRecord } from '@/lib/services/signal';
-import type { Analysis } from '@/lib/ai/schemas/analysis';
+import { analyzeWord, findCachedByKey, toLookupKey, type AnalyzeRecord } from '@/lib/services/signal';
 import { generateContent } from '@/lib/ai/client';
 import { prisma } from '@/lib/db/prisma';
 import { getClientIp, hashIp, checkAnonymousLimit, checkUserLimit } from '@/lib/rate-limit';
@@ -101,8 +100,8 @@ export async function POST(request: Request) {
       createSupabaseClient()
         .then(sb => sb?.auth.getUser() ?? null)
         .catch(() => null),
-      prisma.searchRecord.findFirst({ where: { word, language: dbLanguage } })
-        .then(r => ({ ok: true as const, value: r }))
+      findCachedByKey(toLookupKey(word), dbLanguage)
+        .then(value => ({ ok: true as const, value }))
         .catch((err) => {
           console.error('[POST /api/signal/analyze] Cache lookup failed:', err);
           return { ok: false as const };
@@ -113,21 +112,8 @@ export async function POST(request: Request) {
 
     // ok=false (DB error) → prefetched=undefined signals analyzeWord to retry the lookup.
     // ok=true, value=null → confirmed cache miss.
-    // ok=true, value=record → cache hit.
-    let prefetched: AnalyzeRecord | null | undefined;
-    if (cacheResult.ok) {
-      const r = cacheResult.value;
-      prefetched = r ? {
-        id:       r.id,
-        word:     r.word,
-        context:  r.context,
-        language: r.language,
-        analysis: r.analysisJson as unknown as Analysis,
-        shareId:  r.shareId,
-      } : null;
-    } else {
-      prefetched = undefined;
-    }
+    // ok=true, value=record → cache hit (already an AnalyzeRecord).
+    const prefetched: AnalyzeRecord | null | undefined = cacheResult.ok ? cacheResult.value : undefined;
 
     // Cache hits are never rate-limited (same as today). Only AI calls count.
     // !undefined and !null are both truthy → rate-limit on cache miss AND on DB uncertainty.
