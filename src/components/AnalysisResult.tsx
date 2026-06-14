@@ -676,8 +676,8 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             {word}
           </h1>
           {(heroPhonetic || essential.cefr) && (
-            <p className="flex items-center justify-center gap-2 text-lg text-ink-faint" style={{ fontFamily: 'var(--font-geist-mono)' }}>
-              {heroPhonetic && <span>{heroPhonetic}</span>}
+            <p className="flex flex-wrap items-center justify-center gap-2 text-lg text-ink-faint" style={{ fontFamily: 'var(--font-geist-mono)' }}>
+              {heroPhonetic && <span className="min-w-0 [overflow-wrap:anywhere]">{heroPhonetic}</span>}
               {heroPhonetic && essential.cefr && <span className="select-none">·</span>}
               {essential.cefr && <CefrBadge level={essential.cefr} tooltip={l.cefrTooltip} />}
             </p>

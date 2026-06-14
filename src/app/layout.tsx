@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     url: siteUrl,
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'Empire Signal',
     description: 'Deep linguistic analysis powered by AI.',
   },

@@ -64,10 +64,14 @@ const UI = {
     signUp:              'Sign up',
     logOut:              'Log out',
     rateLimitTitle:      "You've reached today's limit",
-    rateLimitSub:        'Come back tomorrow, or leave your email to be notified when accounts launch.',
+    anonLimitSub:        'Create a free account to keep going — registered users get 30 analyses every month.',
+    createAccountBtn:    'Create a free account',
+    haveAccountSignIn:   'Already have an account? Sign in',
+    registeredLimitTitle:"You've reached this month's limit",
+    registeredLimitSub:  "You've used all your analyses this month. Leave your email and we'll let you know when higher limits are available.",
     waitlistPlaceholder: 'you@example.com',
     alreadyOnList:       'Already on the list.',
-    notifyBtn:           'Notify me when accounts launch',
+    notifyBtn:           'Notify me about higher limits',
     sending:             'Sending...',
     onTheList:           "You're on the list.",
     didYouMean:          'Did you mean',
@@ -102,10 +106,14 @@ const UI = {
     signUp:              'Registrarse',
     logOut:              'Cerrar sesión',
     rateLimitTitle:      'Alcanzaste el límite de hoy',
-    rateLimitSub:        'Vuelve mañana, o deja tu email para que te avisemos cuando las cuentas estén disponibles.',
+    anonLimitSub:        'Crea una cuenta gratis para seguir — los usuarios registrados tienen 30 análisis cada mes.',
+    createAccountBtn:    'Crear una cuenta gratis',
+    haveAccountSignIn:   '¿Ya tienes cuenta? Inicia sesión',
+    registeredLimitTitle:'Alcanzaste el límite de este mes',
+    registeredLimitSub:  'Usaste todos tus análisis este mes. Deja tu email y te avisaremos cuando haya límites más altos.',
     waitlistPlaceholder: 'tu@correo.com',
     alreadyOnList:       'Ya estás en la lista.',
-    notifyBtn:           'Avisarme cuando lancen las cuentas',
+    notifyBtn:           'Avisarme sobre límites más altos',
     sending:             'Enviando...',
     onTheList:           '¡Ya estás en la lista!',
     didYouMean:          '¿Quisiste decir',
@@ -146,7 +154,7 @@ type PageState =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'result'; record: AnalyzeRecord; cacheHit: boolean }
-  | { status: 'error'; message: string; rateLimited?: boolean };
+  | { status: 'error'; message: string; rateLimited?: boolean; tier?: 'anonymous' | 'registered' };
 
 function IconCopy() {
   return (
@@ -505,8 +513,9 @@ export default function Home() {
       }
 
       if (res.status === 429) {
-        track('rate_limit_hit', { word: trimmed });
-        setPageState({ status: 'error', message: (data as { error?: string }).error ?? 'Daily limit reached.', rateLimited: true });
+        const tier = (data as { tier?: 'anonymous' | 'registered' }).tier;
+        track('rate_limit_hit', { word: trimmed, tier });
+        setPageState({ status: 'error', message: (data as { error?: string }).error ?? 'Daily limit reached.', rateLimited: true, tier });
         return;
       }
 
@@ -710,11 +719,36 @@ export default function Home() {
         {settingsButton}
         <div className="min-h-screen bg-bg flex items-center justify-center px-4">
           <div className="max-w-sm w-full">
-            {pageState.rateLimited ? (
+            {pageState.rateLimited && pageState.tier !== 'registered' ? (
               <div className="text-center">
                 <p className="text-sm font-medium text-ink mb-1">{t.rateLimitTitle}</p>
                 <p className="text-xs text-ink-muted mb-6 leading-relaxed">
-                  {t.rateLimitSub}
+                  {t.anonLimitSub}
+                </p>
+                <Link
+                  href="/auth/signup"
+                  className="block w-full py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 bg-accent text-white hover:bg-accent-hover"
+                >
+                  {t.createAccountBtn}
+                </Link>
+                <Link
+                  href="/auth/login"
+                  className="mt-3 inline-block text-xs text-ink-muted hover:text-ink transition-colors duration-150"
+                >
+                  {t.haveAccountSignIn}
+                </Link>
+                <button
+                  onClick={handleReset}
+                  className="mt-5 block mx-auto text-xs text-ink-faint hover:text-ink-muted transition-colors duration-150"
+                >
+                  {t.tryAgain}
+                </button>
+              </div>
+            ) : pageState.rateLimited ? (
+              <div className="text-center">
+                <p className="text-sm font-medium text-ink mb-1">{t.registeredLimitTitle}</p>
+                <p className="text-xs text-ink-muted mb-6 leading-relaxed">
+                  {t.registeredLimitSub}
                 </p>
                 {waitlistStatus === 'success' ? (
                   <p className="text-sm text-ink-muted">{t.onTheList}</p>

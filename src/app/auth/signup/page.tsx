@@ -2,6 +2,7 @@
 
 import { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 const LANG = {
@@ -47,6 +48,7 @@ function useStoredLang(): 'en' | 'es' {
 }
 
 export default function SignupPage() {
+  const router = useRouter();
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [error, setError]       = useState<string | null>(null);
@@ -71,7 +73,7 @@ export default function SignupPage() {
       return;
     }
 
-    const { error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -82,6 +84,15 @@ export default function SignupPage() {
     if (authError) {
       setError(authError.message);
       setLoading(false);
+      return;
+    }
+
+    // Email confirmation is OFF, so signUp returns an active session — the user
+    // is already logged in. Send them straight to the app. The "check your
+    // email" screen below is only a fallback if confirmation gets re-enabled.
+    if (data.session) {
+      router.push('/');
+      router.refresh();
       return;
     }
 
