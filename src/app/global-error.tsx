@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+
 export default function GlobalError({
   error,
   unstable_retry,
@@ -7,6 +9,10 @@ export default function GlobalError({
   error: Error & { digest?: string };
   unstable_retry: () => void;
 }) {
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+
   return (
     <html lang="en">
       <body
@@ -33,7 +39,7 @@ export default function GlobalError({
             onClick={() => unstable_retry()}
             style={{
               fontSize: 14,
-              color: '#b8860b',
+              color: '#3A3D8F',
               background: 'none',
               border: 'none',
               cursor: 'pointer',

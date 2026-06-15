@@ -36,7 +36,7 @@ function utcMidnightMs(): number {
   return d.getTime() + 86_400_000;
 }
 
-export function checkInMemoryLimit(key: string, limit: number): boolean {
+function checkInMemoryLimit(key: string, limit: number): boolean {
   const now = Date.now();
   const resetAt = utcMidnightMs();
   const bucket = buckets.get(key);
@@ -66,8 +66,12 @@ export async function checkAnonymousLimit(ipHash: string): Promise<LimitResult> 
   try {
     const todayUtc = new Date();
     todayUtc.setUTCHours(0, 0, 0, 0);
+    // Count EVERY anonymous search today — cache hits included. The anon limit
+    // exists to drive signup, not just to cap AI cost, so popular pre-cached words
+    // must count too. userId: null scopes the tally to anonymous events, so a
+    // registered user sharing the same IP doesn't consume the anon quota.
     const count = await prisma.searchEvent.count({
-      where: { ipHash, cacheHit: false, createdAt: { gte: todayUtc } },
+      where: { ipHash, userId: null, createdAt: { gte: todayUtc } },
     });
     const remaining = Math.max(0, ANON_DAILY_LIMIT - count);
     return { allowed: count < ANON_DAILY_LIMIT, remaining, limit: ANON_DAILY_LIMIT };

@@ -6,6 +6,7 @@ import { analyzeWord, findCachedByKey, toLookupKey, type AnalyzeRecord } from '@
 import { generateContent } from '@/lib/ai/client';
 import { prisma } from '@/lib/db/prisma';
 import { getClientIp, hashIp, checkAnonymousLimit, checkUserLimit } from '@/lib/rate-limit';
+import { isOwnerRequest, readJsonBody } from '@/lib/api-guard';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 
 const LANGUAGE_DB: Record<string, DbLanguage> = {
@@ -24,14 +25,12 @@ const bodySchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
+    const bodyResult = await readJsonBody(request);
+    if (!bodyResult.ok) {
+      return NextResponse.json({ error: bodyResult.error }, { status: bodyResult.status });
     }
 
-    const parsed = bodySchema.safeParse(body);
+    const parsed = bodySchema.safeParse(bodyResult.body);
     if (!parsed.success) {
       const first = parsed.error.issues[0];
       return NextResponse.json(
@@ -83,9 +82,7 @@ export async function POST(request: Request) {
     }
 
     // Owner bypass: unlimited access for the owner via secret header
-    const ownerKey = request.headers.get('x-owner-key');
-    const bypassKey = process.env.OWNER_BYPASS_KEY;
-    const isOwner = Boolean(bypassKey && ownerKey === bypassKey);
+    const isOwner = isOwnerRequest(request);
 
     const ipHash = hashIp(getClientIp(request));
     const dbLanguage = LANGUAGE_DB[language];
@@ -115,18 +112,25 @@ export async function POST(request: Request) {
     // ok=true, value=record → cache hit (already an AnalyzeRecord).
     const prefetched: AnalyzeRecord | null | undefined = cacheResult.ok ? cacheResult.value : undefined;
 
-    // Cache hits are never rate-limited (same as today). Only AI calls count.
-    // !undefined and !null are both truthy → rate-limit on cache miss AND on DB uncertainty.
-    if (!isOwner && !prefetched) {
+    if (!isOwner) {
       if (userId) {
-        const limitResult = await checkUserLimit(userId);
-        if (!limitResult.allowed) {
-          return NextResponse.json(
-            { error: 'limit_reached', tier: 'registered', limit: limitResult.limit, resetAt: 'monthly' },
-            { status: 429 },
-          );
+        // Registered users: unchanged — only AI calls (cache misses) count toward
+        // the monthly limit; cache hits stay free. (!prefetched is truthy on a
+        // cache miss AND on DB uncertainty.)
+        if (!prefetched) {
+          const limitResult = await checkUserLimit(userId);
+          if (!limitResult.allowed) {
+            return NextResponse.json(
+              { error: 'limit_reached', tier: 'registered', limit: limitResult.limit, resetAt: 'monthly' },
+              { status: 429 },
+            );
+          }
         }
       } else {
+        // Anonymous users: EVERY search counts toward the daily limit, including
+        // cache hits, to drive signup. The count is recomputed server-side from the
+        // DB by IP hash for the current UTC day on every request, so a client
+        // refresh or re-searching a now-cached word cannot bypass it.
         const limitResult = await checkAnonymousLimit(ipHash);
         if (!limitResult.allowed) {
           return NextResponse.json(
@@ -141,7 +145,15 @@ export async function POST(request: Request) {
 
     if (!result.ok) {
       if (result.error === 'WORD_NOT_FOUND') {
-        return NextResponse.json({ error: 'Esta palabra no existe en español estándar.', suggestion: null }, { status: 422 });
+        return NextResponse.json(
+          {
+            error: language === 'es'
+              ? 'Esta palabra no existe en español estándar.'
+              : 'This word does not exist in standard English.',
+            suggestion: null,
+          },
+          { status: 422 },
+        );
       }
       return NextResponse.json({ error: result.error }, { status: 503 });
     }

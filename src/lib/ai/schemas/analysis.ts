@@ -62,7 +62,7 @@ export const analysisSchema = z.object({
         error:      z.string().min(1),
         correction: z.string().min(1),
       }),
-    ).min(1).max(3),
+    ).min(0).max(3),
     wordFamily: z.array(
       z.object({
         word:     z.string().min(1),

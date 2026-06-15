@@ -6,6 +6,7 @@ import { askFollowUp } from '@/lib/services/signal';
 import { prisma } from '@/lib/db/prisma';
 import type { Language } from '@/lib/ai/prompts/types';
 import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
+import { isOwnerRequest, readJsonBody } from '@/lib/api-guard';
 
 const DAILY_LIMIT = 20;
 
@@ -21,14 +22,12 @@ const LANGUAGE_MAP: Record<DbLanguage, Language> = {
 
 export async function POST(request: Request) {
   try {
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
+    const bodyResult = await readJsonBody(request);
+    if (!bodyResult.ok) {
+      return NextResponse.json({ error: bodyResult.error }, { status: bodyResult.status });
     }
 
-    const parsed = bodySchema.safeParse(body);
+    const parsed = bodySchema.safeParse(bodyResult.body);
     if (!parsed.success) {
       const first = parsed.error.issues[0];
       return NextResponse.json(
@@ -39,9 +38,7 @@ export async function POST(request: Request) {
 
     const { searchRecordId, question } = parsed.data;
 
-    const ownerKey = request.headers.get('x-owner-key');
-    const bypassKey = process.env.OWNER_BYPASS_KEY;
-    const isOwner = Boolean(bypassKey && ownerKey === bypassKey);
+    const isOwner = isOwnerRequest(request);
 
     if (!isOwner) {
       const ipHash = hashIp(getClientIp(request));

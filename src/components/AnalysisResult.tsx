@@ -130,16 +130,16 @@ function IconChevron({ open }: { open: boolean }) {
 }
 
 const CEFR_STYLES: Record<string, { background: string; color: string }> = {
-  A1: { background: '#E8F5E9', color: '#2E7D32' },
-  A2: { background: '#E8F5E9', color: '#2E7D32' },
-  B1: { background: '#FFF8E1', color: '#F57F17' },
-  B2: { background: '#FFF8E1', color: '#F57F17' },
-  C1: { background: '#EEF0FF', color: '#3A3D8F' },
-  C2: { background: '#EEF0FF', color: '#3A3D8F' },
+  A1: { background: 'var(--cefr-a-bg)', color: 'var(--cefr-a-text)' },
+  A2: { background: 'var(--cefr-a-bg)', color: 'var(--cefr-a-text)' },
+  B1: { background: 'var(--cefr-b-bg)', color: 'var(--cefr-b-text)' },
+  B2: { background: 'var(--cefr-b-bg)', color: 'var(--cefr-b-text)' },
+  C1: { background: 'var(--cefr-c-bg)', color: 'var(--cefr-c-text)' },
+  C2: { background: 'var(--cefr-c-bg)', color: 'var(--cefr-c-text)' },
 };
 
 function CefrBadge({ level, tooltip }: { level: string; tooltip: string }) {
-  const s = CEFR_STYLES[level] ?? { background: '#F0F0EE', color: '#1A1A1A' };
+  const s = CEFR_STYLES[level] ?? { background: 'var(--cefr-fallback-bg)', color: 'var(--cefr-fallback-text)' };
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
 
@@ -349,7 +349,11 @@ const CEFR_CARD_COLORS: Record<string, { bg: string; text: string }> = {
   C2: { bg: 'rgba(192,132,252,0.15)', text: '#C084FC' },
 };
 
-function generateCard(word: string, essential: Analysis['essential'], etymology: string): void {
+// Indigo brand accent, brightened for legibility on the dark card background
+// (matches the dark-theme --accent token).
+const CARD_ACCENT = '#7B7EC8';
+
+function drawCard(word: string, essential: Analysis['essential'], etymology: string): void {
   const SIZE = 1080;
   const PAD  = 80;
 
@@ -370,15 +374,15 @@ function generateCard(word: string, essential: Analysis['essential'], etymology:
   ctx.textBaseline = 'middle';
 
   // Brand label
-  ctx.fillStyle    = '#C9A84C';
+  ctx.fillStyle    = CARD_ACCENT;
   ctx.letterSpacing = '5px';
   ctx.font = '600 13px system-ui, -apple-system, sans-serif';
   ctx.fillText('EMPIRE SIGNAL', SIZE / 2, PAD + 18);
   ctx.letterSpacing = '0px';
 
-  // Word — scale font to fit
+  // Word — scale font to fit, in the brand serif
   const wordFontSize = word.length <= 6 ? 140 : word.length <= 10 ? 110 : word.length <= 14 ? 85 : 65;
-  ctx.font      = `400 ${wordFontSize}px Georgia, "Times New Roman", serif`;
+  ctx.font      = `400 ${wordFontSize}px "DM Serif Display", Georgia, "Times New Roman", serif`;
   ctx.fillStyle = '#FFFFFF';
   const wordY   = 460;
   ctx.fillText(word, SIZE / 2, wordY, SIZE - PAD * 2);
@@ -414,12 +418,14 @@ function generateCard(word: string, essential: Analysis['essential'], etymology:
     y += 56;
   }
 
-  // Etymology — italic, 3 lines max
-  if (etymology) {
-    ctx.font      = 'italic 400 22px Georgia, "Times New Roman", serif';
+  // Subtitle — etymology if present, otherwise fall back to the meaning in
+  // context so the card never has an empty middle.
+  const subtitle = etymology?.trim() || essential.meaningInContext?.trim() || '';
+  if (subtitle) {
+    ctx.font      = 'italic 400 22px "DM Serif Display", Georgia, "Times New Roman", serif';
     ctx.fillStyle = 'rgba(255,255,255,0.60)';
     const maxW = SIZE - (PAD + 60) * 2;
-    const lines = wrapText(ctx, etymology, maxW, 3);
+    const lines = wrapText(ctx, subtitle, maxW, 3);
     for (const line of lines) {
       ctx.fillText(line, SIZE / 2, y);
       y += 36;
@@ -427,7 +433,7 @@ function generateCard(word: string, essential: Analysis['essential'], etymology:
   }
 
   // URL — bottom anchor
-  ctx.fillStyle    = '#C9A84C';
+  ctx.fillStyle    = CARD_ACCENT;
   ctx.letterSpacing = '2px';
   ctx.font = '400 13px system-ui, -apple-system, sans-serif';
   const cardHost = typeof window !== 'undefined' ? window.location.host : 'empire-signal.vercel.app';
@@ -446,6 +452,20 @@ function generateCard(word: string, essential: Analysis['essential'], etymology:
   }, 'image/png');
 }
 
+function generateCard(word: string, essential: Analysis['essential'], etymology: string): void {
+  const draw = () => drawCard(word, essential, etymology);
+  // The brand serif is loaded via CSS @import; ensure both upright and italic
+  // faces are ready before drawing so the canvas doesn't fall back to Georgia.
+  if (typeof document !== 'undefined' && document.fonts?.load) {
+    Promise.all([
+      document.fonts.load('400 140px "DM Serif Display"'),
+      document.fonts.load('italic 400 22px "DM Serif Display"'),
+    ]).then(draw).catch(draw);
+  } else {
+    draw();
+  }
+}
+
 const REGISTER_ES: Record<string, string> = {
   formal:     'formal',
   informal:   'informal',
@@ -455,6 +475,7 @@ const REGISTER_ES: Record<string, string> = {
   neutral:    'neutro',
   slang:      'jerga',
   literary:   'literario',
+  vulgar:     'vulgar',
 };
 
 const CATEGORY_ES: Record<string, string> = {
@@ -495,11 +516,15 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
   const [validation, setValidation] = useState<ValidationState>({ status: 'idle' });
   const [question, setQuestion] = useState('');
   const [askLoading, setAskLoading] = useState(false);
+  const [askError, setAskError] = useState<string | null>(null);
   const [askHistory, setAskHistory] = useState<AskItem[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { word, analysis } = record;
 
   useEffect(() => {
+    // Browser capability detection — must run client-side after mount; a lazy
+    // initializer would diverge from the SSR render and mismatch on hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSpeechSupported('speechSynthesis' in window);
   }, []);
 
@@ -582,7 +607,10 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
       const res = await fetch('/api/signal/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sentence: trimmed, word: record.word, language: uiLang }),
+        // Evaluate against the WORD's language (the sentence is in that language),
+        // not the UI language — otherwise a Spanish-UI user practising an English
+        // word gets Spanish scoring/feedback for an English sentence.
+        body: JSON.stringify({ sentence: trimmed, word: record.word, language: record.language.toLowerCase() }),
       });
       const data: unknown = await res.json();
       if (!res.ok) {
@@ -601,6 +629,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
     const trimmed = question.trim();
     if (!trimmed || askLoading || !record.id) return;
     setAskLoading(true);
+    setAskError(null);
     try {
       const res = await fetch('/api/signal/ask', {
         method: 'POST',
@@ -611,12 +640,18 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
       if (res.ok) {
         setAskHistory((prev) => [...prev, { question: trimmed, answer: (data as { answer: string }).answer }]);
         setQuestion('');
+      } else {
+        setAskError(
+          (data as { error?: string }).error ??
+            (uiLang === 'es' ? 'No se pudo responder. Inténtalo de nuevo.' : 'Could not answer. Please try again.'),
+        );
       }
-    } catch { /* silently ignore — question input stays */ }
+    } catch {
+      setAskError(uiLang === 'es' ? 'No se pudo conectar con el servidor.' : 'Could not connect to the server.');
+    }
     finally { setAskLoading(false); }
   }
 
-  const lang = record.language.toLowerCase() as 'en' | 'es';  // speech synthesis + content placeholders
   const l = LABELS[uiLang] ?? LABELS.en;
   const { essential, advanced } = analysis;
   const heroPhonetic = essential.pronunciation.phonetic.length <= 45
@@ -1001,21 +1036,23 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                   </p>
                 </section>
 
-                <section style={{ ...cardBase, background: 'var(--surface-error)' }}>
-                  <SectionLabel>{l.commonErrors}</SectionLabel>
-                  <div className="space-y-5">
-                    {advanced.commonErrors.map((ce, i) => (
-                      <div key={i}>
-                        <p className="text-sm mb-1.5" style={{ color: 'var(--danger)' }}>
-                          {ce.error}
-                        </p>
-                        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
-                          → {ce.correction}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </section>
+                {advanced.commonErrors.length > 0 && (
+                  <section style={{ ...cardBase, background: 'var(--surface-error)' }}>
+                    <SectionLabel>{l.commonErrors}</SectionLabel>
+                    <div className="space-y-5">
+                      {advanced.commonErrors.map((ce, i) => (
+                        <div key={i}>
+                          <p className="text-sm mb-1.5" style={{ color: 'var(--danger)' }}>
+                            {ce.error}
+                          </p>
+                          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
+                            → {ce.correction}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
                 {advanced.wordFamily.length > 0 && (
                   <section style={cardBase}>
@@ -1077,6 +1114,10 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
                 ) : l.askBtn}
               </button>
             </div>
+
+            {askError && (
+              <p className="mt-3 text-xs" style={{ color: 'var(--danger)' }}>{askError}</p>
+            )}
           </section>
         )}
 

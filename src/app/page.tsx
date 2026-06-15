@@ -381,6 +381,9 @@ export default function Home() {
 
   useEffect(() => {
     const supabase = createClient();
+    // Resolves auth state by subscribing to an external system (Supabase); the
+    // no-client branch sets the resolved "anonymous" state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!supabase) { setUser(null); return; }
     supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -420,6 +423,9 @@ export default function Home() {
 
   useEffect(() => {
     const pool = CURIOSITIES[language];
+    // Random pick must happen client-side post-mount, otherwise the server and
+    // client render different tips and hydration mismatches.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCuriosity(pool[Math.floor(Math.random() * pool.length)]);
   }, [language]);
 
@@ -647,7 +653,7 @@ export default function Home() {
           <div className="flex items-center justify-between gap-4">
             <p
               className="text-[0.7rem] font-semibold uppercase"
-              style={{ color: '#3A3D8F', letterSpacing: '0.05em' }}
+              style={{ color: 'var(--accent)', letterSpacing: '0.05em' }}
             >
               {t.themeLabel}
             </p>
@@ -875,7 +881,7 @@ export default function Home() {
                   <div className="flex items-center justify-between gap-4">
                     <p
                       className="text-[0.7rem] font-semibold uppercase"
-                      style={{ color: '#3A3D8F', letterSpacing: '0.05em' }}
+                      style={{ color: 'var(--accent)', letterSpacing: '0.05em' }}
                     >
                       {t.themeLabel}
                     </p>

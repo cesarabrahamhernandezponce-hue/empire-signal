@@ -30,7 +30,7 @@ export default async function Image(
           color: '#f5f5f0',
         }}
       >
-        <div style={{ display: 'flex', fontSize: 30, fontStyle: 'italic', letterSpacing: '-0.01em', color: '#c9a96a' }}>
+        <div style={{ display: 'flex', fontSize: 30, fontStyle: 'italic', letterSpacing: '-0.01em', color: '#7B7EC8' }}>
           Empire Signal
         </div>
 

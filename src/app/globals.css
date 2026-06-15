@@ -24,6 +24,11 @@
   --success: #2E7D32;
   --warning: #E65100;
   --danger: #C0392B;
+  /* CEFR badge palette — grouped A (green) / B (amber) / C (indigo) */
+  --cefr-a-bg: #E8F5E9; --cefr-a-text: #2E7D32;
+  --cefr-b-bg: #FFF8E1; --cefr-b-text: #F57F17;
+  --cefr-c-bg: #EEF0FF; --cefr-c-text: #3A3D8F;
+  --cefr-fallback-bg: #F0F0EE; --cefr-fallback-text: #1A1A1A;
 }
 
 [data-theme="dark"] {
@@ -45,6 +50,10 @@
   --success: #4ADE80;
   --warning: #FB923C;
   --danger: #F87171;
+  --cefr-a-bg: rgba(74,222,128,0.15);  --cefr-a-text: #4ADE80;
+  --cefr-b-bg: rgba(251,146,60,0.15);  --cefr-b-text: #FB923C;
+  --cefr-c-bg: rgba(123,126,200,0.18); --cefr-c-text: #A5A8E6;
+  --cefr-fallback-bg: #26263A;         --cefr-fallback-text: #EEEEE9;
 }
 
 body {

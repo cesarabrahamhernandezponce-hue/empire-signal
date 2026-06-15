@@ -19,7 +19,7 @@ export default function Image() {
           color: '#f5f5f0',
         }}
       >
-        <div style={{ display: 'flex', fontSize: 96, fontStyle: 'italic', fontWeight: 700, letterSpacing: '-0.03em', color: '#c9a96a' }}>
+        <div style={{ display: 'flex', fontSize: 96, fontStyle: 'italic', fontWeight: 700, letterSpacing: '-0.03em', color: '#7B7EC8' }}>
           Empire Signal
         </div>
         <div style={{ display: 'flex', marginTop: 24, fontSize: 42, lineHeight: 1.3, color: '#b8b8b0' }}>
