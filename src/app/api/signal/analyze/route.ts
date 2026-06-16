@@ -8,6 +8,7 @@ import { prisma } from '@/lib/db/prisma';
 import { getClientIp, hashIp, checkAnonymousLimit, checkUserLimit } from '@/lib/rate-limit';
 import { isOwnerRequest, readJsonBody } from '@/lib/api-guard';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
+import { classifyInput } from '@/lib/validation/input';
 
 const LANGUAGE_DB: Record<string, DbLanguage> = {
   es: DbLanguage.ES,
@@ -15,10 +16,9 @@ const LANGUAGE_DB: Record<string, DbLanguage> = {
 };
 
 const bodySchema = z.object({
-  word:     z.string().min(1).max(40).trim()
-              .refine((val) => val.trim().split(/\s+/).length <= 3, {
-                message: 'Empire Signal analyzes words and short phrases, not sentences.',
-              }),
+  // Shape only — content rules (length, word count, non-text, etc.) live in the
+  // pure validation layer (classifyInput) so they're testable and run first.
+  word:     z.string().min(1),
   context:  z.string().max(2000).nullish().transform((v) => v ?? null),
   language: z.enum(['es', 'en']).default('en'),
   // "Analyze anyway": set by the client after a soft dictionary not-found to
@@ -44,14 +44,17 @@ export async function POST(request: Request) {
 
     const { word: rawWord, context, language, force } = parsed.data;
 
-    // Normalize: lowercase + strip leading/trailing punctuation so "Hola", "¡hola!" and "hola" hit the same cache entry
-    const word = rawWord.toLowerCase().replace(/^[\s!?¡¿.,;:'"()\[\]{}]+|[\s!?¡¿.,;:'"()\[\]{}]+$/g, '');
-    if (!word) {
+    // Pure validation + normalization gate — runs before any AI/DB call.
+    const validation = classifyInput(rawWord, language === 'es' ? 'ES' : 'EN');
+    if (!validation.ok) {
+      // `error` mirrors `message` for backward-compatibility with the existing
+      // client, which reads `data.error` on non-ok responses.
       return NextResponse.json(
-        { error: 'Invalid parameters: word — must contain at least one letter.' },
+        { reason: validation.reason, message: validation.message, error: validation.message },
         { status: 400 },
       );
     }
+    const word = validation.normalized;
 
     // Dictionary validation — English single words only. dictionaryapi.dev does
     // single-headword lookups, so it 404s on phrasal verbs and 2-3 word phrases
