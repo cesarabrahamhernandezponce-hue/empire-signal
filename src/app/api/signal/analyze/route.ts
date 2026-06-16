@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { Language as DbLanguage } from '@prisma/client';
 
 import { analyzeWord, findCachedByKey, toLookupKey, type AnalyzeRecord } from '@/lib/services/signal';
-import { generateContent } from '@/lib/ai/client';
+import { resolveDictionaryGate } from '@/lib/services/word-classifier';
 import { prisma } from '@/lib/db/prisma';
 import { getClientIp, hashIp, checkAnonymousLimit, checkUserLimit } from '@/lib/rate-limit';
 import { isOwnerRequest, readJsonBody } from '@/lib/api-guard';
@@ -56,47 +56,6 @@ export async function POST(request: Request) {
     }
     const word = validation.normalized;
 
-    // Dictionary validation — English single words only. dictionaryapi.dev does
-    // single-headword lookups, so it 404s on phrasal verbs and 2-3 word phrases
-    // (which the app allows) and on its own incomplete coverage. We therefore:
-    //   • skip it for multi-word input (phrasal verbs etc.) — let the AI handle it,
-    //   • skip it when the user already chose "analyze anyway" (force),
-    //   • treat a 404 as a SOFT not-found (suggestion + analyze-anyway), never a
-    //     definitive "does not exist" claim, since false negatives are common.
-    const isSingleWord = !/\s/.test(word);
-    if (language === 'en' && isSingleWord && !force) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-        const dictRes = await fetch(
-          `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,
-          { signal: controller.signal },
-        );
-        clearTimeout(timeoutId);
-        if (dictRes.status === 404) {
-          let suggestion: string | null = null;
-          try {
-            // Sanitize the word before inserting into prompt to prevent injection
-            const safeWord = JSON.stringify(word).slice(1, -1);
-            const suggResult = await generateContent(
-              `The English word "${safeWord}" is likely misspelled. What is the correct spelling? Reply with ONLY the correctly spelled word in lowercase, no punctuation, nothing else.`,
-              'text/plain',
-            );
-            if (suggResult.ok) {
-              const sugg = suggResult.text.trim().toLowerCase().replace(/[^a-z'\-]/g, '');
-              if (sugg && sugg !== word) suggestion = sugg;
-            }
-          } catch { /* ignore — suggestion stays null */ }
-          return NextResponse.json(
-            { error: "We couldn't verify this word.", suggestion, canForce: true },
-            { status: 422 },
-          );
-        }
-      } catch {
-        // timeout or network failure — don't block analysis
-      }
-    }
-
     // Owner bypass: unlimited access for the owner via secret header
     const isOwner = isOwnerRequest(request);
 
@@ -127,6 +86,28 @@ export async function POST(request: Request) {
     // ok=true, value=null → confirmed cache miss.
     // ok=true, value=record → cache hit (already an AnalyzeRecord).
     const prefetched: AnalyzeRecord | null | undefined = cacheResult.ok ? cacheResult.value : undefined;
+
+    // Dictionary gate — runs ONLY on a confirmed cache MISS (prefetched === null),
+    // so cached words never hit dictionaryapi or the classifier. On a cache HIT
+    // (record) or a DB error (undefined) we skip it. On a 404 the classifier
+    // decides: real-but-uncommon words (slang/acronyms/neologisms/proper nouns)
+    // proceed to analysis; only clear typos and gibberish are rejected. This is
+    // ordered before rate limiting, matching the prior dictionary-check position.
+    if (prefetched === null) {
+      const gate = await resolveDictionaryGate({ word, language, force });
+      if (!gate.ok) {
+        const isES = language === 'es';
+        const error = gate.reason === 'not_a_word'
+          ? (isES ? 'No reconocemos esta palabra.' : "This doesn't look like a recognized word.")
+          : (isES ? 'No pudimos verificar esta palabra.' : "We couldn't verify this word.");
+        // canForce keeps the "analyze anyway" escape hatch: the dictionary and
+        // classifier can both be wrong, so we never hard-block.
+        return NextResponse.json(
+          { error, suggestion: gate.suggestion, canForce: true },
+          { status: 422 },
+        );
+      }
+    }
 
     if (!isOwner) {
       if (userId) {
