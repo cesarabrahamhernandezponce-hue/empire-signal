@@ -77,7 +77,7 @@ type ShareRecord = {
 
 export type AnalyzeResult =
   | { ok: true; record: AnalyzeRecord; cacheHit: boolean }
-  | { ok: false; error: string };
+  | { ok: false; error: string; suggestion?: string | null };
 
 export type ShareResult =
   | { ok: true; record: ShareRecord }
@@ -199,7 +199,9 @@ export async function analyzeWord(params: {
   try {
     const probe = JSON.parse(rawCleaned) as unknown;
     if (typeof probe === 'object' && probe !== null && (probe as Record<string, unknown>).error === 'WORD_NOT_FOUND') {
-      return { ok: false, error: 'WORD_NOT_FOUND' };
+      const raw = (probe as Record<string, unknown>).suggestion;
+      const suggestion = typeof raw === 'string' && raw.trim() ? raw.trim().toLowerCase() : null;
+      return { ok: false, error: 'WORD_NOT_FOUND', suggestion };
     }
   } catch { /* not the sentinel — fall through to parseAnalysis */ }
 

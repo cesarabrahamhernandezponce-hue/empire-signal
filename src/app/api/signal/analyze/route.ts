@@ -21,6 +21,9 @@ const bodySchema = z.object({
               }),
   context:  z.string().max(2000).nullish().transform((v) => v ?? null),
   language: z.enum(['es', 'en']).default('en'),
+  // "Analyze anyway": set by the client after a soft dictionary not-found to
+  // skip the (false-negative-prone) dictionary gate and let the AI decide.
+  force:    z.boolean().optional().default(false),
 });
 
 export async function POST(request: Request) {
@@ -39,7 +42,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { word: rawWord, context, language } = parsed.data;
+    const { word: rawWord, context, language, force } = parsed.data;
 
     // Normalize: lowercase + strip leading/trailing punctuation so "Hola", "¡hola!" and "hola" hit the same cache entry
     const word = rawWord.toLowerCase().replace(/^[\s!?¡¿.,;:'"()\[\]{}]+|[\s!?¡¿.,;:'"()\[\]{}]+$/g, '');
@@ -50,8 +53,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // Dictionary validation — English only (dictionaryapi.dev has incomplete Spanish coverage)
-    if (language === 'en') {
+    // Dictionary validation — English single words only. dictionaryapi.dev does
+    // single-headword lookups, so it 404s on phrasal verbs and 2-3 word phrases
+    // (which the app allows) and on its own incomplete coverage. We therefore:
+    //   • skip it for multi-word input (phrasal verbs etc.) — let the AI handle it,
+    //   • skip it when the user already chose "analyze anyway" (force),
+    //   • treat a 404 as a SOFT not-found (suggestion + analyze-anyway), never a
+    //     definitive "does not exist" claim, since false negatives are common.
+    const isSingleWord = !/\s/.test(word);
+    if (language === 'en' && isSingleWord && !force) {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3000);
@@ -74,7 +84,10 @@ export async function POST(request: Request) {
               if (sugg && sugg !== word) suggestion = sugg;
             }
           } catch { /* ignore — suggestion stays null */ }
-          return NextResponse.json({ error: 'Word not found', suggestion }, { status: 422 });
+          return NextResponse.json(
+            { error: "We couldn't verify this word.", suggestion, canForce: true },
+            { status: 422 },
+          );
         }
       } catch {
         // timeout or network failure — don't block analysis
@@ -145,12 +158,15 @@ export async function POST(request: Request) {
 
     if (!result.ok) {
       if (result.error === 'WORD_NOT_FOUND') {
+        // The AI judged the input isn't a standard word — a stronger signal than
+        // the dictionary, so no "analyze anyway" here (canForce omitted). Still
+        // worded softly and offers a suggestion + the other-language fallback.
         return NextResponse.json(
           {
             error: language === 'es'
-              ? 'Esta palabra no existe en español estándar.'
-              : 'This word does not exist in standard English.',
-            suggestion: null,
+              ? 'No pudimos verificar esta palabra como español estándar.'
+              : "We couldn't verify this as a standard English word.",
+            suggestion: result.suggestion ?? null,
           },
           { status: 422 },
         );

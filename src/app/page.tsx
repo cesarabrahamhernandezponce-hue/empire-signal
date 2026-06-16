@@ -76,6 +76,7 @@ const UI = {
     onTheList:           "You're on the list.",
     didYouMean:          'Did you mean',
     otherLangCta:        'Analyze in Spanish instead',
+    analyzeAnyway:       'Analyze anyway',
     loadingMessages:     ['Analyzing...', 'Consulting etymology...', 'Building examples...'],
   },
   es: {
@@ -118,6 +119,7 @@ const UI = {
     onTheList:           '¡Ya estás en la lista!',
     didYouMean:          '¿Quisiste decir',
     otherLangCta:        'Analizar en inglés',
+    analyzeAnyway:       'Analizar de todos modos',
     loadingMessages:     ['Analizando...', 'Consultando etimología...', 'Construyendo ejemplos...'],
   },
 } as const;
@@ -360,6 +362,7 @@ export default function Home() {
   const [pageState, setPageState]               = useState<PageState>({ status: 'idle' });
   const [spellingError, setSpellingError]       = useState<string | null>(null);
   const [spellingSuggestion, setSpellingSuggestion] = useState<string | null>(null);
+  const [spellingCanForce, setSpellingCanForce] = useState(false);
   const [history, setHistory]                   = useState<AnalyzeRecord[]>([]);
   const [sessionHistory, setSessionHistory]     = useState<string[]>([]);
   const [showHelp, setShowHelp]                   = useState(false);
@@ -401,6 +404,7 @@ export default function Home() {
         setTranslationState({ status: 'idle' });
         setSpellingError(null);
         setSpellingSuggestion(null);
+        setSpellingCanForce(false);
       }
     });
     return () => subscription.unsubscribe();
@@ -458,6 +462,7 @@ export default function Home() {
     setTranslationState({ status: 'idle' });
     setSpellingError(null);
     setSpellingSuggestion(null);
+    setSpellingCanForce(false);
   };
 
   const handleTranslate = async (lang: TranslateLang) => {
@@ -489,7 +494,7 @@ export default function Home() {
     }
   };
 
-  const handleAnalyzeWithWord = async (w: string, langOverride?: Language) => {
+  const handleAnalyzeWithWord = async (w: string, langOverride?: Language, force = false) => {
     const trimmed = w.trim();
     if (!trimmed) return;
 
@@ -505,6 +510,7 @@ export default function Home() {
           word: trimmed,
           context: context.trim() || null,
           language: lang,
+          force,
         }),
       });
 
@@ -512,9 +518,10 @@ export default function Home() {
 
       if (res.status === 422) {
         setPageState({ status: 'idle' });
-        setSpellingError((data as { error?: string }).error ?? 'Word not found. Check the spelling and try again.');
+        setSpellingError((data as { error?: string }).error ?? "We couldn't verify this word.");
         const suggestion = (data as { suggestion?: string | null }).suggestion ?? null;
         setSpellingSuggestion(suggestion);
+        setSpellingCanForce((data as { canForce?: boolean }).canForce ?? false);
         return;
       }
 
@@ -565,6 +572,7 @@ export default function Home() {
       setTranslationState({ status: 'idle' });
       setSpellingError(null);
       setSpellingSuggestion(null);
+      setSpellingCanForce(false);
       setWaitlistEmail('');
       setWaitlistStatus('idle');
       setPageState({ status: 'idle' });
@@ -1008,6 +1016,7 @@ export default function Home() {
                       onClick={() => {
                         setSpellingError(null);
                         setSpellingSuggestion(null);
+                        setSpellingCanForce(false);
                         setWord(spellingSuggestion);
                         handleAnalyzeWithWord(spellingSuggestion);
                       }}
@@ -1026,11 +1035,36 @@ export default function Home() {
                       {t.didYouMean} &ldquo;{spellingSuggestion}&rdquo;?
                     </button>
                   )}
+                  {spellingCanForce && (
+                    <button
+                      onClick={() => {
+                        const w = word;
+                        setSpellingError(null);
+                        setSpellingSuggestion(null);
+                        setSpellingCanForce(false);
+                        handleAnalyzeWithWord(w, undefined, true);
+                      }}
+                      style={{
+                        color: 'var(--accent)',
+                        fontSize: '0.75rem',
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        marginTop: '2px',
+                        display: 'block',
+                      }}
+                    >
+                      {t.analyzeAnyway}
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       const other: Language = language === 'es' ? 'en' : 'es';
                       setSpellingError(null);
                       setSpellingSuggestion(null);
+                      setSpellingCanForce(false);
                       setLanguage(other);
                       handleAnalyzeWithWord(word, other);
                     }}
