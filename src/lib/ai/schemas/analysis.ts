@@ -14,6 +14,14 @@ export const analysisSchema = z.object({
       category:    z.string().min(1),
       explanation: z.string().min(1),
     }),
+    // Every common part of speech the word has, ordered by usage frequency.
+    // Optional for backward compatibility: records cached before this field
+    // existed carry only `wordType`. New records carry both (wordType = the
+    // primary/most-frequent POS, mirrored as wordTypes[0]).
+    wordTypes: z.array(z.object({
+      category:    z.string().min(1),
+      explanation: z.string().min(1),
+    })).min(1).max(4).optional(),
     pronunciation: z.object({
       phonetic: z.string().max(45),
       guide:    z.string().min(1),
@@ -73,6 +81,15 @@ export const analysisSchema = z.object({
 });
 
 export type Analysis = z.infer<typeof analysisSchema>;
+
+export type WordTypeEntry = { category: string; explanation: string };
+
+// Read-side bridge between old and new records: prefer the multi-POS `wordTypes`
+// array, falling back to the single legacy `wordType` so cached records keep
+// rendering. Always returns a non-empty array.
+export function resolveWordTypes(essential: Analysis['essential']): WordTypeEntry[] {
+  return essential.wordTypes ?? [essential.wordType];
+}
 
 export function parseAnalysis(raw: string): { ok: true; data: Analysis } | { ok: false; error: string } {
   const cleaned = raw

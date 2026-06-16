@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import type { User } from '@supabase/supabase-js';
-import type { Analysis } from '@/lib/ai/schemas/analysis';
+import { resolveWordTypes, type Analysis } from '@/lib/ai/schemas/analysis';
 import { track } from '@/lib/analytics';
 
 export type AnalyzeRecord = {
@@ -898,20 +898,27 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
             </section>
           )}
 
-          {/* Word type */}
+          {/* Word type(s) — prefer the multi-POS wordTypes array, fall back to
+              the single legacy wordType for records cached before it existed. */}
           <section style={cardBase}>
             <SectionLabel serif>{l.wordType}</SectionLabel>
-            <div className="flex items-center gap-2 mb-2">
-              <span
-                className="text-xs font-medium px-2 py-0.5 rounded-[4px]"
-                style={{ background: 'var(--badge-bg)', color: 'var(--accent)', border: '1px solid var(--badge-border)' }}
-              >
-                {xlat(essential.wordType.category, uiLang, CATEGORY_ES)}
-              </span>
+            <div className="space-y-3">
+              {resolveWordTypes(essential).map((wt, i) => (
+                <div key={i} className={i > 0 ? 'pt-3 border-t border-line' : ''}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span
+                      className="text-xs font-medium px-2 py-0.5 rounded-[4px]"
+                      style={{ background: 'var(--badge-bg)', color: 'var(--accent)', border: '1px solid var(--badge-border)' }}
+                    >
+                      {xlat(wt.category, uiLang, CATEGORY_ES)}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
+                    {wt.explanation}
+                  </p>
+                </div>
+              ))}
             </div>
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
-              {essential.wordType.explanation}
-            </p>
           </section>
 
           {/* Pronunciation */}

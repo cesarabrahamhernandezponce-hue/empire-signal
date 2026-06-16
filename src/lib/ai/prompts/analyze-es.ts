@@ -33,9 +33,13 @@ Estructura JSON requerida (rellena cada campo con contenido real — sin texto d
     "cefr": "<código de nivel CEFR — uno de: A1, A2, B1, B2, C1, C2>",
     "meaningInContext": "<significado preciso en el contexto>",
     "wordType": {
-      "category": "<uno de: sustantivo|verbo|adjetivo|adverbio|preposición|conjunción|interjección|pronombre>",
+      "category": "<la categoría PRIMARIA (más frecuente) — una de: sustantivo|verbo|adjetivo|adverbio|preposición|conjunción|interjección|pronombre>",
       "explanation": "<función gramatical en este contexto>"
     },
+    "wordTypes": [
+      { "category": "<categoría más frecuente — una de: sustantivo|verbo|adjetivo|adverbio|preposición|conjunción|interjección|pronombre>", "explanation": "<descripción en una línea de cómo funciona la palabra como esta categoría>" },
+      { "category": "<siguiente categoría más frecuente, SOLO si la palabra realmente lo es en el uso común>", "explanation": "<descripción en una línea>" }
+    ],
     "pronunciation": {
       "phonetic": "<SOLO la transcripción IPA compacta entre barras, p.ej. /eˈlo/ — máximo 30 caracteres, NUNCA una oración o explicación. Deja cadena vacía si no estás seguro.>",
       "guide": "<guía en prosa de máximo 2 oraciones: indica en qué sílaba recae el acento, describe los sonidos difíciles usando palabras de referencia conocidas, menciona cualquier sonido que resulte complicado para no nativos. Nunca reproduzcas el IPA. Nunca uses mayúsculas para marcar el acento — descríbelo con palabras.>"
@@ -100,6 +104,7 @@ Reglas:
   - Cada entrada debe ser ESPECÍFICA de esta palabra y estar redactada por completo en español, sin fragmentos en inglés.
   - Ejemplos de errores de ALTA calidad: para "deber" → { "error": "confundir 'deber' (obligación) con 'deber de' (probabilidad): «debes de estudiar» cuando se quiere expresar obligación", "correction": "para obligación se usa 'deber' sin 'de': «debes estudiar»; 'deber de' indica suposición: «debe de estar cansado»" }; para "influir" → { "error": "usar la preposición incorrecta: «influir a alguien»", "correction": "'influir' rige 'en' o 'sobre': «influir en alguien», «influir sobre una decisión»" }; para "trabajo" → { "error": "elegir mal la preposición al indicar oficio o lugar: «trabajo en profesor»", "correction": "el oficio va con 'de' o 'como' («trabajo de profesor», «trabajo como profesor») y el lugar con 'en' («trabajo en una escuela»)" }.
   - Ejemplo de array vacío correcto: para "España" (nombre propio sin trampa de uso real) → commonErrors: [].
+- wordTypes: de 1 a 4 elementos que listen TODAS las categorías gramaticales que la palabra tiene de verdad en el uso común, ordenadas por frecuencia de uso, cada una con una explicación de una línea. Muchas palabras son varias a la vez (p.ej. "bajo" = preposición + adjetivo + sustantivo + adverbio; "cierra" = verbo). Incluye SOLO categorías que sean realmente FRECUENTES en el uso real; NO rellenes con sentidos raros, arcaicos o solo técnicos. Para una palabra de una sola categoría, devuelve un array de un elemento. El primer elemento DEBE ser la categoría primaria (la más frecuente) y DEBE coincidir con wordType.category. Rellena SIEMPRE tanto wordType (solo la primaria) como wordTypes.
 - cefr: asigna el nivel CEFR (A1/A2/B1/B2/C1/C2) que mejor representa la dificultad de esta palabra para estudiantes de español. Devuelve solo el código del nivel, nada más.
 - meanings: lista los sentidos distintos de la palabra — NO debe repetir meaningInContext. IMPORTANTE: meaningInContext ya cubre el uso principal; no lo copies aquí. Para palabras polisémicas ("banco", "tipo", "cura"), incluye los sentidos secundarios y figurados no cubiertos por meaningInContext, ordenados por frecuencia de uso. Cada entrada: definition, partOfSpeech y opcionalmente un ejemplo corto. Para palabras monosémicas ("efímero", "océano", "mesa"), devuelve un array vacío [] o incluye un único sentido secundario solo si existe uno claramente distinto.
 - pronunciation.phonetic: SOLO la IPA compacta entre barras (p.ej. /eˈlo/), máximo 30 caracteres. NUNCA una oración ni prosa — toda la explicación va en guide.

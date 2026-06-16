@@ -29,9 +29,13 @@ Required JSON structure (fill every field with real content — no placeholder t
     "cefr": "<CEFR level code — one of: A1, A2, B1, B2, C1, C2>",
     "meaningInContext": "<precise meaning in context>",
     "wordType": {
-      "category": "<one of: noun|verb|adjective|adverb|preposition|conjunction|interjection|pronoun>",
+      "category": "<the PRIMARY (most frequent) part of speech — one of: noun|verb|adjective|adverb|preposition|conjunction|interjection|pronoun>",
       "explanation": "<grammatical function in this context>"
     },
+    "wordTypes": [
+      { "category": "<most frequent part of speech — one of: noun|verb|adjective|adverb|preposition|conjunction|interjection|pronoun>", "explanation": "<one-line description of how the word works as this part of speech>" },
+      { "category": "<next most frequent part of speech, ONLY if the word genuinely is one in common usage>", "explanation": "<one-line description>" }
+    ],
     "pronunciation": {
       "phonetic": "<ONLY the compact IPA transcription between slashes, e.g. /həˈloʊ/ — maximum 30 characters, NEVER a sentence or explanation. Leave empty string if uncertain.>",
       "guide": "<2-sentence max prose guide: explain which syllable carries the stress, describe tricky sounds using familiar reference words (e.g. 'the o sounds like in go'), flag any sounds non-native speakers find difficult. Never reproduce IPA. Never use capital letters to mark stress — describe it in words instead.>"
@@ -97,6 +101,7 @@ Rules:
   - A false friend with Spanish is a high-value error worth including whenever it exists: e.g. for "actually" → { "error": "false friend: using 'actually' to mean 'currently/nowadays' (like Spanish 'actualmente')", "correction": "'actually' means 'in fact, really'; for 'at present' use 'currently' or 'nowadays': «I am actually a teacher» = «in fact I am a teacher»" }.
   - More examples of HIGH-quality errors: for "comprise" → { "error": "using 'is comprised of': «the team is comprised of five people»", "correction": "the whole comprises the parts — «the team comprises five people»; use 'is composed of' if you need the passive" }; for "affect" → { "error": "confusing 'affect' (verb, to influence) with 'effect' (noun, a result): «this will effect the outcome»", "correction": "use 'affect' for the verb: «this will affect the outcome»; 'effect' is the noun: «it had an effect»" }.
   - Example of a correct empty array: for "Spain" (proper noun with no real usage pitfall) → commonErrors: [].
+- wordTypes: 1 to 4 items listing EVERY common part of speech the word genuinely has, ordered by frequency of use, each with a one-line explanation. Many words are several at once (e.g. "run" = verb + noun; "light" = noun + verb + adjective; "fast" = adjective + adverb) — list each real one. Only include a part of speech that is actually COMMON in real usage; do NOT pad with rare, archaic or technical-only senses. For a single-POS word, return a one-element array. The first entry MUST be the primary (most frequent) POS and MUST match wordType.category. Always populate BOTH wordType (primary only) and wordTypes.
 - cefr: assign the CEFR level (A1/A2/B1/B2/C1/C2) that best represents this word's difficulty for English learners. Return only the level code, nothing else.
 - meanings: lists the word's distinct senses — NOT a repeat of meaningInContext. IMPORTANT: meaningInContext already covers the primary use; do NOT copy it here. For polysemous words ("type", "run", "bank"), populate with secondary and figurative senses not covered by meaningInContext, ordered by frequency of use. Each entry: definition, partOfSpeech, and optionally a short example sentence. For monosemous words ("ephemeral", "ocean", "table"), return an empty array [] or include one secondary sense only if a meaningfully distinct one exists.
 - pronunciation.phonetic: ONLY the compact IPA between slashes (e.g. /həˈloʊ/), 30 characters max. NEVER a sentence, never prose — all explanation goes in guide.
