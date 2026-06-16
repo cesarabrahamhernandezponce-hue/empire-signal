@@ -68,7 +68,7 @@ describe('POST /api/signal/analyze — gate ordering', () => {
   it('cache HIT → neither dictionary/classifier gate nor rate limit-blocking path runs, returns 200', async () => {
     body('ephemeral');
     mockedFindCached.mockResolvedValue(RECORD as never);
-    mockedAnalyze.mockResolvedValue({ ok: true, record: RECORD as never, cacheHit: true });
+    mockedAnalyze.mockResolvedValue({ ok: true, record: RECORD as never, cacheHit: true, model: null });
 
     const res = await POST(request());
     const data = await res.json();
@@ -83,7 +83,7 @@ describe('POST /api/signal/analyze — gate ordering', () => {
     body('rizz');
     mockedFindCached.mockResolvedValue(null);
     mockedGate.mockResolvedValue({ ok: true });
-    mockedAnalyze.mockResolvedValue({ ok: true, record: RECORD as never, cacheHit: false });
+    mockedAnalyze.mockResolvedValue({ ok: true, record: RECORD as never, cacheHit: false, model: 'gemini:gemini-2.5-flash-lite' });
 
     const res = await POST(request());
 
@@ -140,7 +140,7 @@ describe('POST /api/signal/analyze — gate ordering', () => {
   it('DB error (cache lookup throws) → gate is SKIPPED (uncertain miss), analysis still proceeds', async () => {
     body('rizz');
     mockedFindCached.mockRejectedValue(new Error('db down'));
-    mockedAnalyze.mockResolvedValue({ ok: true, record: RECORD as never, cacheHit: false });
+    mockedAnalyze.mockResolvedValue({ ok: true, record: RECORD as never, cacheHit: false, model: 'gemini:gemini-2.5-flash-lite' });
 
     const res = await POST(request());
 

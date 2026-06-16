@@ -180,7 +180,7 @@ export async function POST(request: Request) {
       })();
     }
 
-    return NextResponse.json({ record: result.record, cacheHit: result.cacheHit }, { status: 200 });
+    return NextResponse.json({ record: result.record, cacheHit: result.cacheHit, model: result.model }, { status: 200 });
   } catch (err) {
     console.error('[POST /api/signal/analyze] Unexpected error:', err);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });

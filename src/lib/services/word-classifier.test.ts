@@ -21,7 +21,7 @@ function stubFetchReject() {
 }
 
 function aiJson(obj: unknown) {
-  mockedGenerate.mockResolvedValue({ ok: true, text: JSON.stringify(obj) });
+  mockedGenerate.mockResolvedValue({ ok: true, text: JSON.stringify(obj), model: 'test-model', provider: 'test' });
 }
 
 beforeEach(() => {
@@ -119,7 +119,7 @@ describe('resolveDictionaryGate — 404 → classification routing', () => {
   });
 
   it('malformed classifier JSON → falls back to valid → proceeds', async () => {
-    mockedGenerate.mockResolvedValue({ ok: true, text: 'not json at all {' });
+    mockedGenerate.mockResolvedValue({ ok: true, text: 'not json at all {', model: 'test-model', provider: 'test' });
     const r = await resolveDictionaryGate({ word: 'rizz', language: 'en', force: false });
     expect(r).toEqual({ ok: true });
   });

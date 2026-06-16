@@ -56,7 +56,7 @@ function stripCodeFences(text: string): string {
 }
 
 export type AIResult =
-  | { ok: true; text: string }
+  | { ok: true; text: string; model: string; provider: string }
   | { ok: false; error: string };
 
 // Flatten an AggregateError (from Promise.any) into a short list of messages.
@@ -67,11 +67,13 @@ function describeAggregate(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
+type RaceWin = { text: string; model: string };
+
 function raceModels(
   pass: Pass,
   prompt: string,
   isJson: boolean,
-): { promise: Promise<string>; cleanup: () => void } {
+): { promise: Promise<RaceWin>; cleanup: () => void } {
   const controllers = pass.models.map(() => new AbortController());
   const timers: ReturnType<typeof setTimeout>[] = [];
 
@@ -86,7 +88,7 @@ function raceModels(
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     timers.push(timer);
 
-    const run = async (): Promise<string> => {
+    const run = async (): Promise<RaceWin> => {
       // Re-try the SAME model at most once after a 429; any other outcome
       // resolves or rejects immediately. One retry recovers the transient
       // per-minute limit; looping further just burns the daily quota and makes
@@ -125,14 +127,14 @@ function raceModels(
         const data = await res.json() as { choices?: { message?: { content?: string } }[] };
         const raw = data.choices?.[0]?.message?.content;
         if (!raw) throw new Error('empty');
-        if (!isJson) return raw;
+        if (!isJson) return { text: raw, model };
 
         // Reject responses that aren't parseable JSON so a fast-but-truncated
         // or garbled answer can't win the race and poison the result —
         // Promise.any then falls through to a model that returns valid JSON.
         const cleaned = stripCodeFences(raw);
         JSON.parse(cleaned); // throws on invalid JSON → this attempt loses the race
-        return cleaned;
+        return { text: cleaned, model };
       }
     };
 
@@ -160,9 +162,12 @@ export async function generateContent(
   for (const pass of passes) {
     const race = raceModels(pass, prompt, isJson);
     try {
-      const text = await race.promise;
+      const win = await race.promise;
       race.cleanup();
-      return { ok: true, text };
+      // Surface which model actually answered so callers (and the smoke
+      // harness) can attribute every successful generation to a model.
+      console.log(`[ai/client] won by ${pass.provider}:${win.model}`);
+      return { ok: true, text: win.text, model: win.model, provider: pass.provider };
     } catch (err) {
       race.cleanup();
       errors.push(`${pass.provider}[${pass.models.join('/')}]: ${describeAggregate(err)}`);

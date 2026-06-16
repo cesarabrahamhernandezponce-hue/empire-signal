@@ -76,7 +76,7 @@ type ShareRecord = {
 };
 
 export type AnalyzeResult =
-  | { ok: true; record: AnalyzeRecord; cacheHit: boolean }
+  | { ok: true; record: AnalyzeRecord; cacheHit: boolean; model: string | null }
   | { ok: false; error: string; suggestion?: string | null };
 
 export type ShareResult =
@@ -180,7 +180,8 @@ export async function analyzeWord(params: {
     }).catch((err) => console.error('[analyzeWord] SearchEvent (cache hit) failed:', err));
 
     const record = await enrichWithContext({ ...cached, analysis: filterSynonyms(cached.analysis) }, cached.word, context, language);
-    return { ok: true, record, cacheHit: true };
+    // Cache hit — no model answered this request (served from DB).
+    return { ok: true, record, cacheHit: true, model: null };
   }
 
   // Cache miss — base analysis never includes context (it's ephemeral)
@@ -192,6 +193,8 @@ export async function analyzeWord(params: {
   if (!aiResult.ok) {
     return { ok: false, error: aiResult.error };
   }
+  // Track which model produced the analysis we ultimately return.
+  let winningModel: string | null = `${aiResult.provider}:${aiResult.model}`;
 
   // Check for word-not-found sentinel before attempting full parse
   const rawCleaned = aiResult.text.trim()
@@ -221,6 +224,7 @@ export async function analyzeWord(params: {
       return { ok: false, error: 'Could not generate a valid analysis. Please try again.' };
     }
     analysis = secondParse.data;
+    winningModel = `${aiRetry.provider}:${aiRetry.model}`;
   }
 
   // Filter before DB write so the cached version is already clean
@@ -258,7 +262,7 @@ export async function analyzeWord(params: {
       shareId:  record.shareId,
     };
     const enriched = await enrichWithContext(baseRecord, baseRecord.word, context, language);
-    return { ok: true, record: enriched, cacheHit: false };
+    return { ok: true, record: enriched, cacheHit: false, model: winningModel };
   } catch (err) {
     // Two concurrent requests for the same word+language hit the unique constraint (P2002);
     // recover by returning the record the first request already created.
@@ -283,7 +287,7 @@ export async function analyzeWord(params: {
           shareId:  existing.shareId,
         };
         const enriched = await enrichWithContext(baseRecord, baseRecord.word, context, language);
-        return { ok: true, record: enriched, cacheHit: false };
+        return { ok: true, record: enriched, cacheHit: false, model: winningModel };
       }
     }
     console.error('[analyzeWord] DB write failed:', err);
@@ -292,7 +296,7 @@ export async function analyzeWord(params: {
       { id: '', word: canonical, context: null, language: dbLanguage, analysis, shareId: '' },
       canonical, context, language,
     );
-    return { ok: true, record: enriched, cacheHit: false };
+    return { ok: true, record: enriched, cacheHit: false, model: winningModel };
   }
 }
 
