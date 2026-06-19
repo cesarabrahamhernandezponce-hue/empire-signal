@@ -610,16 +610,17 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
 
     const lang = record.language.toLowerCase();
 
-    // 1. English: prefer the real human recording when one exists.
+    // 1. Server TTS proxy — clean, uniform voice for every word, and same-origin
+    //    so it works even when the browser has no local speech voices installed
+    //    (common on Linux). Preferred over the dictionary's crowd-sourced human
+    //    recordings, whose quality is wildly inconsistent.
+    if (await playUrl(`/api/signal/tts?word=${encodeURIComponent(record.word)}&lang=${lang}`)) return;
+
+    // 2. English fallback: a real human recording, only if the proxy is down.
     if (lang === 'en') {
       const url = await fetchDictionaryAudio(record.word);
       if (url && await playUrl(url)) return;
     }
-
-    // 2. Server TTS proxy — natural voice for any word in either language, and
-    //    same-origin so it works even when the browser has no local speech
-    //    voices installed (common on Linux), where speakFallback is silent.
-    if (await playUrl(`/api/signal/tts?word=${encodeURIComponent(record.word)}&lang=${lang}`)) return;
 
     // 3. Last resort: the browser's own speech synthesis.
     speakFallback();
