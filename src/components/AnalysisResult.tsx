@@ -556,6 +556,47 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
     }
   }
 
+  // Real human recordings from the dictionary API (English only). Scans every
+  // entry, not just the first — some words carry their audio on a later sense.
+  async function fetchDictionaryAudio(word: string): Promise<string | null> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    try {
+      const res = await fetch(
+        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,
+        { signal: controller.signal },
+      );
+      if (!res.ok) return null;
+      const data: Array<{ phonetics?: Array<{ audio?: string }> }> = await res.json();
+      for (const entry of data) {
+        const audioUrl = entry.phonetics?.find((p) => p.audio)?.audio;
+        if (audioUrl) return audioUrl;
+      }
+      return null;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  // Plays an audio URL, resolving true once playback starts and false if the
+  // source can't be loaded/played — so the caller can fall through to the next
+  // source. State cleanup on end/error lives here.
+  function playUrl(url: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => { setIsSpeaking(false); audioRef.current = null; };
+        audio.onerror = () => { audioRef.current = null; resolve(false); };
+        audio.play().then(() => resolve(true)).catch(() => { audioRef.current = null; resolve(false); });
+      } catch {
+        resolve(false);
+      }
+    });
+  }
+
   async function handleListen() {
     if (isSpeaking) {
       audioRef.current?.pause();
@@ -567,35 +608,20 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
 
     setIsSpeaking(true);
 
-    if (record.language.toLowerCase() === 'en') {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
-      try {
-        const res = await fetch(
-          `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(record.word)}`,
-          { signal: controller.signal },
-        );
-        clearTimeout(timeoutId);
-        if (res.ok) {
-          const data: Array<{ phonetics: Array<{ audio?: string }> }> = await res.json();
-          const audioUrl = data[0]?.phonetics?.find((p) => p.audio)?.audio;
-          if (audioUrl) {
-            try {
-              const audio = new Audio(audioUrl);
-              audioRef.current = audio;
-              audio.onended = () => { setIsSpeaking(false); audioRef.current = null; };
-              audio.onerror = () => { setIsSpeaking(false); audioRef.current = null; };
-              await audio.play();
-              return;
-            } catch { /* play() rejected → fall through to speakFallback */ }
-          }
-        }
-      } catch {
-        clearTimeout(timeoutId);
-        /* fall through to Web Speech */
-      }
+    const lang = record.language.toLowerCase();
+
+    // 1. English: prefer the real human recording when one exists.
+    if (lang === 'en') {
+      const url = await fetchDictionaryAudio(record.word);
+      if (url && await playUrl(url)) return;
     }
 
+    // 2. Server TTS proxy — natural voice for any word in either language, and
+    //    same-origin so it works even when the browser has no local speech
+    //    voices installed (common on Linux), where speakFallback is silent.
+    if (await playUrl(`/api/signal/tts?word=${encodeURIComponent(record.word)}&lang=${lang}`)) return;
+
+    // 3. Last resort: the browser's own speech synthesis.
     speakFallback();
   }
 

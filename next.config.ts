@@ -5,7 +5,8 @@ import type { NextConfig } from "next";
 // theme-bootstrap script (layout.tsx) and Next.js injects inline bootstrap data;
 // a nonce-based policy would require threading a nonce through the modified Next
 // fork and is deferred. Even so, the policy is meaningful: it whitelists the only
-// external origins allowed to load/connect (Supabase, PostHog, Google Fonts) and
+// external origins allowed to load/connect (Supabase, PostHog, Google Fonts, and
+// dictionaryapi.dev for English pronunciation audio) and
 // locks down framing, base-uri, plugins and form targets — which is what stops
 // clickjacking and injection from doing real damage.
 // React's dev build uses eval() for debugging (callstack reconstruction); it
@@ -19,7 +20,8 @@ const csp = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob:",
   "font-src 'self' https://fonts.gstatic.com data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://*.posthog.com",
+  "media-src 'self' https://api.dictionaryapi.dev",
+  "connect-src 'self' https://api.dictionaryapi.dev https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://*.posthog.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
