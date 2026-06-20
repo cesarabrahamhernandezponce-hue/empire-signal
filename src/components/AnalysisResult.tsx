@@ -227,7 +227,7 @@ const LABELS = {
     stop:            'Stop',
     share:           'Share',
     copied:          'Copied!',
-    copy:            'Copy',
+    copy:            'Copy meaning',
     meaning:         'Meaning',
     meanings:        'Meanings',
     meaningInCtx:    'Meaning in context',
@@ -270,7 +270,7 @@ const LABELS = {
     stop:            'Detener',
     share:           'Compartir',
     copied:          '¡Copiado!',
-    copy:            'Copiar',
+    copy:            'Copiar significado',
     meaning:         'Significado',
     meanings:        'Significados',
     meaningInCtx:    'Significado en contexto',
@@ -783,7 +783,7 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
               className="flex items-center gap-1.5 text-sm py-2.5 px-3 text-ink-muted hover:text-accent transition-colors duration-150"
               title={wordCopied ? l.copied : l.copy}
               onClick={() => {
-                navigator.clipboard.writeText(word).then(() => {
+                navigator.clipboard.writeText(essential.meaningInContext).then(() => {
                   setWordCopied(true);
                   setTimeout(() => setWordCopied(false), 1500);
                 });
