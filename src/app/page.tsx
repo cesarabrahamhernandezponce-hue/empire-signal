@@ -38,6 +38,9 @@ const CURIOSITIES: Record<'en' | 'es', string[]> = {
 const UI = {
   en: {
     insightLabel:        'Empire Insight',
+    wordOfDayLabel:      'Word of the Day',
+    wordOfDayCta:        'See full analysis →',
+    differentiators:     ['Etymology & origin', 'Register & collocations', 'Common errors'],
     tagline:             'Linguistic intelligence',
     headline:            'You know the word. But do you know how to use it?',
     subheadline:         'Empire Signal shows you the register, the collocations, and the context that turn vocabulary you recognize into vocabulary you can actually use.',
@@ -81,6 +84,9 @@ const UI = {
   },
   es: {
     insightLabel:        'Perspectiva Empire',
+    wordOfDayLabel:      'Palabra del día',
+    wordOfDayCta:        'Ver análisis completo →',
+    differentiators:     ['Etimología y origen', 'Registro y colocaciones', 'Errores comunes'],
     tagline:             'Inteligencia lingüística',
     headline:            'Conoces la palabra. ¿Pero sabes cómo usarla?',
     subheadline:         'Empire Signal te muestra el registro, las colocaciones y el contexto que convierten el vocabulario que reconoces en vocabulario que de verdad puedes usar.',
@@ -372,6 +378,7 @@ export default function Home() {
   const [targetLang, setTargetLang]               = useState<TranslateLang | null>(null);
   const [translationState, setTranslationState]   = useState<TranslationState>({ status: 'idle' });
   const [isDesktop, setIsDesktop]                 = useState(false);
+  const [wordOfDay, setWordOfDay]                 = useState<{ word: string; record: AnalyzeRecord } | null>(null);
   const settingsRef                             = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -431,6 +438,21 @@ export default function Home() {
     // client render different tips and hydration mismatches.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCuriosity(pool[Math.floor(Math.random() * pool.length)]);
+  }, [language]);
+
+  // Word of the Day — deterministic per language, served pre-cached (no AI, no
+  // rate-limit cost). Refetch when the language toggle changes.
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/signal/word-of-day?language=${language}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { word?: string; record?: AnalyzeRecord } | null) => {
+        if (active && data?.word && data.record) {
+          setWordOfDay({ word: data.word, record: data.record });
+        }
+      })
+      .catch(() => {});
+    return () => { active = false; };
   }, [language]);
 
   useEffect(() => {
@@ -552,6 +574,14 @@ export default function Home() {
   };
 
   const handleAnalyze = () => handleAnalyzeWithWord(word);
+
+  // Open the pre-cached Word of the Day as a normal result — no network round
+  // trip (the record is already loaded) and no metered analyze call.
+  const handleOpenWordOfDay = () => {
+    if (!wordOfDay) return;
+    track('word_of_day_opened', { word: wordOfDay.word, language });
+    setPageState({ status: 'result', record: wordOfDay.record, cacheHit: true });
+  };
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -956,9 +986,37 @@ export default function Home() {
           </h1>
 
           {/* 3. Subheadline */}
-          <p className="text-xs sm:text-sm text-ink-faint sm:text-ink-muted leading-relaxed text-center mb-4 sm:mb-8 max-w-[420px] sm:max-w-[480px] mx-auto">
+          <p className="text-xs sm:text-sm text-ink-faint sm:text-ink-muted leading-relaxed text-center mb-4 sm:mb-6 max-w-[420px] sm:max-w-[480px] mx-auto">
             {t.subheadline}
           </p>
+
+          {/* Word of the Day — editorial kicker (not a boxed card, to avoid the
+              templated feel). Sits above the search card so it's the first thing
+              seen; tapping opens the pre-cached full analysis (no AI/limit cost). */}
+          {wordOfDay && word.length === 0 && (
+            <div className="text-center mb-4 sm:mb-6">
+              <button
+                onClick={handleOpenWordOfDay}
+                className="group inline-flex flex-wrap items-baseline justify-center gap-x-2.5 gap-y-1"
+              >
+                <span className="text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-ink-faint">
+                  {t.wordOfDayLabel}
+                </span>
+                <span
+                  className="text-[1.15rem] sm:text-[1.3rem] italic text-accent leading-none decoration-accent/30 underline-offset-4 group-hover:underline"
+                  style={{ fontFamily: 'var(--font-dm-serif)' }}
+                >
+                  {wordOfDay.word}
+                </span>
+                <span
+                  aria-hidden
+                  className="text-accent text-sm transition-transform duration-150 group-hover:translate-x-0.5"
+                >
+                  →
+                </span>
+              </button>
+            </div>
+          )}
 
           {/* 4. Search card */}
           <div className="w-full bg-surface border border-line rounded-[12px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden">
@@ -1230,7 +1288,7 @@ export default function Home() {
 
           {/* Differentiators — the core pitch, right under the search card */}
           <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2">
-            {(['Etymology & origin', 'Register & collocations', 'Common errors'] as const).map((f) => (
+            {t.differentiators.map((f) => (
               <span key={f} className="flex items-center gap-1.5 text-[0.72rem] text-ink-muted">
                 <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
                 {f}
