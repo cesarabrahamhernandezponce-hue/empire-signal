@@ -51,6 +51,30 @@
     /* JS sets font-size based on canvas + mark type. */
     font-size: var(--fs, 150px);
   }
+  /* Stacked lockup: "Empire" wordmark with a tracked "SIGNAL" sublabel. */
+  .mark.lockup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-right: 0;
+  }
+  .mark.lockup .lk-e {
+    display: block;
+    padding-right: 0.12em;   /* air for the slanted final glyph */
+  }
+  .mark.lockup .lk-s {
+    display: block;
+    font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 0.30em;
+    line-height: 1;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    padding-left: 0.5em;     /* offset trailing tracking to re-center */
+    margin-top: 0.16em;
+    opacity: 0.82;
+  }
 </style>
 </head>
 <body>
@@ -64,7 +88,10 @@
     const bg = bgParam === 'cream' ? '#FAFAF8'
              : bgParam === 'gradient' ? GRAD
              : 'transparent';
-    const mark = q.get('mark') === 'E' ? 'E' : 'Empire';
+    const markParam = q.get('mark');
+    const mark = markParam === 'E' ? 'E'
+               : markParam === 'lockup' ? 'lockup'
+               : 'Empire';
 
     const root = document.body.style;
     root.setProperty('--w', w + 'px');
@@ -72,7 +99,12 @@
     root.setProperty('--bg', bg);
 
     const el = document.getElementById('mark');
-    el.textContent = mark;
+    if (mark === 'lockup') {
+      el.classList.add('lockup');
+      el.innerHTML = '<span class="lk-e">Empire</span><span class="lk-s">Signal</span>';
+    } else {
+      el.textContent = mark;
+    }
 
     // Solid cream foreground (knockout) — reads better than thin gradient
     // strokes when the mark sits on a filled tile, e.g. a tiny favicon.
@@ -87,8 +119,12 @@
     function fit() {
       const padOverride = parseFloat(q.get('pad'));
       const padX = !isNaN(padOverride) ? padOverride
-                 : mark === 'E' ? 0.30 : 0.14;    // fraction of width as side padding
-      const padY = mark === 'E' ? padX : 0.16;    // keep the E vertically tight too
+                 : mark === 'E' ? 0.30
+                 : mark === 'lockup' ? 0.16
+                 : 0.14;                           // fraction of width as side padding
+      const padY = mark === 'E' ? padX
+                 : mark === 'lockup' ? 0.22        // room for the two stacked lines
+                 : 0.16;
       const maxW = w * (1 - padX * 2);
       const maxH = h * (1 - padY * 2);
       let fs = 10;
