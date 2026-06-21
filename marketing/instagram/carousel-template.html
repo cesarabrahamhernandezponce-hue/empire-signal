@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: 'DM Serif Display'; font-style: normal; font-weight: 400;
+    src: url('file:///home/cesar/proyectos/empire/empire-signal/src/app/_og-fonts/DMSerifDisplay-Regular.ttf') format('truetype');
+  }
+  @font-face {
+    font-family: 'DM Serif Display'; font-style: italic; font-weight: 400;
+    src: url('file:///home/cesar/proyectos/empire/empire-signal/src/app/_og-fonts/DMSerifDisplay-Italic.ttf') format('truetype');
+  }
+  :root {
+    --bg: #FAFAF8;
+    --ink: #1A1A1A;
+    --accent: #3A3D8F;
+    --muted: #6B6B6B;
+    --subtle: #9B9B9B;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1080px; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  .serif { font-family: 'DM Serif Display', Georgia, serif; }
+
+  .frame {
+    position: relative;
+    width: 1080px; height: 1080px;
+    padding: 96px;
+    display: flex; flex-direction: column;
+  }
+  /* Subtle corner wordmark — identical on every slide */
+  .wordmark {
+    position: absolute; top: 62px; left: 96px;
+    font-size: 19px; font-weight: 600;
+    letter-spacing: 0.34em; text-transform: uppercase;
+    color: var(--subtle);
+  }
+
+  .slide { flex: 1; display: none; }
+  .slide.on { display: flex; flex-direction: column; }
+
+  /* ---------- Slide 1 — hook ---------- */
+  .s1.on { align-items: center; justify-content: center; text-align: center; }
+  .s1 .kicker { font-style: italic; font-size: 56px; color: var(--muted); margin-bottom: 44px; }
+  .s1 .hero { font-size: 152px; line-height: 1; color: var(--ink); letter-spacing: -0.015em; }
+  .s1 .ipa { font-size: 40px; color: var(--muted); margin-top: 40px; letter-spacing: 0.01em; }
+  .s1 .meaning { font-size: 33px; color: var(--muted); margin-top: 52px; line-height: 1.45; max-width: 620px; }
+
+  /* ---------- Slides 2 & 3 — editorial body ---------- */
+  .editorial.on { align-items: flex-start; justify-content: center; text-align: left; }
+  .editorial .header {
+    font-size: 30px; font-weight: 700;
+    letter-spacing: 0.30em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 60px;
+  }
+  .editorial .body {
+    font-size: 47px; line-height: 1.5; color: var(--ink); font-weight: 400;
+  }
+  .editorial .body em {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-style: italic; color: var(--accent); font-size: 1.02em;
+  }
+
+  /* ---------- Slide 4 — CTA ---------- */
+  .s4.on { align-items: center; justify-content: center; text-align: center; }
+  .s4 .brand { font-style: italic; font-size: 110px; line-height: 1; color: var(--accent); }
+  .s4 .tagline { font-size: 43px; font-weight: 500; color: var(--ink); margin-top: 48px; }
+  .s4 .features {
+    font-size: 27px; color: var(--muted); margin-top: 30px;
+    max-width: 640px; line-height: 1.65; letter-spacing: 0.01em;
+  }
+  .s4 .btn {
+    margin-top: 70px;
+    background: var(--accent); color: #FAFAF8;
+    font-size: 30px; font-weight: 600; letter-spacing: 0.01em;
+    padding: 28px 52px; border-radius: 999px;
+  }
+  .s4 .btn .arrow { margin-left: 12px; }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="wordmark">Empire Signal</div>
+
+    <!-- Slide 1 -->
+    <div class="slide s1">
+      <div class="kicker serif">Did you know?</div>
+      <div class="hero serif">serendipity</div>
+      <div class="ipa">/&#716;ser.&#601;n&#712;d&#618;p.&#601;.ti/</div>
+      <div class="meaning">the occurrence of finding valuable things without looking for them</div>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="slide s2 editorial">
+      <div class="header">The Etymology</div>
+      <div class="body">Coined in 1754 by Horace Walpole, in a letter describing an unexpected discovery. He took it from a Persian fairy tale, <em>&lsquo;The Three Princes of Serendip&rsquo;</em> &mdash; princes who kept finding things they weren&rsquo;t looking for.</div>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="slide s3 editorial">
+      <div class="header">The Deeper Layer</div>
+      <div class="body">&lsquo;Serendip&rsquo; was the old Persian name for Sri Lanka &mdash; from Sanskrit <em>&lsquo;Simhaladvipa,&rsquo;</em> meaning <em>&lsquo;Island of Lions.&rsquo;</em> A word about lucky accidents was itself born from one.</div>
+    </div>
+
+    <!-- Slide 4 -->
+    <div class="slide s4">
+      <div class="brand serif">Empire Signal</div>
+      <div class="tagline">Deep linguistic analysis. Not just definitions.</div>
+      <div class="features">Etymology &middot; Register &middot; Collocations &middot; Usage &middot; Common errors &mdash; all in one search</div>
+      <div class="btn">Try it free &mdash; link in bio<span class="arrow">&#8594;</span></div>
+    </div>
+  </div>
+
+  <script>
+    const s = new URLSearchParams(location.search).get('s') || '1';
+    document.querySelector('.s' + s).classList.add('on');
+    document.documentElement.setAttribute('data-ready', '1');
+  </script>
+</body>
+</html>
