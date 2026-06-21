@@ -975,6 +975,18 @@ export default function Home() {
             >
               Empire
             </span>
+            <span
+              className="block text-[0.62rem] sm:text-[0.72rem] uppercase text-ink-muted leading-none mt-1.5 sm:mt-2"
+              style={{
+                fontFamily: 'var(--font-geist-sans)',
+                letterSpacing: '0.42em',
+                // El tracking añade espacio a la derecha de la última letra; un
+                // padding izquierdo equivalente reequilibra el centrado óptico.
+                paddingLeft: '0.42em',
+              }}
+            >
+              Signal
+            </span>
           </div>
 
           {/* 2. Headline */}
