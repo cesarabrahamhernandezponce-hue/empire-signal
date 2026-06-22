@@ -7,6 +7,7 @@ import type { User } from '@supabase/supabase-js';
 import AnalysisResult, { type AnalyzeRecord } from '@/components/AnalysisResult';
 import { track } from '@/lib/analytics';
 import { createClient } from '@/lib/supabase/client';
+import { loadSessionHistory, addSessionHistory } from '@/lib/session-history';
 
 const CURIOSITIES: Record<'en' | 'es', string[]> = {
   en: [
@@ -51,6 +52,8 @@ const UI = {
     hideContext:         '− Hide context',
     translate:           'Translate',
     translating:         'Translating',
+    translateLimit:      "You've reached today's translation limit. Come back tomorrow.",
+    translateError:      'Translation failed. Please try again.',
     analyze:             'Analyze',
     analyzing:           'Analyzing...',
     errorTitle:          'Something went wrong',
@@ -80,7 +83,13 @@ const UI = {
     didYouMean:          'Did you mean',
     otherLangCta:        'Analyze in Spanish instead',
     analyzeAnyway:       'Analyze anyway',
-    loadingMessages:     ['Analyzing...', 'Consulting etymology...', 'Building examples...'],
+    loadingMessages:     [
+      'Consulting etymology archives...',
+      'Mapping collocations...',
+      'Checking register levels...',
+      'Finding usage examples...',
+      'Analyzing common errors...',
+    ],
   },
   es: {
     insightLabel:        'Perspectiva Empire',
@@ -97,6 +106,8 @@ const UI = {
     hideContext:         '− Ocultar contexto',
     translate:           'Traducir',
     translating:         'Traduciendo',
+    translateLimit:      'Alcanzaste el límite de traducciones de hoy. Vuelve mañana.',
+    translateError:      'No se pudo traducir. Inténtalo de nuevo.',
     analyze:             'Analizar',
     analyzing:           'Analizando...',
     errorTitle:          'Algo salió mal',
@@ -126,7 +137,13 @@ const UI = {
     didYouMean:          '¿Quisiste decir',
     otherLangCta:        'Analizar en inglés',
     analyzeAnyway:       'Analizar de todos modos',
-    loadingMessages:     ['Analizando...', 'Consultando etimología...', 'Construyendo ejemplos...'],
+    loadingMessages:     [
+      'Consultando archivos etimológicos...',
+      'Mapeando colocaciones...',
+      'Comprobando niveles de registro...',
+      'Buscando ejemplos de uso...',
+      'Analizando errores comunes...',
+    ],
   },
 } as const;
 
@@ -153,7 +170,7 @@ type TranslateLang = (typeof TRANSLATE_LANGS)[number]['id'];
 type TranslationState =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'result'; text: string; lang: TranslateLang }
+  | { status: 'result'; translations: { lang: TranslateLang; text: string }[] }
   | { status: 'error'; message: string };
 
 type Language = 'en' | 'es';
@@ -306,12 +323,26 @@ function HelpModal({ title, language, onClose }: { title: string; language: 'en'
   );
 }
 
-function LoadingView({ word, messages }: { word: string; messages: readonly string[] }) {
+function LoadingView({ word, messages, srLabel }: { word: string; messages: readonly string[]; srLabel: string }) {
   const [msgIdx, setMsgIdx] = useState(0);
+  const [visible, setVisible] = useState(true);
 
+  // Decorative rotation only — these messages advance on a fixed 2s timer and
+  // do not reflect real analysis progress (the AI can't report it). The view
+  // unmounts the moment the result arrives, so the result is never delayed.
   useEffect(() => {
-    const id = setInterval(() => setMsgIdx((i) => (i + 1) % messages.length), 4000);
-    return () => clearInterval(id);
+    let fadeTimer: ReturnType<typeof setTimeout>;
+    const id = setInterval(() => {
+      setVisible(false);
+      fadeTimer = setTimeout(() => {
+        setMsgIdx((i) => (i + 1) % messages.length);
+        setVisible(true);
+      }, 350);
+    }, 2000);
+    return () => {
+      clearInterval(id);
+      clearTimeout(fadeTimer);
+    };
   }, [messages.length]);
 
   return (
@@ -330,7 +361,7 @@ function LoadingView({ word, messages }: { word: string; messages: readonly stri
           {([96, 72, 112] as const).map((h, i) => (
             <div
               key={i}
-              className="animate-pulse rounded-[12px] border border-line p-6"
+              className="motion-safe:animate-pulse rounded-[12px] border border-line p-6"
               style={{ background: 'var(--surface)', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
             >
               <div className="rounded-md" style={{ background: 'var(--surface-muted)', height: h }} />
@@ -338,7 +369,31 @@ function LoadingView({ word, messages }: { word: string; messages: readonly stri
           ))}
         </div>
 
-        <p className="mt-8 text-center text-sm text-ink-muted">{messages[msgIdx]}</p>
+        {/* Indicator stacked above the text so the message changing width never
+            shifts the indicator sideways. Ring spinner when motion is allowed;
+            a calmer opacity-pulse dot under prefers-reduced-motion (CSS-only
+            swap that reacts live to the OS setting, no JS). */}
+        <div className="mt-8 flex flex-col items-center gap-3">
+          <span
+            className="w-3.5 h-3.5 border-2 border-line border-t-accent rounded-full animate-spin shrink-0 motion-reduce:hidden"
+            aria-hidden
+          />
+          <span
+            className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse shrink-0 hidden motion-reduce:block"
+            aria-hidden
+          />
+          <p
+            aria-hidden
+            className="text-center text-sm text-ink-muted min-h-[1.25rem]"
+            style={{ transition: 'opacity 350ms ease', opacity: visible ? 1 : 0 }}
+          >
+            {messages[msgIdx]}
+          </p>
+          {/* Single static announcement for screen readers — the rotating
+              messages above are decorative and would otherwise spam the
+              live region every 2s. */}
+          <span role="status" className="sr-only">{srLabel}</span>
+        </div>
       </div>
     </div>
   );
@@ -375,7 +430,7 @@ export default function Home() {
   const [waitlistEmail, setWaitlistEmail]         = useState('');
   const [waitlistStatus, setWaitlistStatus]       = useState<'idle' | 'loading' | 'success' | 'duplicate'>('idle');
   const [translateExpanded, setTranslateExpanded] = useState(false);
-  const [targetLang, setTargetLang]               = useState<TranslateLang | null>(null);
+  const [selectedLangs, setSelectedLangs]         = useState<TranslateLang[]>([]);
   const [translationState, setTranslationState]   = useState<TranslationState>({ status: 'idle' });
   const [isDesktop, setIsDesktop]                 = useState(false);
   const [wordOfDay, setWordOfDay]                 = useState<{ word: string; record: AnalyzeRecord } | null>(null);
@@ -407,7 +462,7 @@ export default function Home() {
         setShowContext(false);
         setCuriosityVisible(true);
         setTranslateExpanded(false);
-        setTargetLang(null);
+        setSelectedLangs([]);
         setTranslationState({ status: 'idle' });
         setSpellingError(null);
         setSpellingSuggestion(null);
@@ -430,6 +485,16 @@ export default function Home() {
       })
       .catch(() => {});
     return () => { active = false; };
+  }, [user]);
+
+  // Anonymous users get a lightweight, client-only history from localStorage.
+  // Logged-in users use the DB-backed history above; the two never mix.
+  useEffect(() => {
+    if (user !== null) return;  // undefined = unresolved, truthy = logged-in (DB history)
+    const entries = loadSessionHistory();
+    if (entries.length === 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSessionHistory(entries.map((e) => e.word));
   }, [user]);
 
   useEffect(() => {
@@ -480,39 +545,56 @@ export default function Home() {
     setWord(val);
     setCuriosityVisible(val.length === 0);
     setTranslateExpanded(false);
-    setTargetLang(null);
+    setSelectedLangs([]);
     setTranslationState({ status: 'idle' });
     setSpellingError(null);
     setSpellingSuggestion(null);
     setSpellingCanForce(false);
   };
 
-  const handleTranslate = async (lang: TranslateLang) => {
+  // Toggle a language in/out of the pending selection. Clears any shown
+  // results so the displayed translations never contradict the chips.
+  const toggleTranslateLang = (id: TranslateLang) => {
+    setSelectedLangs((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setTranslationState((s) => (s.status === 'idle' ? s : { status: 'idle' }));
+  };
+
+  // One batched request for every selected language — the endpoint accepts the
+  // array and counts a single rate-limit event per call, so this respects the
+  // durable translate limit instead of burning one unit per language.
+  const handleTranslate = async () => {
     const trimmed = word.trim();
-    if (!trimmed) return;
-    setTargetLang(lang);
+    if (!trimmed || selectedLangs.length === 0) return;
+    const langs = selectedLangs;
     setTranslationState({ status: 'loading' });
-    track('translation_requested', { targetLanguage: lang });
+    track('translation_requested', { targetLanguages: langs });
     try {
       const res = await fetch('/api/signal/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word: trimmed, targetLanguages: [lang] }),
+        body: JSON.stringify({ word: trimmed, targetLanguages: langs }),
       });
       const data: unknown = await res.json();
+      if (res.status === 429) {
+        setTranslationState({ status: 'error', message: UI[language].translateLimit });
+        return;
+      }
       if (!res.ok) {
-        setTranslationState({ status: 'error', message: (data as { error?: string }).error ?? 'Translation failed.' });
+        setTranslationState({ status: 'error', message: UI[language].translateError });
         return;
       }
-      const translations = (data as { translations: Record<string, string> }).translations;
-      const text = translations[lang];
-      if (!text) {
-        setTranslationState({ status: 'error', message: 'No translation returned.' });
+      const translations = (data as { translations?: Record<string, string> }).translations ?? {};
+      // Render in the canonical TRANSLATE_LANGS order, not request/response order.
+      const ordered = TRANSLATE_LANGS
+        .filter((l) => langs.includes(l.id) && typeof translations[l.id] === 'string')
+        .map((l) => ({ lang: l.id, text: translations[l.id] }));
+      if (ordered.length === 0) {
+        setTranslationState({ status: 'error', message: UI[language].translateError });
         return;
       }
-      setTranslationState({ status: 'result', text, lang });
+      setTranslationState({ status: 'result', translations: ordered });
     } catch {
-      setTranslationState({ status: 'error', message: 'Could not connect to the server.' });
+      setTranslationState({ status: 'error', message: UI[language].translateError });
     }
   };
 
@@ -568,6 +650,11 @@ export default function Home() {
         const filtered = prev.filter((w) => w !== record.word);
         return [record.word, ...filtered].slice(0, 20);
       });
+      // Persist only the lightweight session history for anonymous users;
+      // registered users are covered by the DB history and must not be mixed in.
+      if (user === null) {
+        addSessionHistory(record.word, lang);
+      }
     } catch {
       setPageState({ status: 'error', message: 'Could not connect to the server. Check your connection.' });
     }
@@ -598,7 +685,7 @@ export default function Home() {
       setWord('');
       setCuriosityVisible(true);
       setTranslateExpanded(false);
-      setTargetLang(null);
+      setSelectedLangs([]);
       setTranslationState({ status: 'idle' });
       setSpellingError(null);
       setSpellingSuggestion(null);
@@ -728,7 +815,7 @@ export default function Home() {
 
   // ── Loading ──────────────────────────────────────────────────────────────
   if (pageState.status === 'loading') {
-    return <LoadingView word={word} messages={t.loadingMessages} />;
+    return <LoadingView word={word} messages={t.loadingMessages} srLabel={t.analyzing} />;
   }
 
   // ── Result ───────────────────────────────────────────────────────────────
@@ -1159,67 +1246,94 @@ export default function Home() {
             {/* Inline translator */}
             {canAnalyze && !spellingError && (
               <div className="px-5 sm:px-7 pb-5 border-t border-line pt-4">
-                <div className="flex items-center gap-2">
-                  {translateExpanded && (
-                    <div className="flex gap-1.5 flex-wrap flex-1">
-                      {TRANSLATE_LANGS.map((l) => (
-                        <button
-                          key={l.id}
-                          onClick={() => handleTranslate(l.id)}
-                          disabled={translationState.status === 'loading'}
-                          className={`px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed ${
-                            targetLang === l.id
-                              ? 'bg-accent text-white border-accent'
-                              : 'bg-bg text-ink-muted border-line hover:text-ink hover:border-ink-muted'
-                          }`}
-                        >
-                          {l.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                {!translateExpanded ? (
                   <button
                     onClick={() => {
-                      if (translateExpanded) {
-                        setTranslateExpanded(false);
-                      } else {
-                        setTranslateExpanded(true);
-                      }
-                      setTargetLang(null);
+                      setTranslateExpanded(true);
+                      setSelectedLangs([]);
                       setTranslationState({ status: 'idle' });
                     }}
-                    disabled={translationState.status === 'loading'}
-                    className="shrink-0 px-3 py-1 rounded-[6px] text-xs font-medium border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 py-1 rounded-[6px] text-xs font-medium border border-line text-ink-muted hover:text-ink hover:border-ink-muted transition-all duration-150"
                   >
-                    {translationState.status === 'loading' ? (
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-3 h-3 border border-line border-t-accent rounded-full animate-spin" />
-                        {t.translating}
-                      </span>
-                    ) : t.translate}
+                    {t.translate}
                   </button>
-                </div>
+                ) : (
+                  <>
+                    <div className="flex gap-1.5 flex-wrap mb-3">
+                      {TRANSLATE_LANGS.map((l) => {
+                        const selected = selectedLangs.includes(l.id);
+                        return (
+                          <button
+                            key={l.id}
+                            onClick={() => toggleTranslateLang(l.id)}
+                            disabled={translationState.status === 'loading'}
+                            aria-pressed={selected}
+                            className={`px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed ${
+                              selected
+                                ? 'bg-accent text-white border-accent'
+                                : 'bg-bg text-ink-muted border-line hover:text-ink hover:border-ink-muted'
+                            }`}
+                          >
+                            {l.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleTranslate}
+                        disabled={selectedLangs.length === 0 || translationState.status === 'loading'}
+                        className="shrink-0 px-3 py-1.5 rounded-[6px] text-xs font-semibold border bg-accent text-white border-accent enabled:hover:bg-accent-hover transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {translationState.status === 'loading' ? (
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin" />
+                            {t.translating}
+                          </span>
+                        ) : (
+                          `${t.translate}${selectedLangs.length > 0 ? ` (${selectedLangs.length})` : ''}`
+                        )}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setTranslateExpanded(false);
+                          setSelectedLangs([]);
+                          setTranslationState({ status: 'idle' });
+                        }}
+                        disabled={translationState.status === 'loading'}
+                        className="shrink-0 p-1.5 text-ink-faint hover:text-ink transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label={t.close}
+                      >
+                        <IconClose />
+                      </button>
+                    </div>
+                  </>
+                )}
 
                 {translationState.status === 'result' && (
-                  <div className="mt-4 flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-[1.5rem] font-bold tracking-tight leading-none" style={{ color: 'var(--text-primary)' }}>
-                        {translationState.text}
-                      </p>
-                      <p
-                        className="mt-1.5 text-[0.65rem] font-semibold uppercase"
-                        style={{ color: 'var(--text-subtle)', letterSpacing: '0.08em' }}
-                      >
-                        {TRANSLATE_LANGS.find((l) => l.id === translationState.lang)?.label}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => navigator.clipboard.writeText((translationState as { status: 'result'; text: string }).text)}
-                      className="mt-1 shrink-0 text-ink-faint hover:text-ink transition-colors duration-150"
-                      title="Copy"
-                    >
-                      <IconCopy />
-                    </button>
+                  <div className="mt-4 flex flex-col gap-4">
+                    {translationState.translations.map(({ lang, text }) => (
+                      <div key={lang} className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[1.5rem] font-bold tracking-tight leading-none" style={{ color: 'var(--text-primary)' }}>
+                            {text}
+                          </p>
+                          <p
+                            className="mt-1.5 text-[0.65rem] font-semibold uppercase"
+                            style={{ color: 'var(--text-subtle)', letterSpacing: '0.08em' }}
+                          >
+                            {TRANSLATE_LANGS.find((l) => l.id === lang)?.label}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(text)}
+                          className="mt-1 shrink-0 text-ink-faint hover:text-ink transition-colors duration-150"
+                          title="Copy"
+                        >
+                          <IconCopy />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
 
