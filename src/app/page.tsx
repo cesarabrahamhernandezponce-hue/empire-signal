@@ -9,6 +9,11 @@ import { track } from '@/lib/analytics';
 import { createClient } from '@/lib/supabase/client';
 import { loadSessionHistory, addSessionHistory } from '@/lib/session-history';
 
+// A 503 from /analyze means every free AI provider was momentarily saturated.
+// That clears in a second or two, so we silently retry once before showing the
+// error — confirmed to turn most transient failures into a normal result.
+const ANALYZE_RETRY_DELAY_MS = 1500;
+
 const CURIOSITIES: Record<'en' | 'es', string[]> = {
   en: [
     'Did you know Spanish has over 500 million native speakers, making it the world\'s second most spoken language?',
@@ -598,7 +603,7 @@ export default function Home() {
     }
   };
 
-  const handleAnalyzeWithWord = async (w: string, langOverride?: Language, force = false) => {
+  const handleAnalyzeWithWord = async (w: string, langOverride?: Language, force = false, attempt = 0) => {
     const trimmed = w.trim();
     if (!trimmed) return;
 
@@ -637,6 +642,13 @@ export default function Home() {
       }
 
       if (!res.ok) {
+        // 503 = every AI provider was momentarily busy. This almost always
+        // clears on a second try, so retry once (staying in the loading state)
+        // before surfacing the error.
+        if (res.status === 503 && attempt === 0) {
+          await new Promise((r) => setTimeout(r, ANALYZE_RETRY_DELAY_MS));
+          return handleAnalyzeWithWord(w, langOverride, force, attempt + 1);
+        }
         const message = (data as { error?: string }).error ?? 'Unknown server error.';
         setPageState({ status: 'error', message });
         return;

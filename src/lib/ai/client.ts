@@ -1,7 +1,9 @@
-// Free models can take a while to emit the full analysis JSON. A short timeout
-// just forced a wasteful "abort then restart" waterfall that added latency
-// without improving success. Give one pass enough room to finish.
-const TIMEOUT_MS = 45000;
+// Free models can take a while to emit the full analysis JSON, so a pass needs
+// real headroom — too short forces a wasteful "abort then restart" waterfall.
+// But 45s let a single saturated provider hang the whole request; capped at 30s
+// so an exhausted fallback chain surfaces its error sooner and the client retry
+// can take over while the user is still waiting.
+const TIMEOUT_MS = 30000;
 // Free tiers reject bursts with HTTP 429 + a Retry-After hint. Wait and retry
 // the same model once (capped) instead of discarding it — recovers the per-minute
 // rate limit without firing another model and burning more daily quota.
