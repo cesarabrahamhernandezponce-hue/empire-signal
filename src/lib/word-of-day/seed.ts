@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// WORD OF THE DAY — SEED LIST  ⚠️ PLACEHOLDER — REVIEW BEFORE LAUNCH ⚠️
+// WORD OF THE DAY — SEED LIST  (curated, B2–C1)
 // ─────────────────────────────────────────────────────────────────────────────
-// César: these are reasonable candidates, NOT a final curated list. Edit freely.
+// Finalized curated rotation. Edit freely, but keep the rules below intact.
 // Rules to keep things working:
 //   • Exactly 15 words per language (the daily rotation is `days % list.length`).
 //     If you change the count, both lists can differ in length — each language
@@ -16,37 +16,37 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const WORDS_EN: readonly string[] = [
-  'ephemeral',
   'serendipity',
-  'nuance',
-  'resilience',
-  'ubiquitous',
+  'ephemeral',
   'eloquent',
-  'meticulous',
-  'candor',
-  'tenacious',
-  'ambivalent',
+  'resilience',
+  'nuance',
+  'candid',
   'pragmatic',
-  'scrutinize',
-  'juxtapose',
-  'cathartic',
-  'quintessential',
+  'meticulous',
+  'profound',
+  'ambiguous',
+  'tenacious',
+  'lucid',
+  'empathy',
+  'articulate',
+  'inevitable',
 ];
 
 export const WORDS_ES: readonly string[] = [
   'efímero',
   'resiliencia',
   'inefable',
-  'cotidiano',
+  'sublime',
+  'melancolía',
   'perspicaz',
-  'añoranza',
-  'matiz',
+  'cabal',
+  'vehemente',
+  'sosiego',
   'ímpetu',
-  'sosegado',
-  'vislumbrar',
-  'arraigar',
-  'desdén',
+  'añoranza',
+  'prudencia',
+  'audaz',
   'conmover',
   'esmero',
-  'vorágine',
 ];
