@@ -6,5 +6,10 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  // Run session refresh only on UI routes. API routes do their own auth, and the
+  // metadata image generators (icon/og/twitter) never need a session — excluding
+  // them avoids a Supabase getUser() round-trip on every such request.
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico|icon|apple-icon|opengraph-image|twitter-image|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 };

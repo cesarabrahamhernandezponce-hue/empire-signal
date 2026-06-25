@@ -38,10 +38,11 @@ export const metadata: Metadata = {
   },
 };
 
-// Apply the saved theme before first paint so dark mode doesn't flash light
-// (and so non-home pages, which never ran the home page's theme effect, still
-// honor the user's choice). Reads the same 'theme' key the app writes.
-const themeBootstrap = `(function(){try{if(localStorage.getItem('theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();`;
+// Apply the saved theme AND UI language before first paint. The theme prevents a
+// dark-mode flash; setting <html lang> to match the user's chosen language (the
+// app writes 'language' = 'en' | 'es') means screen readers announce the content
+// with the correct phonetics instead of always reading Spanish as English.
+const themeBootstrap = `(function(){try{var d=document.documentElement;if(localStorage.getItem('theme')==='dark'){d.setAttribute('data-theme','dark');}var l=localStorage.getItem('language');if(l==='es'||l==='en'){d.lang=l;}}catch(e){}})();`;
 
 export default function RootLayout({
   children,

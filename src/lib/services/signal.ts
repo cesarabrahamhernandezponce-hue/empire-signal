@@ -7,7 +7,7 @@ import { buildContextPromptES } from '../ai/prompts/context-es';
 import { buildContextPromptEN } from '../ai/prompts/context-en';
 import { buildAskPromptES } from '../ai/prompts/ask-es';
 import { buildAskPromptEN } from '../ai/prompts/ask-en';
-import { buildTranslatePrompt } from '../ai/prompts/translate';
+import { buildTranslatePrompt, SUPPORTED_LANGUAGE_CODES } from '../ai/prompts/translate';
 import { parseTranslation } from '../ai/schemas/translation';
 import type { Language } from '../ai/prompts/types';
 import { parseAnalysis, type Analysis } from '../ai/schemas/analysis';
@@ -342,6 +342,11 @@ export async function translateWord(params: {
 
   if (targetLanguages.length === 0) {
     return { ok: false, error: 'At least one target language is required.' };
+  }
+
+  const unsupported = targetLanguages.filter((code) => !SUPPORTED_LANGUAGE_CODES.has(code));
+  if (unsupported.length > 0) {
+    return { ok: false, error: `Unsupported language code(s): ${unsupported.join(', ')}.` };
   }
 
   const prompt = buildTranslatePrompt(word, targetLanguages, tone);

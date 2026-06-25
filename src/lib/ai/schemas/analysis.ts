@@ -23,7 +23,13 @@ export const analysisSchema = z.object({
       explanation: z.string().min(1),
     })).min(1).max(4).optional(),
     pronunciation: z.object({
-      phonetic: z.string().max(45),
+      // Free models sometimes hallucinate long IPA/prose here. Truncating a single
+      // cosmetic field is far better than failing validation and discarding an
+      // otherwise-correct analysis, so coerce overlong values down to the cap.
+      phonetic: z.preprocess(
+        (v) => (typeof v === 'string' ? v.trim().slice(0, 45) : v),
+        z.string().max(45),
+      ),
       guide:    z.string().min(1),
     }),
     usageExamples: z.array(

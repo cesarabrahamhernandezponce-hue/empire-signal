@@ -760,68 +760,77 @@ export default function Home() {
     </div>
   );
 
-  // ── Settings button + panel (shared by idle & error) ─────────────────────
+  // ── Settings button + panel ───────────────────────────────────────────────
+  // The gear button and dropdown are identical wherever settings appear; only the
+  // wrapper position differs (fixed corner on error, inline in the idle toolbar).
+  // Defining them once keeps the two placements from drifting apart.
+  const settingsGearButton = (
+    <button
+      onClick={() => setSettingsOpen((v) => !v)}
+      className="p-1.5 text-ink-faint hover:text-ink transition-colors duration-150"
+      aria-label="Settings"
+    >
+      <IconGear />
+    </button>
+  );
+
+  const settingsPanel = settingsOpen && (
+    <div
+      style={{
+        position: 'absolute',
+        top: 'calc(100% + 6px)',
+        right: 0,
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: '12px',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+        padding: '16px',
+        minWidth: '192px',
+        zIndex: 50,
+      }}
+    >
+      {/* Theme */}
+      <div className="flex items-center justify-between gap-4">
+        <p
+          className="text-[0.7rem] font-semibold uppercase"
+          style={{ color: 'var(--accent)', letterSpacing: '0.05em' }}
+        >
+          {t.themeLabel}
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-ink-muted">
+            {theme === 'light' ? t.light : t.dark}
+          </span>
+          <button
+            onClick={() => setTheme((tv) => (tv === 'light' ? 'dark' : 'light'))}
+            className="relative flex-shrink-0 flex items-center rounded-full border border-line transition-colors duration-200"
+            style={{
+              width: '36px',
+              height: '20px',
+              background: theme === 'dark' ? '#3A3D8F' : '#F0F0EE',
+              borderColor: theme === 'dark' ? '#3A3D8F' : '#EAEAE6',
+            }}
+            aria-label="Toggle theme"
+          >
+            <span
+              className="absolute rounded-full bg-white shadow-sm transition-transform duration-200"
+              style={{
+                width: '14px',
+                height: '14px',
+                transform: theme === 'dark' ? 'translateX(19px)' : 'translateX(3px)',
+              }}
+            />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Corner placement used by the error state.
   const settingsButton = (
     <div ref={settingsRef} className="fixed top-4 right-4 z-50">
-      <button
-        onClick={() => setSettingsOpen((v) => !v)}
-        className="p-1.5 text-ink-faint hover:text-ink transition-colors duration-150"
-        aria-label="Settings"
-      >
-        <IconGear />
-      </button>
-
-      {settingsOpen && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 6px)',
-            right: 0,
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: '12px',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-            padding: '16px',
-            minWidth: '192px',
-            zIndex: 50,
-          }}
-        >
-          {/* Theme */}
-          <div className="flex items-center justify-between gap-4">
-            <p
-              className="text-[0.7rem] font-semibold uppercase"
-              style={{ color: 'var(--accent)', letterSpacing: '0.05em' }}
-            >
-              {t.themeLabel}
-            </p>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-ink-muted">
-                {theme === 'light' ? t.light : t.dark}
-              </span>
-              <button
-                onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
-                className="relative flex-shrink-0 flex items-center rounded-full border border-line transition-colors duration-200"
-                style={{
-                  width: '36px',
-                  height: '20px',
-                  background: theme === 'dark' ? '#3A3D8F' : '#F0F0EE',
-                  borderColor: theme === 'dark' ? '#3A3D8F' : '#EAEAE6',
-                }}
-                aria-label="Toggle theme"
-              >
-                <span
-                  className="absolute rounded-full bg-white shadow-sm transition-transform duration-200"
-                  style={{
-                    width: '14px',
-                    height: '14px',
-                    transform: theme === 'dark' ? 'translateX(19px)' : 'translateX(3px)',
-                  }}
-                />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {settingsGearButton}
+      {settingsPanel}
     </div>
   );
 
@@ -993,63 +1002,8 @@ export default function Home() {
                 <IconHelp />
               </button>
               <div ref={settingsRef} className="relative">
-              <button
-                onClick={() => setSettingsOpen((v) => !v)}
-                className="p-1.5 text-ink-faint hover:text-ink transition-colors duration-150"
-                aria-label="Settings"
-              >
-                <IconGear />
-              </button>
-              {settingsOpen && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 'calc(100% + 6px)',
-                    right: 0,
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-                    padding: '16px',
-                    minWidth: '192px',
-                    zIndex: 50,
-                  }}
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <p
-                      className="text-[0.7rem] font-semibold uppercase"
-                      style={{ color: 'var(--accent)', letterSpacing: '0.05em' }}
-                    >
-                      {t.themeLabel}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-ink-muted">
-                        {theme === 'light' ? t.light : t.dark}
-                      </span>
-                      <button
-                        onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
-                        className="relative flex-shrink-0 flex items-center rounded-full border border-line transition-colors duration-200"
-                        style={{
-                          width: '36px',
-                          height: '20px',
-                          background: theme === 'dark' ? '#3A3D8F' : '#F0F0EE',
-                          borderColor: theme === 'dark' ? '#3A3D8F' : '#EAEAE6',
-                        }}
-                        aria-label="Toggle theme"
-                      >
-                        <span
-                          className="absolute rounded-full bg-white shadow-sm transition-transform duration-200"
-                          style={{
-                            width: '14px',
-                            height: '14px',
-                            transform: theme === 'dark' ? 'translateX(19px)' : 'translateX(3px)',
-                          }}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+                {settingsGearButton}
+                {settingsPanel}
               </div>
             </div>
           </div>

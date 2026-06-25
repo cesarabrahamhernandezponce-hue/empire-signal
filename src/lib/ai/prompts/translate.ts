@@ -1,4 +1,4 @@
-const LANG_NAMES: Record<string, string> = {
+export const LANG_NAMES: Record<string, string> = {
   en: 'English',
   es: 'Spanish',
   fr: 'French',
@@ -17,6 +17,11 @@ const LANG_NAMES: Record<string, string> = {
   sv: 'Swedish',
   uk: 'Ukrainian',
 };
+
+// Set of language codes the translator actually supports. Exported so callers
+// can reject unknown codes before spending an AI call on a request that would
+// fail parsing anyway.
+export const SUPPORTED_LANGUAGE_CODES = new Set(Object.keys(LANG_NAMES));
 
 const TONE_INSTRUCTIONS: Record<string, string> = {
   formal:   'Use a formal/polite register suitable for professional settings.',
