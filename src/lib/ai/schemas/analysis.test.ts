@@ -102,6 +102,55 @@ describe('analysisSchema — backward compatibility (wordType / wordTypes)', () 
   });
 });
 
+describe('parseAnalysis — input hardening', () => {
+  it('fails on invalid JSON', () => {
+    const result = parseAnalysis('this is not json');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/JSON/i);
+  });
+
+  it('strips a ```json markdown fence before parsing', () => {
+    const fenced = '```json\n' + JSON.stringify(baseAnalysis()) + '\n```';
+    const result = parseAnalysis(fenced);
+    expect(result.ok).toBe(true);
+  });
+
+  it('fails when a required section is missing, naming the path', () => {
+    const noEssential = { ...baseAnalysis() } as Record<string, unknown>;
+    delete noEssential.essential;
+    const result = parseAnalysis(JSON.stringify(noEssential));
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/essential/);
+  });
+
+  it('truncates an overlong phonetic field instead of rejecting', () => {
+    const longPhonetic = {
+      ...baseAnalysis(),
+      essential: {
+        ...baseAnalysis().essential,
+        pronunciation: { phonetic: '/x/'.repeat(50), guide: 'guide' },
+      },
+    };
+    const result = parseAnalysis(JSON.stringify(longPhonetic));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.essential.pronunciation.phonetic.length).toBeLessThanOrEqual(45);
+  });
+
+  it('rejects usageExamples that do not have exactly 3 entries', () => {
+    const twoExamples = {
+      ...baseAnalysis(),
+      essential: {
+        ...baseAnalysis().essential,
+        usageExamples: [
+          { register: 'formal', example: 'a' },
+          { register: 'everyday', example: 'b' },
+        ],
+      },
+    };
+    expect(parseAnalysis(JSON.stringify(twoExamples)).ok).toBe(false);
+  });
+});
+
 describe('resolveWordTypes — read-side fallback', () => {
   it('returns the single wordType when wordTypes is undefined', () => {
     const { essential } = baseAnalysis();
