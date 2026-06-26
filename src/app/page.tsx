@@ -13,6 +13,13 @@ import { loadSessionHistory, addSessionHistory } from '@/lib/session-history';
 // That clears in a second or two, so we silently retry once before showing the
 // error — confirmed to turn most transient failures into a normal result.
 const ANALYZE_RETRY_DELAY_MS = 1500;
+// Per-attempt cap on the analyze fetch. A single AI generation is bounded
+// server-side at 30s; 45s leaves room for that plus the response transfer
+// before we abort and surface a timeout instead of spinning forever.
+const ANALYZE_TIMEOUT_MS = 45000;
+// After this long in the loading view, swap the rotating decorative messages
+// for a reassuring "this is taking longer than usual" note.
+const LOADING_SLOW_AFTER_MS = 12000;
 
 const CURIOSITIES: Record<'en' | 'es', string[]> = {
   en: [
@@ -61,6 +68,8 @@ const UI = {
     translateError:      'Translation failed. Please try again.',
     analyze:             'Analyze',
     analyzing:           'Analyzing...',
+    analyzingSlow:       'This is taking a bit longer than usual — still working on it…',
+    timeoutError:        'This took too long. The server may be busy — please try again.',
     errorTitle:          'Something went wrong',
     tryAgain:            '← Try again',
     langLabel:           'Language',
@@ -115,6 +124,8 @@ const UI = {
     translateError:      'No se pudo traducir. Inténtalo de nuevo.',
     analyze:             'Analizar',
     analyzing:           'Analizando...',
+    analyzingSlow:       'Esto está tardando un poco más de lo normal — seguimos trabajando…',
+    timeoutError:        'Tardó demasiado. El servidor puede estar ocupado — inténtalo de nuevo.',
     errorTitle:          'Algo salió mal',
     tryAgain:            '← Intentar de nuevo',
     langLabel:           'Idioma',
@@ -328,14 +339,26 @@ function HelpModal({ title, language, onClose }: { title: string; language: 'en'
   );
 }
 
-function LoadingView({ word, messages, srLabel }: { word: string; messages: readonly string[]; srLabel: string }) {
+function LoadingView({ word, messages, srLabel, slowMessage }: { word: string; messages: readonly string[]; srLabel: string; slowMessage: string }) {
   const [msgIdx, setMsgIdx] = useState(0);
   const [visible, setVisible] = useState(true);
+  const [slow, setSlow] = useState(false);
 
   // Decorative rotation only — these messages advance on a fixed 2s timer and
-  // do not reflect real analysis progress (the AI can't report it). The view
-  // unmounts the moment the result arrives, so the result is never delayed.
+  // do not reflect real analysis progress (the AI can't report it). Once we
+  // cross the slow threshold we stop rotating and hold a reassuring message so
+  // a long generation never looks frozen. The view unmounts the moment the
+  // result arrives, so the result is never delayed.
   useEffect(() => {
+    const slowTimer = setTimeout(() => {
+      setSlow(true);
+      setVisible(true);
+    }, LOADING_SLOW_AFTER_MS);
+    return () => clearTimeout(slowTimer);
+  }, []);
+
+  useEffect(() => {
+    if (slow) return;
     let fadeTimer: ReturnType<typeof setTimeout>;
     const id = setInterval(() => {
       setVisible(false);
@@ -348,7 +371,7 @@ function LoadingView({ word, messages, srLabel }: { word: string; messages: read
       clearInterval(id);
       clearTimeout(fadeTimer);
     };
-  }, [messages.length]);
+  }, [messages.length, slow]);
 
   return (
     <div className="min-h-screen bg-bg">
@@ -392,7 +415,7 @@ function LoadingView({ word, messages, srLabel }: { word: string; messages: read
             className="text-center text-sm text-ink-muted min-h-[1.25rem]"
             style={{ transition: 'opacity 350ms ease', opacity: visible ? 1 : 0 }}
           >
-            {messages[msgIdx]}
+            {slow ? slowMessage : messages[msgIdx]}
           </p>
           {/* Single static announcement for screen readers — the rotating
               messages above are decorative and would otherwise spam the
@@ -611,6 +634,9 @@ export default function Home() {
 
     setPageState({ status: 'loading' });
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), ANALYZE_TIMEOUT_MS);
+
     try {
       const res = await fetch('/api/signal/analyze', {
         method: 'POST',
@@ -621,6 +647,7 @@ export default function Home() {
           language: lang,
           force,
         }),
+        signal: controller.signal,
       });
 
       const data: unknown = await res.json();
@@ -667,8 +694,20 @@ export default function Home() {
       if (user === null) {
         addSessionHistory(record.word, lang);
       }
-    } catch {
+    } catch (err) {
+      // A timeout (abort) usually means the AI tier was momentarily slow rather
+      // than a real failure — retry once like a 503 before surfacing the error.
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        if (attempt === 0) {
+          clearTimeout(timeoutId);
+          return handleAnalyzeWithWord(w, langOverride, force, attempt + 1);
+        }
+        setPageState({ status: 'error', message: UI[lang].timeoutError });
+        return;
+      }
       setPageState({ status: 'error', message: 'Could not connect to the server. Check your connection.' });
+    } finally {
+      clearTimeout(timeoutId);
     }
   };
 
@@ -836,7 +875,7 @@ export default function Home() {
 
   // ── Loading ──────────────────────────────────────────────────────────────
   if (pageState.status === 'loading') {
-    return <LoadingView word={word} messages={t.loadingMessages} srLabel={t.analyzing} />;
+    return <LoadingView word={word} messages={t.loadingMessages} srLabel={t.analyzing} slowMessage={t.analyzingSlow} />;
   }
 
   // ── Result ───────────────────────────────────────────────────────────────
