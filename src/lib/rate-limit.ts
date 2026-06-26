@@ -103,10 +103,12 @@ export async function checkDbLimit(
     await prisma.rateLimitEvent.create({ data: { scope, ipHash } });
     return true;
   } catch (err) {
-    // Table missing (pre-migration) or DB unreachable — the in-memory check
-    // already passed, so fail open rather than block legitimate users.
-    console.error(`[rate-limit] DB limit check failed for scope=${scope}, relying on in-memory:`, err);
-    return true;
+    // Fail closed: if the DB is unreachable we can't enforce the cross-instance
+    // cap, so we block the metered AI call rather than let it through. Protects
+    // the free Gemini/OpenRouter budget when Supabase blinks, at the cost of
+    // temporarily denying these endpoints during an outage.
+    console.error(`[rate-limit] DB limit check failed for scope=${scope}, failing closed:`, err);
+    return false;
   }
 }
 

@@ -95,7 +95,32 @@ function countModel(m: string) {
   modelCounts.set(m, (modelCounts.get(m) ?? 0) + 1);
 }
 
-async function post(path: string, body: unknown): Promise<{ status: number; json: any; ms: number; netError?: string }> {
+type SmokeEssential = {
+  meaningInContext?: unknown;
+  usageExamples?: unknown[];
+  collocations?: unknown[];
+  wordTypes?: unknown[];
+  wordType?: { category?: unknown };
+};
+type SmokeRecord = {
+  id?: string;
+  language?: string;
+  analysis?: {
+    essential?: SmokeEssential;
+    advanced?: { synonyms?: Array<{ word?: unknown; nuance?: unknown }> };
+  };
+};
+type SmokeJson = {
+  record?: SmokeRecord;
+  model?: string;
+  cacheHit?: boolean;
+  suggestion?: unknown;
+  score?: unknown;
+  feedback?: unknown;
+  answer?: unknown;
+} | null;
+
+async function post(path: string, body: unknown): Promise<{ status: number; json: SmokeJson; ms: number; netError?: string }> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), REQ_TIMEOUT_MS);
   const t0 = Date.now();
@@ -110,7 +135,7 @@ async function post(path: string, body: unknown): Promise<{ status: number; json
       signal: ctrl.signal,
     });
     const ms = Date.now() - t0;
-    let json: any = null;
+    let json: SmokeJson = null;
     try { json = await res.json(); } catch { /* non-JSON body */ }
     return { status: res.status, json, ms };
   } catch (err) {
@@ -122,7 +147,7 @@ async function post(path: string, body: unknown): Promise<{ status: number; json
 
 // Structural assertions for a 200 analyze response. Returns list of failure
 // strings (empty = all good).
-function check200(c: Case, json: any): { problems: string[]; model: string } {
+function check200(c: Case, json: SmokeJson): { problems: string[]; model: string } {
   const problems: string[] = [];
   const record = json?.record;
   const model = json?.model ?? (json?.cacheHit ? 'cache' : '(missing)');
@@ -139,7 +164,7 @@ function check200(c: Case, json: any): { problems: string[]; model: string } {
     problems.push(`schema invalid: ${first.path.join('.')} — ${first.message}`);
   }
 
-  const e = record.analysis?.essential ?? {};
+  const e: SmokeEssential = record.analysis?.essential ?? {};
 
   // 2. meaningInContext non-empty
   if (!e.meaningInContext || String(e.meaningInContext).trim().length === 0) {
@@ -230,7 +255,7 @@ async function runEndpointChecks() {
   const vWord = 'run';
   const vSentence = 'I run every morning to stay fit.';
   const v = await post('/api/signal/validate', { sentence: vSentence, word: vWord, language: 'en' });
-  let vPass = v.status === 200 && typeof v.json?.score === 'number' && typeof v.json?.feedback === 'string' && v.json.feedback.length > 0;
+  const vPass = v.status === 200 && typeof v.json?.score === 'number' && typeof v.json?.feedback === 'string' && v.json.feedback.length > 0;
   rows.push({ input: `validate("${vWord}")`, lang: 'en', expected: 200, got: v.netError ? `NET:${v.netError}` : v.status, pass: vPass, model: '-', notes: 'endpoint' });
   if (!vPass) fails.push(`validate: status ${v.status}, body=${JSON.stringify(v.json)?.slice(0, 200)}`);
 

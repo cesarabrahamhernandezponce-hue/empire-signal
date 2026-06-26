@@ -4,6 +4,7 @@ import { Language as DbLanguage } from '@prisma/client';
 
 import { askFollowUp } from '@/lib/services/signal';
 import { prisma } from '@/lib/db/prisma';
+import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import type { Language } from '@/lib/ai/prompts/types';
 import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
 import { isOwnerRequest, readJsonBody } from '@/lib/api-guard';
@@ -40,7 +41,15 @@ export async function POST(request: Request) {
 
     const isOwner = isOwnerRequest(request);
 
+    let userId: string | null = null;
     if (!isOwner) {
+      const supabase = await createSupabaseClient();
+      const user = supabase ? (await supabase.auth.getUser()).data.user : null;
+      if (!user) {
+        return NextResponse.json({ error: 'Sign in to ask follow-up questions.' }, { status: 401 });
+      }
+      userId = user.id;
+
       const ipHash = hashIp(getClientIp(request));
       if (!(await checkDbLimit('ask', ipHash, DAILY_LIMIT))) {
         return NextResponse.json({ error: 'Daily limit reached. Come back tomorrow.' }, { status: 429 });
@@ -58,7 +67,7 @@ export async function POST(request: Request) {
       question,
       language:       LANGUAGE_MAP[record.language],
       searchRecordId,
-      userId:         null,
+      userId,
     });
 
     if (!result.ok) {
