@@ -77,9 +77,7 @@ const UI = {
     light:               'Light',
     dark:                'Dark',
     howToUse:            'How to use Empire Signal',
-    lensLead:            'Wrote a whole text?',
-    lensDesc:            'See what your writing reveals about you — register, habits, and one thing to grow.',
-    lensCta:            'Analyze with Lens',
+    lensCta:             'Analyze a text',
     howToUseTitle:       'What you can do',
     close:               'Close',
     recent:              'Recent',
@@ -136,9 +134,7 @@ const UI = {
     light:               'Claro',
     dark:                'Oscuro',
     howToUse:            'Cómo usar Empire Signal',
-    lensLead:            '¿Escribiste un texto completo?',
-    lensDesc:            'Descubre lo que tu escritura revela de ti — registro, hábitos y una cosa por mejorar.',
-    lensCta:            'Analizar con Lens',
+    lensCta:             'Analizar un texto',
     howToUseTitle:       'Qué puedes hacer',
     close:               'Cerrar',
     recent:              'Recientes',
@@ -1411,15 +1407,30 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Analyze button */}
-              <button
-                onClick={handleAnalyze}
-                disabled={!canAnalyze}
-                style={{ backgroundImage: BRAND_GRADIENT }}
-                className="w-full py-3.5 rounded-lg text-sm font-semibold tracking-wide text-white shadow-md transition-all duration-150 enabled:cursor-pointer enabled:hover:shadow-lg enabled:hover:brightness-110 enabled:active:scale-[0.99] enabled:active:shadow disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed"
-              >
-                {t.analyze}
-              </button>
+              {/* Two peer entry points, same weight: a single word, or a whole text via Empire Lens */}
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                <button
+                  onClick={handleAnalyze}
+                  disabled={!canAnalyze}
+                  style={{ backgroundImage: BRAND_GRADIENT }}
+                  className="flex-1 py-3.5 rounded-lg text-sm font-semibold tracking-wide text-white shadow-md transition-all duration-150 enabled:cursor-pointer enabled:hover:shadow-lg enabled:hover:brightness-110 enabled:active:scale-[0.99] enabled:active:shadow disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed"
+                >
+                  {t.analyze}
+                </button>
+                <Link
+                  href="/lens"
+                  className="group flex-1 flex items-center justify-center gap-2 py-3.5 rounded-lg text-sm font-semibold tracking-wide border border-accent bg-[var(--surface-blue)] text-accent transition-all duration-150 hover:bg-accent hover:text-white active:scale-[0.99]"
+                >
+                  <span>{t.lensCta}</span>
+                  <span
+                    aria-hidden
+                    className="italic"
+                    style={{ fontFamily: 'var(--font-dm-serif)' }}
+                  >
+                    · Empire Lens
+                  </span>
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -1456,28 +1467,6 @@ export default function Home() {
               </span>
             ))}
           </div>
-
-          {/* Empire Lens entry — flagship feature for whole texts */}
-          <Link
-            href="/lens"
-            className="group mt-6 flex items-center justify-between gap-4 rounded-[12px] border border-line bg-[var(--surface-blue)] px-4 py-3.5 transition-colors hover:border-accent"
-          >
-            <div className="min-w-0 text-left">
-              <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-ink-faint">
-                {t.lensLead}
-              </p>
-              <p className="mt-1 text-[0.92rem] leading-snug text-ink-muted">
-                <span className="text-ink" style={{ fontFamily: 'var(--font-dm-serif)' }}>
-                  Empire Lens{' '}
-                </span>
-                {t.lensDesc}
-              </p>
-            </div>
-            <span className="shrink-0 inline-flex items-baseline gap-1.5 text-[0.82rem] font-medium text-accent transition-colors group-hover:text-accent-hover">
-              <span style={{ fontFamily: 'var(--font-dm-serif)', fontStyle: 'italic' }}>{t.lensCta}</span>
-              <span aria-hidden className="transition-transform duration-150 group-hover:translate-x-0.5">→</span>
-            </span>
-          </Link>
 
           {/* Empire Insight — branded content module */}
           <div
