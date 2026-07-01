@@ -77,6 +77,9 @@ const UI = {
     light:               'Light',
     dark:                'Dark',
     howToUse:            'How to use Empire Signal',
+    lensLead:            'Wrote a whole text?',
+    lensDesc:            'See what your writing reveals about you — register, habits, and one thing to grow.',
+    lensCta:            'Analyze with Lens',
     howToUseTitle:       'What you can do',
     close:               'Close',
     recent:              'Recent',
@@ -133,6 +136,9 @@ const UI = {
     light:               'Claro',
     dark:                'Oscuro',
     howToUse:            'Cómo usar Empire Signal',
+    lensLead:            '¿Escribiste un texto completo?',
+    lensDesc:            'Descubre lo que tu escritura revela de ti — registro, hábitos y una cosa por mejorar.',
+    lensCta:            'Analizar con Lens',
     howToUseTitle:       'Qué puedes hacer',
     close:               'Cerrar',
     recent:              'Recientes',
@@ -712,6 +718,30 @@ export default function Home() {
   };
 
   const handleAnalyze = () => handleAnalyzeWithWord(word);
+
+  // Deep-link pickup for Empire Lens: a "?w=<word>&lang=<en|es>" link (used by
+  // the Lens word-suggestion panel's "Analyze in Empire" action) prefills the
+  // word and runs the normal analyze flow once on mount. The query string is
+  // cleared afterward so a refresh doesn't re-trigger it.
+  const didLensPickup = useRef(false);
+  useEffect(() => {
+    if (didLensPickup.current) return;
+    didLensPickup.current = true;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const w = params.get('w');
+      if (!w) return;
+      const lp = params.get('lang');
+      const lang: Language | undefined = lp === 'es' || lp === 'en' ? lp : undefined;
+      // Prefill from a trusted deep link and kick off the normal analyze flow.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (lang) setLanguage(lang);
+      setWord(w);
+      window.history.replaceState(null, '', window.location.pathname);
+      void handleAnalyzeWithWord(w, lang);
+    } catch { /* ignore malformed query */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Open the pre-cached Word of the Day as a normal result — no network round
   // trip (the record is already loaded) and no metered analyze call.
@@ -1426,6 +1456,28 @@ export default function Home() {
               </span>
             ))}
           </div>
+
+          {/* Empire Lens entry — flagship feature for whole texts */}
+          <Link
+            href="/lens"
+            className="group mt-6 flex items-center justify-between gap-4 rounded-[12px] border border-line bg-[var(--surface-blue)] px-4 py-3.5 transition-colors hover:border-accent"
+          >
+            <div className="min-w-0 text-left">
+              <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-ink-faint">
+                {t.lensLead}
+              </p>
+              <p className="mt-1 text-[0.92rem] leading-snug text-ink-muted">
+                <span className="text-ink" style={{ fontFamily: 'var(--font-dm-serif)' }}>
+                  Empire Lens{' '}
+                </span>
+                {t.lensDesc}
+              </p>
+            </div>
+            <span className="shrink-0 inline-flex items-baseline gap-1.5 text-[0.82rem] font-medium text-accent transition-colors group-hover:text-accent-hover">
+              <span style={{ fontFamily: 'var(--font-dm-serif)', fontStyle: 'italic' }}>{t.lensCta}</span>
+              <span aria-hidden className="transition-transform duration-150 group-hover:translate-x-0.5">→</span>
+            </span>
+          </Link>
 
           {/* Empire Insight — branded content module */}
           <div

@@ -69,6 +69,16 @@ body {
   to   { opacity: 1; }
 }
 
+@keyframes lensSheetUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes lensRise {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+
 .word-btn {
   background: none;
   border: none;
