@@ -21,6 +21,7 @@ vi.mock('@/lib/rate-limit', () => ({
 }));
 vi.mock('@/lib/api-guard', () => ({
   isOwnerRequest: vi.fn(() => false),
+  isOwnerEmail: vi.fn(() => false),
   readJsonBody: vi.fn(),
 }));
 vi.mock('@/lib/supabase/server', () => ({

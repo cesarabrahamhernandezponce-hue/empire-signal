@@ -6,7 +6,7 @@ import { analyzeWord, findCachedByKey, toLookupKey, type AnalyzeRecord } from '@
 import { resolveDictionaryGate } from '@/lib/services/word-classifier';
 import { prisma } from '@/lib/db/prisma';
 import { getClientIp, hashIp, checkAnonymousLimit, checkUserLimit } from '@/lib/rate-limit';
-import { isOwnerRequest, readJsonBody } from '@/lib/api-guard';
+import { isOwnerRequest, isOwnerEmail, readJsonBody } from '@/lib/api-guard';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { classifyInput } from '@/lib/validation/input';
 
@@ -56,9 +56,6 @@ export async function POST(request: Request) {
     }
     const word = validation.normalized;
 
-    // Owner bypass: unlimited access for the owner via secret header
-    const isOwner = isOwnerRequest(request);
-
     const ipHash = hashIp(getClientIp(request));
     const dbLanguage = LANGUAGE_DB[language];
 
@@ -81,6 +78,9 @@ export async function POST(request: Request) {
     ]);
 
     const userId: string | null = authData?.data?.user?.id ?? null;
+    const userEmail: string | null = authData?.data?.user?.email ?? null;
+    // Owner bypass: secret header OR the signed-in owner account (email already loaded above).
+    const isOwner = isOwnerRequest(request) || isOwnerEmail(userEmail);
 
     // ok=false (DB error) → prefetched=undefined signals analyzeWord to retry the lookup.
     // ok=true, value=null → confirmed cache miss.
@@ -160,7 +160,6 @@ export async function POST(request: Request) {
 
     // Fire-and-forget: write user search history for authenticated users.
     // Never blocks or fails the response.
-    const userEmail = authData?.data?.user?.email;
     if (result.record.id && userId && userEmail) {
       void (async () => {
         try {

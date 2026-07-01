@@ -7,7 +7,7 @@ import { prisma } from '@/lib/db/prisma';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import type { Language } from '@/lib/ai/prompts/types';
 import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
-import { isOwnerRequest, readJsonBody } from '@/lib/api-guard';
+import { isOwnerRequest, isOwnerEmail, readJsonBody } from '@/lib/api-guard';
 
 const DAILY_LIMIT = 20;
 
@@ -39,12 +39,13 @@ export async function POST(request: Request) {
 
     const { searchRecordId, question } = parsed.data;
 
-    const isOwner = isOwnerRequest(request);
+    const supabase = await createSupabaseClient();
+    const user = supabase ? (await supabase.auth.getUser()).data.user : null;
+    // Header key OR the signed-in owner account bypasses both the auth gate and the limit.
+    const isOwner = isOwnerRequest(request) || isOwnerEmail(user?.email);
 
-    let userId: string | null = null;
+    let userId: string | null = user?.id ?? null;
     if (!isOwner) {
-      const supabase = await createSupabaseClient();
-      const user = supabase ? (await supabase.auth.getUser()).data.user : null;
       if (!user) {
         return NextResponse.json({ error: 'Sign in to ask follow-up questions.' }, { status: 401 });
       }

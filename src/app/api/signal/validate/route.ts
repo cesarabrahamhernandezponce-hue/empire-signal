@@ -5,7 +5,7 @@ import { generateContent } from '@/lib/ai/client';
 import { buildValidatePromptEN } from '@/lib/ai/prompts/validate-en';
 import { buildValidatePromptES } from '@/lib/ai/prompts/validate-es';
 import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
-import { isOwnerRequest, readJsonBody } from '@/lib/api-guard';
+import { isOwner, readJsonBody } from '@/lib/api-guard';
 
 const DAILY_LIMIT = 20;
 
@@ -51,9 +51,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const isOwner = isOwnerRequest(request);
-
-    if (!isOwner) {
+    if (!(await isOwner(request))) {
       const ipHash = hashIp(getClientIp(request));
       if (!(await checkDbLimit('validate', ipHash, DAILY_LIMIT))) {
         return NextResponse.json(

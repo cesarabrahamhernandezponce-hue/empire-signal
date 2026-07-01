@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { translateWord } from '@/lib/services/signal';
 import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
-import { isOwnerRequest, readJsonBody } from '@/lib/api-guard';
+import { isOwner, readJsonBody } from '@/lib/api-guard';
 
 const DAILY_LIMIT = 30;
 
@@ -31,9 +31,7 @@ export async function POST(request: Request) {
 
     const { word, targetLanguages, tone } = parsed.data;
 
-    const isOwner = isOwnerRequest(request);
-
-    if (!isOwner) {
+    if (!(await isOwner(request))) {
       const ipHash = hashIp(getClientIp(request));
       if (!(await checkDbLimit('translate', ipHash, DAILY_LIMIT))) {
         return NextResponse.json({ error: 'Daily limit reached. Come back tomorrow.' }, { status: 429 });
