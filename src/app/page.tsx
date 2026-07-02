@@ -53,12 +53,13 @@ const UI = {
     insightLabel:        'Empire Insight',
     wordOfDayLabel:      'Word of the Day',
     wordOfDayCta:        'See full analysis →',
-    differentiators:     ['Etymology & origin', 'Register & collocations', 'Common errors'],
     tagline:             'Linguistic intelligence',
     headline:            'You know the word. But do you know how to use it?',
     subheadline:         'Empire Signal shows you the register, the collocations, and the context that turn vocabulary you recognize into vocabulary you can actually use.',
-    placeholder:         "Try a word — like 'ephemeral'…",
-    placeholderShort:    'Try a word…',
+    placeholder:         'Type any word…',
+    placeholderShort:    'Type a word…',
+    exampleLabel:        'Try:',
+    exampleWord:         'ephemeral',
     contextHint:         "e.g. I'm reading a 19th-century medical text...",
     addContext:          '+ Add context (optional)',
     hideContext:         '− Hide context',
@@ -72,12 +73,11 @@ const UI = {
     timeoutError:        'This took too long. The server may be busy — please try again.',
     errorTitle:          'Something went wrong',
     tryAgain:            '← Try again',
-    langLabel:           'Language',
     themeLabel:          'Theme',
     light:               'Light',
     dark:                'Dark',
     howToUse:            'How to use Empire Signal',
-    lensCta:             'Analyze a text',
+    lensLink:            'Have a full text? Analyze it with',
     howToUseTitle:       'What you can do',
     close:               'Close',
     recent:              'Recent',
@@ -111,12 +111,13 @@ const UI = {
     insightLabel:        'Perspectiva Empire',
     wordOfDayLabel:      'Palabra del día',
     wordOfDayCta:        'Ver análisis completo →',
-    differentiators:     ['Etimología y origen', 'Registro y colocaciones', 'Errores comunes'],
     tagline:             'Inteligencia lingüística',
     headline:            'Conoces la palabra. ¿Pero sabes cómo usarla?',
     subheadline:         'Empire Signal te muestra el registro, las colocaciones y el contexto que convierten el vocabulario que reconoces en vocabulario que de verdad puedes usar.',
-    placeholder:         "Prueba una palabra — como 'efímero'…",
-    placeholderShort:    'Prueba una palabra…',
+    placeholder:         'Escribe cualquier palabra…',
+    placeholderShort:    'Escribe una palabra…',
+    exampleLabel:        'Prueba:',
+    exampleWord:         'efímero',
     contextHint:         'ej. Estoy leyendo un texto médico del siglo XIX...',
     addContext:          '+ Agregar contexto (opcional)',
     hideContext:         '− Ocultar contexto',
@@ -130,12 +131,11 @@ const UI = {
     timeoutError:        'Tardó demasiado. El servidor puede estar ocupado — inténtalo de nuevo.',
     errorTitle:          'Algo salió mal',
     tryAgain:            '← Intentar de nuevo',
-    langLabel:           'Idioma',
     themeLabel:          'Tema',
     light:               'Claro',
     dark:                'Oscuro',
     howToUse:            'Cómo usar Empire Signal',
-    lensCta:             'Analizar un texto',
+    lensLink:            '¿Tienes un texto completo? Analízalo con',
     howToUseTitle:       'Qué puedes hacer',
     close:               'Cerrar',
     recent:              'Recientes',
@@ -1088,9 +1088,9 @@ export default function Home() {
           </div>
 
           {/* 1. Wordmark */}
-          <div className="text-center mb-5 sm:mb-6">
+          <div className="text-center mb-4">
             <span
-              className="inline-block text-[2.25rem] sm:text-[2.75rem] tracking-tight leading-none"
+              className="inline-block text-[1.4rem] sm:text-[1.6rem] tracking-tight leading-none"
               style={{
                 fontFamily: 'var(--font-dm-serif)',
                 fontStyle: 'italic',
@@ -1108,7 +1108,7 @@ export default function Home() {
               Empire
             </span>
             <span
-              className="block text-[0.62rem] sm:text-[0.72rem] uppercase text-ink-muted leading-none mt-1.5 sm:mt-2"
+              className="block text-[0.5rem] sm:text-[0.56rem] uppercase text-ink-muted leading-none mt-1 sm:mt-1.5"
               style={{
                 fontFamily: 'var(--font-geist-sans)',
                 letterSpacing: '0.42em',
@@ -1123,14 +1123,14 @@ export default function Home() {
 
           {/* 2. Headline */}
           <h1
-            className="text-[1.2rem] sm:text-[clamp(1.5rem,3vw,2.5rem)] tracking-tight text-ink leading-[1.2] sm:leading-[1.15] text-center mb-2.5 sm:mb-3"
+            className="text-[1.2rem] sm:text-[clamp(1.35rem,2.4vw,1.9rem)] tracking-tight text-ink leading-[1.2] sm:leading-[1.15] text-center mb-2.5 sm:mb-3"
             style={{ fontFamily: 'var(--font-dm-serif)' }}
           >
             {t.headline}
           </h1>
 
           {/* 3. Subheadline */}
-          <p className="text-xs sm:text-sm text-ink-faint sm:text-ink-muted leading-relaxed text-center mb-4 sm:mb-6 max-w-[420px] sm:max-w-[480px] mx-auto">
+          <p className="text-xs sm:text-sm text-ink-faint sm:text-ink-muted leading-relaxed text-center mb-4 sm:mb-5 max-w-[400px] sm:max-w-[440px] mx-auto">
             {t.subheadline}
           </p>
 
@@ -1166,10 +1166,7 @@ export default function Home() {
           <div className="w-full bg-surface border border-line rounded-[12px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden">
 
             {/* Language toggle */}
-            <div className="flex items-center justify-between px-5 sm:px-7 pt-4 sm:pt-5">
-              <span className="text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-ink-faint select-none">
-                {t.langLabel}
-              </span>
+            <div className="flex items-center justify-end px-5 sm:px-7 pt-4 sm:pt-5">
               <div className="flex gap-1.5">
                 {(['en', 'es'] as const).map((lang) => (
                   <button
@@ -1188,7 +1185,7 @@ export default function Home() {
             </div>
 
             {/* Input — protagonist */}
-            <div className="px-5 sm:px-7 pt-4 pb-5 sm:pb-6">
+            <div className="px-5 sm:px-7 pt-4 pb-3">
               <input
                 type="text"
                 value={word}
@@ -1200,6 +1197,19 @@ export default function Home() {
                 maxLength={40}
                 className="w-full bg-transparent text-[1.5rem] font-medium text-ink placeholder:text-ink-faint outline-none border-b-2 border-line focus:border-accent transition-colors duration-200 pb-1"
               />
+              {word.length === 0 && (
+                <button
+                  onClick={() => {
+                    setWord(t.exampleWord);
+                    setCuriosityVisible(false);
+                    track('example_word_clicked', { word: t.exampleWord });
+                    handleAnalyzeWithWord(t.exampleWord);
+                  }}
+                  className="mt-2.5 inline-block rounded-full border bg-[var(--badge-bg)] border-[var(--badge-border)] text-accent text-xs px-3 py-1 transition-colors cursor-pointer"
+                >
+                  {t.exampleLabel} <span className="font-medium">{t.exampleWord}</span> →
+                </button>
+              )}
               {word.length >= 25 && (
                 <p
                   className="text-right text-[10px] mt-0.5"
@@ -1390,11 +1400,11 @@ export default function Home() {
               </div>
             )}
 
-            {/* Section divider */}
-            <div className="h-px bg-line" />
+            {/* Section divider — only when the inline translator area is visible */}
+            {canAnalyze && !spellingError && <div className="h-px bg-line" />}
 
             {/* Options */}
-            <div className="px-5 sm:px-7 py-5 sm:py-6 space-y-4 sm:space-y-5">
+            <div className="px-5 sm:px-7 pt-3 pb-5 space-y-3">
 
               {/* Context toggle */}
               <div>
@@ -1421,28 +1431,27 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Two peer entry points, same weight: a single word, or a whole text via Empire Lens */}
-              <div className="flex flex-col sm:flex-row gap-2.5">
-                <button
-                  onClick={handleAnalyze}
-                  disabled={!canAnalyze}
-                  style={{ backgroundImage: BRAND_GRADIENT }}
-                  className="flex-1 py-3.5 rounded-lg text-sm font-semibold tracking-wide text-white shadow-md transition-all duration-150 enabled:cursor-pointer enabled:hover:shadow-lg enabled:hover:brightness-110 enabled:active:scale-[0.99] enabled:active:shadow disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed"
-                >
-                  {t.analyze}
-                </button>
+              {/* Analyze is the single primary action; Empire Lens is a quiet secondary link below. */}
+              <button
+                onClick={handleAnalyze}
+                disabled={!canAnalyze}
+                className="w-full py-3.5 rounded-lg text-sm font-semibold tracking-wide border shadow-md transition-all duration-150 enabled:bg-accent enabled:text-white enabled:border-transparent enabled:cursor-pointer enabled:hover:shadow-lg enabled:hover:brightness-110 enabled:active:scale-[0.99] enabled:active:shadow disabled:bg-transparent disabled:border-[var(--border)] disabled:text-[var(--text-subtle)] disabled:shadow-none disabled:cursor-not-allowed"
+              >
+                {t.analyze}
+              </button>
+              <div className="mt-3 text-center">
                 <Link
                   href="/lens"
-                  className="group flex-1 flex items-center justify-center gap-2 py-3.5 rounded-lg text-sm font-semibold tracking-wide border border-accent bg-[var(--surface-blue)] text-accent transition-all duration-150 hover:bg-accent hover:text-white active:scale-[0.99]"
+                  className="text-xs text-ink-muted hover:text-accent transition-colors"
                 >
-                  <span>{t.lensCta}</span>
+                  {t.lensLink}{' '}
                   <span
-                    aria-hidden
                     className="italic"
                     style={{ fontFamily: 'var(--font-dm-serif)' }}
                   >
-                    · Empire Lens
-                  </span>
+                    Empire Lens
+                  </span>{' '}
+                  →
                 </Link>
               </div>
             </div>
@@ -1463,7 +1472,7 @@ export default function Home() {
                       setCuriosityVisible(false);
                       handleAnalyzeWithWord(w);
                     }}
-                    className="text-xs text-ink-muted border border-line bg-[var(--surface-muted)] rounded-full hover:border-accent hover:text-accent transition-colors duration-150 px-3.5 py-1.5"
+                    className="text-xs text-accent border border-[var(--badge-border)] bg-[var(--badge-bg)] rounded-full hover:border-accent hover:text-accent transition-colors duration-150 px-3.5 py-1.5"
                   >
                     {w}
                   </button>
@@ -1478,29 +1487,21 @@ export default function Home() {
             </div>
           )}
 
-          {/* Differentiators — the core pitch, right under the search card */}
-          <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2">
-            {t.differentiators.map((f) => (
-              <span key={f} className="flex items-center gap-1.5 text-[0.72rem] text-ink-muted">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
-                {f}
-              </span>
-            ))}
-          </div>
-
-          {/* Empire Insight — branded content module */}
-          <div
-            className={`mt-6 rounded-[12px] border border-line border-l-2 border-l-accent bg-[var(--surface-muted)] px-4 py-3.5 transition-opacity duration-500 ${
-              curiosityVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
-          >
-            <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-accent mb-1.5">
-              {t.insightLabel}
-            </p>
-            <p className="text-sm text-ink-muted leading-relaxed" suppressHydrationWarning>
-              {curiosity}
-            </p>
-          </div>
+          {/* Empire Insight — shown only to new users (no Recent chips), never stacked with them */}
+          {sessionHistory.length === 0 && (
+            <div
+              className={`mt-6 rounded-[12px] border border-line border-l-2 border-l-accent bg-[var(--surface-muted)] px-4 py-3.5 transition-opacity duration-500 ${
+                curiosityVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-accent mb-1.5">
+                {t.insightLabel}
+              </p>
+              <p className="text-sm text-ink-muted leading-relaxed" suppressHydrationWarning>
+                {curiosity}
+              </p>
+            </div>
+          )}
 
         </div>
       </main>

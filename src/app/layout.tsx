@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, DM_Serif_Display } from "next/font/google";
 import "./globals.css";
 import PostHogProvider from "./PostHogProvider";
 
@@ -10,6 +10,13 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const dmSerif = DM_Serif_Display({
+  variable: "--font-dm-serif",
+  weight: "400",
+  style: ["normal", "italic"],
   subsets: ["latin"],
 });
 
@@ -53,7 +60,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} ${dmSerif.variable}`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />

@@ -1,11 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-dm-serif: 'DM Serif Display', Georgia, serif;
   --bg: #FAFAF8;
   --surface: #FFFFFF;
   --text-primary: #1A1A1A;
