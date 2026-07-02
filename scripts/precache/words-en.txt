@@ -2502,3 +2502,54 @@ fear
 anger
 desire
 passion
+
+# --- Idioms, phrasal verbs & fixed phrases (multi-word, <=5 words) ---
+# Cold multi-word analyses are the slowest (the free model often needs the
+# flash fallback), so pre-caching the common ones turns a ~20s wait into a hit.
+look forward to
+give up
+put off
+carry on
+run into
+come across
+get along
+put up with
+take off
+turn down
+bring up
+figure out
+point out
+work out
+break down
+set up
+get over
+go through
+look after
+pick up
+show up
+turn out
+back up
+look up to
+make up
+face value
+break the ice
+piece of cake
+under the weather
+once in a while
+call it a day
+bite the bullet
+cut corners
+beat around the bush
+a blessing in disguise
+the last straw
+on the same page
+rule of thumb
+silver lining
+get cold feet
+hang in there
+in a nutshell
+out of the blue
+up in the air
+on purpose
+at odds
+off the record

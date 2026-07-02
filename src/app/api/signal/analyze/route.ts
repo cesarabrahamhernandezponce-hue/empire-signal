@@ -10,6 +10,10 @@ import { isOwnerRequest, isOwnerEmail, readJsonBody } from '@/lib/api-guard';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { classifyInput } from '@/lib/validation/input';
 
+// A cold (uncached) analysis of a longer phrase can take ~20s on the free model;
+// without this, Vercel's default function limit cuts it off and the user sees a failure.
+export const maxDuration = 60;
+
 const LANGUAGE_DB: Record<string, DbLanguage> = {
   es: DbLanguage.ES,
   en: DbLanguage.EN,

@@ -5,6 +5,10 @@ import { translateWord } from '@/lib/services/signal';
 import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
 import { isOwner, readJsonBody } from '@/lib/api-guard';
 
+// A cold AI generation can exceed Vercel's default function limit; raise it so
+// slow translations complete instead of being cut off.
+export const maxDuration = 60;
+
 const DAILY_LIMIT = 30;
 
 const bodySchema = z.object({

@@ -7,6 +7,10 @@ import { buildValidatePromptES } from '@/lib/ai/prompts/validate-es';
 import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
 import { isOwner, readJsonBody } from '@/lib/api-guard';
 
+// A cold AI generation can exceed Vercel's default function limit; raise it so
+// slow validations complete instead of being cut off.
+export const maxDuration = 60;
+
 const DAILY_LIMIT = 20;
 
 const bodySchema = z.object({

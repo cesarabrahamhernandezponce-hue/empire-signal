@@ -5,6 +5,10 @@ import { analyzeWithLens } from '@/lib/services/lens';
 import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
 import { isOwner, readJsonBody } from '@/lib/api-guard';
 
+// One Lens call is a heavy ~250-word generation that easily exceeds Vercel's
+// default function limit; raise it so the generation completes instead of being cut off.
+export const maxDuration = 60;
+
 // Each Lens call is one heavy ~250-word generation, so it's capped tighter than
 // analyze (5/day). Durable + fail-closed via checkDbLimit, with the owner bypass.
 const DAILY_LIMIT = 3;

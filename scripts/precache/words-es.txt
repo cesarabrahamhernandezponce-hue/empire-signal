@@ -2502,3 +2502,39 @@ indeleble
 incólume
 diáfano
 límpido
+
+# --- Locuciones, frases hechas y expresiones (multi-palabra, <=5 palabras) ---
+# Los análisis multi-palabra en frío son los más lentos (el modelo gratis suele
+# caer al fallback flash), así que pre-cachear los comunes convierte una espera
+# de ~20s en un acierto de cache.
+valor nominal
+a propósito
+meter la pata
+tomar el pelo
+estar en las nubes
+dar en el clavo
+echar de menos
+ponerse las pilas
+tirar la toalla
+estar hecho polvo
+hacer la vista gorda
+ser pan comido
+llover a cántaros
+dar la lata
+de vez en cuando
+por si acaso
+en un santiamén
+a la larga
+sin embargo
+de hecho
+por supuesto
+de repente
+a menudo
+en cambio
+tal vez
+a lo mejor
+de todos modos
+al fin y al cabo
+a fin de cuentas
+de golpe
+hacer caso
