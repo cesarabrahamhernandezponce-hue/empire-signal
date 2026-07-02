@@ -1,0 +1,222 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: 'DM Serif Display'; font-style: normal; font-weight: 400;
+    src: url('file:///home/cesar/proyectos/empire/empire-signal/src/app/_og-fonts/DMSerifDisplay-Regular.ttf') format('truetype');
+  }
+  @font-face {
+    font-family: 'DM Serif Display'; font-style: italic; font-weight: 400;
+    src: url('file:///home/cesar/proyectos/empire/empire-signal/src/app/_og-fonts/DMSerifDisplay-Italic.ttf') format('truetype');
+  }
+  :root {
+    --bg: #FAFAF8;
+    --ink: #1A1A1A;
+    --accent: #3A3D8F;
+    --muted: #6B6B6B;
+    --subtle: #9B9B9B;
+    --box: #F1F1ED;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1080px; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  .serif { font-family: 'DM Serif Display', Georgia, serif; }
+
+  .frame {
+    position: relative;
+    width: 1080px; height: 1080px;
+    padding: 96px;
+    display: flex; flex-direction: column;
+  }
+  /* Subtle corner wordmark — identical on every slide */
+  .wordmark {
+    position: absolute; top: 62px; left: 96px;
+    font-size: 19px; font-weight: 600;
+    letter-spacing: 0.34em; text-transform: uppercase;
+    color: var(--subtle);
+  }
+
+  .slide { flex: 1; display: none; }
+  .slide.on { display: flex; flex-direction: column; }
+
+  /* Shared label — uppercase, letter-spaced, ink blue */
+  .label {
+    font-size: 28px; font-weight: 700;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  /* ---------- Slide 1 — Cover ---------- */
+  .s1.on { align-items: center; justify-content: center; text-align: center; }
+  .s1 .label { margin-bottom: 56px; }
+  .s1 .hero {
+    font-size: 104px; line-height: 1.06; color: var(--ink);
+    letter-spacing: -0.018em; max-width: 880px;
+  }
+  .s1 .hero em {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-style: italic; color: var(--accent);
+  }
+  .s1 .sub {
+    font-size: 36px; color: var(--muted); margin-top: 56px;
+    line-height: 1.5; max-width: 700px;
+  }
+
+  /* ---------- Phrasal verb slides (2–7) ---------- */
+  .pv.on { align-items: flex-start; justify-content: center; text-align: left; }
+  .pv .label { margin-bottom: 46px; }
+  .pv .term {
+    font-size: 132px; line-height: 1; color: var(--ink);
+    letter-spacing: -0.02em; margin-bottom: 18px;
+  }
+
+  /* A single sense block: meaning + example */
+  .sense { margin-top: 30px; max-width: 860px; }
+  .sense .meaning {
+    font-size: 40px; line-height: 1.4; color: var(--ink); font-weight: 500;
+  }
+  .sense .example {
+    font-size: 33px; line-height: 1.45; color: var(--muted);
+    font-style: italic; margin-top: 16px;
+  }
+  /* Inseparable / grammar note tag */
+  .tag {
+    display: inline-block; margin-left: 14px;
+    font-size: 22px; font-style: normal; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); vertical-align: 0.22em;
+  }
+
+  /* Two-sense divider */
+  .two .sense { margin-top: 26px; }
+  .two .sense + .sense {
+    margin-top: 30px; padding-top: 30px;
+    border-top: 1px solid rgba(58,61,143,0.16);
+  }
+  .sense .num {
+    font-size: 22px; font-weight: 700; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+  }
+
+  /* CTA button */
+  .cta {
+    margin-top: 56px;
+    align-self: flex-start;
+    background: var(--accent); color: #FAFAF8;
+    font-size: 31px; font-weight: 600; letter-spacing: 0.01em;
+    padding: 28px 54px; border-radius: 999px;
+  }
+  .cta .arrow { margin-left: 12px; }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="wordmark">Empire Signal</div>
+
+    <!-- Slide 1 — Cover -->
+    <div class="slide s1">
+      <div class="label">Phrasal Verbs</div>
+      <div class="hero serif">6 ways to use <em>&lsquo;put&rsquo;</em> that confuse learners</div>
+      <div class="sub">Same verb. Completely different meanings.</div>
+    </div>
+
+    <!-- Slide 2 — put off -->
+    <div class="slide s2 pv two">
+      <div class="label">Phrasal Verb &middot; 01</div>
+      <div class="term serif">put off</div>
+      <div class="sense">
+        <div class="num">Sense 1</div>
+        <div class="meaning">to postpone</div>
+        <div class="example">&ldquo;We had to put off the meeting until next week.&rdquo;</div>
+      </div>
+      <div class="sense">
+        <div class="num">Sense 2</div>
+        <div class="meaning">to make someone lose interest</div>
+        <div class="example">&ldquo;His rude attitude really put me off.&rdquo;</div>
+      </div>
+    </div>
+
+    <!-- Slide 3 — put up with -->
+    <div class="slide s3 pv">
+      <div class="label">Phrasal Verb &middot; 02</div>
+      <div class="term serif">put up with</div>
+      <div class="sense">
+        <div class="meaning">to tolerate something unpleasant<span class="tag">Inseparable</span></div>
+        <div class="example">&ldquo;I don&rsquo;t know how she puts up with all that noise.&rdquo;</div>
+      </div>
+    </div>
+
+    <!-- Slide 4 — put down -->
+    <div class="slide s4 pv two">
+      <div class="label">Phrasal Verb &middot; 03</div>
+      <div class="term serif">put down</div>
+      <div class="sense">
+        <div class="num">Sense 1</div>
+        <div class="meaning">to criticize or humiliate someone</div>
+        <div class="example">&ldquo;He always puts me down in front of others.&rdquo;</div>
+      </div>
+      <div class="sense">
+        <div class="num">Sense 2</div>
+        <div class="meaning">to set something down</div>
+        <div class="example">&ldquo;She put down her book and looked up.&rdquo;</div>
+      </div>
+    </div>
+
+    <!-- Slide 5 — put out -->
+    <div class="slide s5 pv two">
+      <div class="label">Phrasal Verb &middot; 04</div>
+      <div class="term serif">put out</div>
+      <div class="sense">
+        <div class="num">Sense 1</div>
+        <div class="meaning">to extinguish</div>
+        <div class="example">&ldquo;Firefighters put out the blaze.&rdquo;</div>
+      </div>
+      <div class="sense">
+        <div class="num">Sense 2</div>
+        <div class="meaning">to inconvenience someone</div>
+        <div class="example">&ldquo;I hope I&rsquo;m not putting you out by asking.&rdquo;</div>
+      </div>
+    </div>
+
+    <!-- Slide 6 — put through -->
+    <div class="slide s6 pv two">
+      <div class="label">Phrasal Verb &middot; 05</div>
+      <div class="term serif">put through</div>
+      <div class="sense">
+        <div class="num">Sense 1</div>
+        <div class="meaning">to connect someone (on the phone)</div>
+        <div class="example">&ldquo;Let me put you through to the manager.&rdquo;</div>
+      </div>
+      <div class="sense">
+        <div class="num">Sense 2</div>
+        <div class="meaning">to make someone endure something</div>
+        <div class="example">&ldquo;They put her through a tough interview.&rdquo;</div>
+      </div>
+    </div>
+
+    <!-- Slide 7 — put away + CTA -->
+    <div class="slide s7 pv">
+      <div class="label">Phrasal Verb &middot; 06</div>
+      <div class="term serif">put away</div>
+      <div class="sense">
+        <div class="meaning">to store something in its proper place</div>
+        <div class="example">&ldquo;Please put away your clothes.&rdquo;</div>
+      </div>
+      <div class="cta">Get the full picture on any word &mdash; link in bio<span class="arrow">&rarr;</span></div>
+    </div>
+  </div>
+
+  <script>
+    const s = new URLSearchParams(location.search).get('s') || '1';
+    document.querySelector('.s' + s).classList.add('on');
+    document.documentElement.setAttribute('data-ready', '1');
+  </script>
+</body>
+</html>

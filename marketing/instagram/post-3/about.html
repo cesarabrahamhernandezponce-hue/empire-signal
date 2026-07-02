@@ -1,0 +1,180 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: 'DM Serif Display'; font-style: normal; font-weight: 400;
+    src: url('file:///home/cesar/proyectos/empire/empire-signal/src/app/_og-fonts/DMSerifDisplay-Regular.ttf') format('truetype');
+  }
+  @font-face {
+    font-family: 'DM Serif Display'; font-style: italic; font-weight: 400;
+    src: url('file:///home/cesar/proyectos/empire/empire-signal/src/app/_og-fonts/DMSerifDisplay-Italic.ttf') format('truetype');
+  }
+  :root {
+    --bg: #FAFAF8;
+    --ink: #1A1A1A;
+    --accent: #3A3D8F;
+    --muted: #6B6B6B;
+    --subtle: #9B9B9B;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1080px; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  .serif { font-family: 'DM Serif Display', Georgia, serif; }
+
+  .frame {
+    position: relative;
+    width: 1080px; height: 1080px;
+    overflow: hidden;
+  }
+  .wordmark {
+    position: absolute; top: 64px; left: 96px;
+    font-size: 19px; font-weight: 600;
+    letter-spacing: 0.34em; text-transform: uppercase;
+    color: var(--subtle);
+    z-index: 5;
+  }
+
+  .slide { display: none; }
+  .slide.on { display: block; }
+
+  /* ---------- Slide 1 — cover ---------- */
+  .s1.on {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+    padding: 96px;
+  }
+  .s1 .eyebrow {
+    font-size: 26px; font-weight: 700; letter-spacing: 0.30em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 52px;
+  }
+  .s1 .title { font-size: 116px; line-height: 1.02; color: var(--ink); letter-spacing: -0.015em; }
+  .s1 .sub { font-size: 38px; color: var(--muted); margin-top: 56px; line-height: 1.45; max-width: 720px; }
+  .s1 .sub b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Slides 2–5 — copy (top) + phone mockup (bottom) ---------- */
+  .feature .copy {
+    position: absolute; top: 150px; left: 96px; right: 96px;
+    z-index: 4;
+  }
+  .feature .step {
+    font-size: 24px; font-weight: 700; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 24px;
+  }
+  .feature .title { font-size: 66px; line-height: 1.05; color: var(--ink); letter-spacing: -0.01em; }
+  .feature .body {
+    font-size: 31px; line-height: 1.5; color: var(--muted);
+    margin-top: 26px; max-width: 760px;
+  }
+  .feature .body b { color: var(--ink); font-weight: 600; }
+
+  /* Phone mockup — upright, centered, bleeds off the bottom edge */
+  .phone {
+    position: absolute;
+    left: 50%; transform: translateX(-50%);
+    bottom: -170px;
+    width: 500px;
+    background: #14141A;
+    border-radius: 58px;
+    padding: 16px;
+    box-shadow: 0 60px 100px -34px rgba(20,20,30,0.42), 0 0 0 1px rgba(0,0,0,0.04);
+    z-index: 2;
+  }
+  .phone .screen {
+    position: relative;
+    width: 468px; height: 600px;
+    border-radius: 44px;
+    overflow: hidden;
+    background: #FAFAF8;
+  }
+  .phone .screen img {
+    display: block;
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: top;
+  }
+  /* dynamic-island pill */
+  .phone .island {
+    position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+    width: 112px; height: 30px; border-radius: 999px; background: #14141A;
+    z-index: 2;
+  }
+
+  /* ---------- Slide 5 CTA ---------- */
+  .s5 .btn {
+    display: inline-block;
+    margin-top: 38px;
+    background: var(--accent); color: #FAFAF8;
+    font-size: 28px; font-weight: 600; letter-spacing: 0.01em;
+    padding: 24px 46px; border-radius: 999px;
+    box-shadow: 0 18px 40px -16px rgba(58,61,143,0.55);
+  }
+  .s5 .btn .arrow { margin-left: 12px; }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="wordmark">Empire Signal</div>
+
+    <!-- Slide 1 — cover -->
+    <div class="slide s1">
+      <div class="eyebrow">English, deeper</div>
+      <div class="title serif">What is<br>Empire Signal?</div>
+      <div class="sub">Not a dictionary. A tool that shows you how to <b>actually use</b> a word.</div>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="slide s2 feature">
+      <div class="copy">
+        <div class="step">01 &middot; The idea</div>
+        <div class="title serif">Beyond the definition</div>
+        <div class="body">Register, collocations, etymology, and real usage &mdash; for the words you already <b>half-know</b>.</div>
+      </div>
+      <div class="phone"><div class="screen"><span class="island"></span><img src="assets/shot-s2.jpg"></div></div>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="slide s3 feature">
+      <div class="copy">
+        <div class="step">02 &middot; Validate</div>
+        <div class="title serif">Write it. We check it.</div>
+        <div class="body">Type a sentence with the word. Empire tells you if it sounds <b>natural</b> &mdash; and how to fix it.</div>
+      </div>
+      <div class="phone"><div class="screen"><span class="island"></span><img src="assets/shot-s3.jpg"></div></div>
+    </div>
+
+    <!-- Slide 4 -->
+    <div class="slide s4 feature">
+      <div class="copy">
+        <div class="step">03 &middot; Collocations</div>
+        <div class="title serif">The combinations<br>that matter</div>
+        <div class="body">See how a word really gets used &mdash; the phrases <b>native speakers</b> actually say.</div>
+      </div>
+      <div class="phone"><div class="screen"><span class="island"></span><img src="assets/shot-s4.jpg"></div></div>
+    </div>
+
+    <!-- Slide 5 -->
+    <div class="slide s5 feature">
+      <div class="copy">
+        <div class="step">04 &middot; Common errors</div>
+        <div class="title serif">Avoid the mistakes<br>learners make</div>
+        <div class="body">The traps, the false friends, the confusions &mdash; flagged before you make them.</div>
+        <a class="btn">Try it free &mdash; link in bio<span class="arrow">&#8594;</span></a>
+      </div>
+      <div class="phone"><div class="screen"><span class="island"></span><img src="assets/shot-s5.jpg"></div></div>
+    </div>
+  </div>
+
+  <script>
+    const s = new URLSearchParams(location.search).get('s') || '1';
+    document.querySelector('.s' + s).classList.add('on');
+    document.documentElement.setAttribute('data-ready', '1');
+  </script>
+</body>
+</html>
