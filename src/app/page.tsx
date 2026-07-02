@@ -81,6 +81,7 @@ const UI = {
     howToUseTitle:       'What you can do',
     close:               'Close',
     recent:              'Recent',
+    viewAll:             'View all →',
     logIn:               'Log in',
     signUp:              'Sign up',
     logOut:              'Log out',
@@ -138,6 +139,7 @@ const UI = {
     howToUseTitle:       'Qué puedes hacer',
     close:               'Cerrar',
     recent:              'Recientes',
+    viewAll:             'Ver todo →',
     logIn:               'Iniciar sesión',
     signUp:              'Registrarse',
     logOut:              'Cerrar sesión',
@@ -429,6 +431,18 @@ function LoadingView({ word, messages, srLabel, slowMessage }: { word: string; m
   );
 }
 
+function dedupeWords(words: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const w of words) {
+    const key = w.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(w);
+  }
+  return out;
+}
+
 export default function Home() {
   const router = useRouter();
   const [user, setUser]                         = useState<User | null | undefined>(undefined);
@@ -510,7 +524,7 @@ export default function Home() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data: { history: Array<{ word: string }> } | null) => {
         if (active && data?.history) {
-          setSessionHistory(data.history.map((h) => h.word));
+          setSessionHistory(dedupeWords(data.history.map((h) => h.word)));
         }
       })
       .catch(() => {});
@@ -524,7 +538,7 @@ export default function Home() {
     const entries = loadSessionHistory();
     if (entries.length === 0) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSessionHistory(entries.map((e) => e.word));
+    setSessionHistory(dedupeWords(entries.map((e) => e.word)));
   }, [user]);
 
   useEffect(() => {
@@ -1441,7 +1455,7 @@ export default function Home() {
                 {t.recent}
               </p>
               <div className="flex gap-1.5 flex-wrap">
-                {sessionHistory.map((w) => (
+                {sessionHistory.slice(0, 6).map((w) => (
                   <button
                     key={w}
                     onClick={() => {
@@ -1449,12 +1463,18 @@ export default function Home() {
                       setCuriosityVisible(false);
                       handleAnalyzeWithWord(w);
                     }}
-                    className="text-xs text-ink-muted border border-line bg-surface rounded-full hover:border-accent hover:text-accent transition-colors duration-150 px-3 py-1"
+                    className="text-xs text-ink-muted border border-line bg-[var(--surface-muted)] rounded-full hover:border-accent hover:text-accent transition-colors duration-150 px-3.5 py-1.5"
                   >
                     {w}
                   </button>
                 ))}
               </div>
+              <Link
+                href="/history"
+                className="inline-block mt-2 text-xs text-ink-muted hover:text-ink transition-colors"
+              >
+                {t.viewAll}
+              </Link>
             </div>
           )}
 
