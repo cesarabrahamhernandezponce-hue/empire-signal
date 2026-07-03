@@ -7,7 +7,7 @@ import type { User } from '@supabase/supabase-js';
 import AnalysisResult, { type AnalyzeRecord } from '@/components/AnalysisResult';
 import { track } from '@/lib/analytics';
 import { createClient } from '@/lib/supabase/client';
-import { loadSessionHistory, addSessionHistory } from '@/lib/session-history';
+import { loadSessionHistory, addSessionHistory, removeSessionHistory, type SessionHistoryEntry } from '@/lib/session-history';
 
 // A 503 from /analyze means every free AI provider was momentarily saturated.
 // That clears in a second or two, so we silently retry once before showing the
@@ -82,6 +82,9 @@ const UI = {
     close:               'Close',
     recent:              'Recent',
     viewAll:             'View all →',
+    deleteHistoryConfirm: 'Delete word from history?',
+    deleteConfirm:       'Delete',
+    cancel:              'Cancel',
     logIn:               'Log in',
     signUp:              'Sign up',
     logOut:              'Log out',
@@ -140,6 +143,9 @@ const UI = {
     close:               'Cerrar',
     recent:              'Recientes',
     viewAll:             'Ver todo →',
+    deleteHistoryConfirm: '¿Eliminar palabra del historial?',
+    deleteConfirm:       'Eliminar',
+    cancel:              'Cancelar',
     logIn:               'Iniciar sesión',
     signUp:              'Registrarse',
     logOut:              'Cerrar sesión',
@@ -431,14 +437,14 @@ function LoadingView({ word, messages, srLabel, slowMessage }: { word: string; m
   );
 }
 
-function dedupeWords(words: string[]): string[] {
+function dedupeEntries(entries: SessionHistoryEntry[]): SessionHistoryEntry[] {
   const seen = new Set<string>();
-  const out: string[] = [];
-  for (const w of words) {
-    const key = w.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const out: SessionHistoryEntry[] = [];
+  for (const e of entries) {
+    const key = e.word.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push(w);
+    out.push(e);
   }
   return out;
 }
@@ -469,7 +475,8 @@ export default function Home() {
   const [spellingSuggestion, setSpellingSuggestion] = useState<string | null>(null);
   const [spellingCanForce, setSpellingCanForce] = useState(false);
   const [history, setHistory]                   = useState<AnalyzeRecord[]>([]);
-  const [sessionHistory, setSessionHistory]     = useState<string[]>([]);
+  const [sessionHistory, setSessionHistory]     = useState<SessionHistoryEntry[]>([]);
+  const [pendingDelete, setPendingDelete]       = useState<SessionHistoryEntry | null>(null);
   const [showHelp, setShowHelp]                   = useState(false);
   const [waitlistEmail, setWaitlistEmail]         = useState('');
   const [waitlistStatus, setWaitlistStatus]       = useState<'idle' | 'loading' | 'success' | 'duplicate'>('idle');
@@ -522,9 +529,9 @@ export default function Home() {
     let active = true;
     fetch('/api/signal/history')
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { history: Array<{ word: string }> } | null) => {
+      .then((data: { history: Array<{ word: string; language: 'en' | 'es' }> } | null) => {
         if (active && data?.history) {
-          setSessionHistory(dedupeWords(data.history.map((h) => h.word)));
+          setSessionHistory(dedupeEntries(data.history));
         }
       })
       .catch(() => {});
@@ -538,7 +545,7 @@ export default function Home() {
     const entries = loadSessionHistory();
     if (entries.length === 0) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSessionHistory(dedupeWords(entries.map((e) => e.word)));
+    setSessionHistory(dedupeEntries(entries));
   }, [user]);
 
   useEffect(() => {
@@ -553,6 +560,9 @@ export default function Home() {
   // rate-limit cost). Refetch when the language toggle changes.
   useEffect(() => {
     let active = true;
+    // Clear immediately so a failed/empty fetch for the new language can never
+    // leave the previous language's word on screen.
+    setWordOfDay(null);
     fetch(`/api/signal/word-of-day?language=${language}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data: { word?: string; record?: AnalyzeRecord } | null) => {
@@ -642,6 +652,41 @@ export default function Home() {
     }
   };
 
+  // Long-press on a history chip opens the delete confirmation instead of
+  // running an analysis. A ref flag lets the click handler know a long-press
+  // already fired so it doesn't also trigger the search on pointer release.
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
+
+  const startHistoryLongPress = (entry: SessionHistoryEntry) => {
+    longPressFired.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
+      setPendingDelete(entry);
+    }, 500);
+  };
+
+  const cancelHistoryLongPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleDeleteHistory = (entry: SessionHistoryEntry) => {
+    setSessionHistory((prev) => prev.filter((e) => e.word !== entry.word));
+    if (user === null) {
+      removeSessionHistory(entry.word);
+    } else if (user) {
+      fetch('/api/signal/history', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word: entry.word, language: entry.language }),
+      }).catch(() => {});
+    }
+    setPendingDelete(null);
+  };
+
   const handleAnalyzeWithWord = async (w: string, langOverride?: Language, force = false, attempt = 0) => {
     const trimmed = w.trim();
     if (!trimmed) return;
@@ -702,8 +747,8 @@ export default function Home() {
       track('word_analyzed', { word: record.word, language: lang, cacheHit });
       setPageState({ status: 'result', record, cacheHit });
       setSessionHistory((prev) => {
-        const filtered = prev.filter((w) => w !== record.word);
-        return [record.word, ...filtered].slice(0, 20);
+        const filtered = prev.filter((e) => e.word !== record.word);
+        return [{ word: record.word, language: lang }, ...filtered].slice(0, 20);
       });
       // Persist only the lightweight session history for anonymous users;
       // registered users are covered by the DB history and must not be mixed in.
@@ -1039,6 +1084,39 @@ export default function Home() {
   return (
     <>
       {showHelp && <HelpModal title={t.howToUseTitle} language={language} onClose={() => setShowHelp(false)} />}
+
+      {pendingDelete && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.30)' }}
+          onClick={() => setPendingDelete(null)}
+        >
+          <div
+            style={{ background: 'var(--surface)', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', padding: '28px 32px', maxWidth: '360px', width: '100%' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              {t.deleteHistoryConfirm}
+            </p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '22px' }}>
+              “{pendingDelete.word}”
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setPendingDelete(null)}
+                style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '10px', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer' }}
+              >
+                {t.cancel}
+              </button>
+              <button
+                onClick={() => handleDeleteHistory(pendingDelete)}
+                style={{ background: '#dc2626', border: 'none', borderRadius: '10px', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, color: '#fff', cursor: 'pointer' }}
+              >
+                {t.deleteConfirm}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="min-h-screen bg-bg flex flex-col items-center px-4 pt-4 pb-16">
         <div className="w-full max-w-[600px]">
@@ -1464,17 +1542,27 @@ export default function Home() {
                 {t.recent}
               </p>
               <div className="flex gap-1.5 flex-wrap">
-                {sessionHistory.slice(0, 6).map((w) => (
+                {sessionHistory.slice(0, 6).map((entry) => (
                   <button
-                    key={w}
+                    key={entry.word}
+                    onPointerDown={() => startHistoryLongPress(entry)}
+                    onPointerUp={cancelHistoryLongPress}
+                    onPointerLeave={cancelHistoryLongPress}
+                    onContextMenu={(e) => e.preventDefault()}
                     onClick={() => {
-                      setWord(w);
+                      if (longPressFired.current) {
+                        longPressFired.current = false;
+                        return;
+                      }
+                      setLanguage(entry.language);
+                      setWord(entry.word);
                       setCuriosityVisible(false);
-                      handleAnalyzeWithWord(w);
+                      handleAnalyzeWithWord(entry.word, entry.language);
                     }}
+                    style={{ userSelect: 'none', touchAction: 'manipulation' }}
                     className="text-xs text-accent border border-[var(--badge-border)] bg-[var(--badge-bg)] rounded-full hover:border-accent hover:text-accent transition-colors duration-150 px-3.5 py-1.5"
                   >
-                    {w}
+                    {entry.word}
                   </button>
                 ))}
               </div>

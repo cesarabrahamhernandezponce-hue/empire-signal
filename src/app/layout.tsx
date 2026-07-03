@@ -23,25 +23,30 @@ const dmSerif = DM_Serif_Display({
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://empire-signal.vercel.app';
 
+const siteTitle = 'Empire Signal — You know the word. But do you know how to use it?';
+const siteDescription =
+  'Deep word analysis for intermediate and advanced English learners: register, collocations, real usage, common errors. Beyond the dictionary.';
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Empire Signal',
-    template: '%s · Empire Signal',
+    default: siteTitle,
+    template: '%s — Empire Signal',
   },
-  description: 'Deep linguistic analysis powered by AI.',
+  description: siteDescription,
   applicationName: 'Empire Signal',
   openGraph: {
     type: 'website',
     siteName: 'Empire Signal',
-    title: 'Empire Signal',
-    description: 'Deep linguistic analysis powered by AI.',
+    locale: 'en_US',
+    title: siteTitle,
+    description: siteDescription,
     url: siteUrl,
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Empire Signal',
-    description: 'Deep linguistic analysis powered by AI.',
+    title: siteTitle,
+    description: siteDescription,
   },
 };
 

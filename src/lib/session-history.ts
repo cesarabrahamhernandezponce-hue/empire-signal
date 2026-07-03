@@ -27,6 +27,18 @@ export function loadSessionHistory(): SessionHistoryEntry[] {
   }
 }
 
+// Remove a word from the stored history (used when the user deletes a chip).
+// Returns the new list so callers can keep state in sync even if the write fails.
+export function removeSessionHistory(word: string): SessionHistoryEntry[] {
+  const next = loadSessionHistory().filter((e) => e.word !== word);
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Store unavailable/full — keep going with the in-memory list.
+  }
+  return next;
+}
+
 // Prepend a freshly analyzed word, drop any earlier duplicate, cap the list,
 // and persist. Returns the new list so callers can keep state in sync even
 // when the write itself fails.
