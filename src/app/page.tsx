@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
 import AnalysisResult, { type AnalyzeRecord } from '@/components/AnalysisResult';
+import OnboardingModal from '@/components/OnboardingModal';
 import { track } from '@/lib/analytics';
 import { createClient } from '@/lib/supabase/client';
 import { loadSessionHistory, addSessionHistory, removeSessionHistory, type SessionHistoryEntry } from '@/lib/session-history';
@@ -774,6 +775,16 @@ export default function Home() {
 
   const handleAnalyze = () => handleAnalyzeWithWord(word);
 
+  // First-visit onboarding CTA: reuses the same analysis path as the "Try:
+  // ephemeral" chip. Forced to EN because "ephemeral" is the cached English
+  // sample, so it never spends AI budget.
+  const handleOnboardingExample = () => {
+    setWord('ephemeral');
+    setCuriosityVisible(false);
+    track('onboarding_example_clicked', { word: 'ephemeral' });
+    handleAnalyzeWithWord('ephemeral', 'en');
+  };
+
   // Deep-link pickup for Empire Lens: a "?w=<word>&lang=<en|es>" link (used by
   // the Lens word-suggestion panel's "Analyze in Empire" action) prefills the
   // word and runs the normal analyze flow once on mount. The query string is
@@ -1084,6 +1095,8 @@ export default function Home() {
   return (
     <>
       {showHelp && <HelpModal title={t.howToUseTitle} language={language} onClose={() => setShowHelp(false)} />}
+
+      <OnboardingModal user={user} onSeeExample={handleOnboardingExample} />
 
       {pendingDelete && (
         <div

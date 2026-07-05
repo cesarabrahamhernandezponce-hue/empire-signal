@@ -505,7 +505,7 @@ function pickVoice(lang: string): SpeechSynthesisVoice | null {
   );
 }
 
-export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWord, user, onSignOut, hasHistory, uiLang = 'en', interactive = true }: Props) {
+export default function AnalysisResult({ record, onReset, onAnalyzeWord, user, onSignOut, hasHistory, uiLang = 'en', interactive = true }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [wordCopied, setWordCopied] = useState(false);
@@ -742,12 +742,6 @@ export default function AnalysisResult({ record, cacheHit, onReset, onAnalyzeWor
               {heroPhonetic && <span className="min-w-0 [overflow-wrap:anywhere]">{heroPhonetic}</span>}
               {heroPhonetic && essential.cefr && <span className="select-none">·</span>}
               {essential.cefr && <CefrBadge level={essential.cefr} tooltip={l.cefrTooltip} />}
-            </p>
-          )}
-
-          {cacheHit && (
-            <p className="mt-2 text-[0.65rem] font-medium tracking-widest uppercase" style={{ color: 'var(--success)' }}>
-              cached
             </p>
           )}
 
