@@ -563,6 +563,7 @@ export default function Home() {
     let active = true;
     // Clear immediately so a failed/empty fetch for the new language can never
     // leave the previous language's word on screen.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setWordOfDay(null);
     fetch(`/api/signal/word-of-day?language=${language}`)
       .then((res) => (res.ok ? res.json() : null))
