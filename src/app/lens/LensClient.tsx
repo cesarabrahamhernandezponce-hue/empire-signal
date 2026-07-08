@@ -8,6 +8,8 @@ type Lang = 'en' | 'es';
 
 const MAX_WORDS = 400;
 const MIN_WORDS = 5;
+// Persist the last report so a refresh doesn't discard a costly ~60s generation.
+const STORAGE_KEY = 'lens:last:v1';
 // A 503 means every free AI provider was momentarily saturated; that usually
 // clears in a second, so retry once silently before surfacing an error.
 const RETRY_DELAY_MS = 1500;
@@ -25,6 +27,13 @@ const UI = {
     langLabel:       'Language',
     analyze:         'Analyze with Lens',
     analyzing:       'Reading your writing…',
+    loadingSteps:    [
+      'Reading your writing…',
+      'Weighing your register…',
+      'Measuring your lexical range…',
+      'Spotting your habits…',
+      'Finding the one thing to grow…',
+    ],
     over:            (n: number) => `${n} / ${MAX_WORDS} words — a little over. Trim it down.`,
     under:           (n: number) => `${n} / ${MAX_WORDS} words — write at least ${MIN_WORDS}.`,
     counter:         (n: number) => `${n} / ${MAX_WORDS} words`,
@@ -43,6 +52,8 @@ const UI = {
     patternsLabel:   'How you write',
     signalsLabel:    'Spanish-speaker signals',
     growthLabel:     'Your growth focus',
+    shareGrowth:     'Share',
+    copied:          'Copied',
     textLabel:       'Your text',
     textHint:        'Tap a highlighted word for stronger alternatives.',
     noWeak:          'Nothing felt weak here — your word choices hold up.',
@@ -60,6 +71,13 @@ const UI = {
     langLabel:       'Idioma',
     analyze:         'Analizar con Lens',
     analyzing:       'Leyendo tu escritura…',
+    loadingSteps:    [
+      'Leyendo tu escritura…',
+      'Sopesando tu registro…',
+      'Midiendo tu variedad léxica…',
+      'Detectando tus hábitos…',
+      'Buscando la única cosa en la que crecer…',
+    ],
     over:            (n: number) => `${n} / ${MAX_WORDS} palabras — un poco largo. Acórtalo.`,
     under:           (n: number) => `${n} / ${MAX_WORDS} palabras — escribe al menos ${MIN_WORDS}.`,
     counter:         (n: number) => `${n} / ${MAX_WORDS} palabras`,
@@ -77,6 +95,8 @@ const UI = {
     patternsLabel:   'Cómo escribes',
     signalsLabel:    'Señales de interferencia',
     growthLabel:     'Tu enfoque de crecimiento',
+    shareGrowth:     'Compartir',
+    copied:          'Copiado',
     textLabel:       'Tu texto',
     textHint:        'Toca una palabra resaltada para ver alternativas más fuertes.',
     noWeak:          'Nada se sintió débil aquí — tus elecciones de palabras se sostienen.',
@@ -243,14 +263,23 @@ function SuggestionPanel({
 function AnnotatedText({
   text, suggestions, language, onPick,
 }: { text: string; suggestions: WordSuggestion[]; language: Lang; onPick: (s: WordSuggestion) => void }) {
-  const { tokens, byToken } = useMemo(() => mapSuggestions(text, suggestions), [text, suggestions]);
+  const { byToken } = useMemo(() => mapSuggestions(text, suggestions), [text, suggestions]);
+  // Keep the original whitespace after each token (newlines included) so pasted
+  // paragraphs render with their line breaks instead of collapsing to one block.
+  // Token order matches mapSuggestions' split(/\s+/), so `byToken` indices align.
+  const parts = useMemo(
+    () => [...text.trim().matchAll(/(\S+)(\s*)/g)].map((m) => ({ tok: m[1], sep: m[2] })),
+    [text],
+  );
 
   return (
-    <p className="text-[1.02rem] sm:text-[1.08rem] leading-[1.9] text-ink-muted" style={{ fontFamily: 'var(--font-dm-serif)' }}>
-      {tokens.map((tok, i) => {
+    <p
+      className="text-[1.02rem] sm:text-[1.08rem] leading-[1.9] text-ink-muted"
+      style={{ fontFamily: 'var(--font-dm-serif)', whiteSpace: 'pre-wrap' }}
+    >
+      {parts.map(({ tok, sep }, i) => {
         const sug = byToken.get(i);
-        const space = i < tokens.length - 1 ? ' ' : '';
-        if (!sug) return <span key={i}>{tok}{space}</span>;
+        if (!sug) return <span key={i}>{tok}{sep}</span>;
         return (
           <span key={i}>
             <button
@@ -261,7 +290,7 @@ function AnnotatedText({
             >
               {tok}
             </button>
-            {space}
+            {sep}
           </span>
         );
       })}
@@ -275,7 +304,23 @@ function LensReport({
 }: { profile: LensProfile; text: string; language: Lang }) {
   const t = UI[language];
   const [active, setActive] = useState<WordSuggestion | null>(null);
+  const [copied, setCopied] = useState(false);
   const { register, spelling, lexicalVariety, patterns, spanishSignals, wordSuggestions, growthFocus } = profile;
+
+  const shareGrowth = useCallback(async () => {
+    const url = `${window.location.origin}/lens`;
+    const body = `${growthFocus}\n\n— Empire Lens`;
+    // Native share sheet on mobile is the ideal path for Reddit/IG; otherwise copy.
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try { await navigator.share({ text: body, url }); } catch { /* user cancelled */ }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(`${body}\n${url}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard blocked */ }
+  }, [growthFocus]);
 
   return (
     <div className="flex flex-col gap-9" style={{ animation: 'lensRise 320ms ease' }}>
@@ -379,6 +424,23 @@ function LensReport({
         >
           {growthFocus}
         </p>
+        <div className="mt-5 flex justify-end">
+          <button
+            onClick={shareGrowth}
+            className="inline-flex items-center gap-1.5 text-[0.72rem] font-semibold uppercase tracking-wider text-ink-faint hover:text-accent transition-colors"
+          >
+            {copied ? (
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden>
+                <path d="M2.5 7.5l3 3 6-7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden>
+                <path d="M9.5 4.5V3a1 1 0 00-1-1H3a1 1 0 00-1 1v5.5a1 1 0 001 1h1.5M5.5 4.5H11a1 1 0 011 1V11a1 1 0 01-1 1H5.5a1 1 0 01-1-1V5.5a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+            {copied ? t.copied : t.shareGrowth}
+          </button>
+        </div>
       </section>
 
       {/* Annotated text + word suggestions */}
@@ -400,6 +462,29 @@ function LensReport({
   );
 }
 
+// ── Loading indicator ────────────────────────────────────────────────────────
+// A single spinner for a ~60s free-model generation reads as "stuck", so we walk
+// through the phases the analysis actually goes through. Advances and stops on
+// the last step rather than looping, to imply forward progress.
+function LoadingIndicator({ language }: { language: Lang }) {
+  const steps = UI[language].loadingSteps;
+  const [i, setI] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setI((prev) => Math.min(prev + 1, steps.length - 1)), 2800);
+    return () => clearInterval(id);
+  }, [steps.length]);
+
+  return (
+    <div className="mt-10 flex flex-col items-center gap-3">
+      <div className="w-4 h-4 border-2 border-line border-t-accent rounded-full animate-spin motion-reduce:hidden" />
+      <p key={i} className="text-sm text-ink-faint" style={{ animation: 'fadeIn 300ms ease' }}>
+        {steps[i]}
+      </p>
+    </div>
+  );
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 type State =
   | { status: 'idle' }
@@ -413,12 +498,34 @@ export default function LensClient() {
   const [state, setState] = useState<State>({ status: 'idle' });
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.profile && typeof parsed.text === 'string'
+          && (parsed.language === 'en' || parsed.language === 'es')) {
+          setLanguage(parsed.language);
+          setState({ status: 'result', profile: parsed.profile, text: parsed.text });
+          return;
+        }
+      }
+    } catch { /* ignore corrupt payload */ }
     try {
       const l = localStorage.getItem('language');
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (l === 'es' || l === 'en') setLanguage(l);
     } catch { /* ignore */ }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
+
+  useEffect(() => {
+    if (state.status !== 'result') return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        profile: state.profile, text: state.text, language,
+      }));
+    } catch { /* quota or disabled */ }
+  }, [state, language]);
 
   const t = UI[language];
   const words = countWords(text);
@@ -581,12 +688,7 @@ export default function LensClient() {
         )}
 
         {/* Loading */}
-        {state.status === 'loading' && (
-          <div className="mt-10 flex flex-col items-center gap-3">
-            <div className="w-4 h-4 border-2 border-line border-t-accent rounded-full animate-spin motion-reduce:hidden" />
-            <p className="text-sm text-ink-faint">{t.analyzing}</p>
-          </div>
-        )}
+        {state.status === 'loading' && <LoadingIndicator language={language} />}
 
         {/* Error / rate limit */}
         {state.status === 'error' && (
@@ -613,7 +715,11 @@ export default function LensClient() {
             <LensReport profile={state.profile} text={state.text} language={language} />
             <div className="mt-10 text-center">
               <button
-                onClick={() => { setState({ status: 'idle' }); setText(''); }}
+                onClick={() => {
+                  setState({ status: 'idle' });
+                  setText('');
+                  try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+                }}
                 className="text-sm text-ink-muted hover:text-ink transition-colors"
               >
                 {t.newAnalysis}
