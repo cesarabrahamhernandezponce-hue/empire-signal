@@ -8,6 +8,11 @@ const TIMEOUT_MS = 30000;
 // the same model once (capped) instead of discarding it — recovers the per-minute
 // rate limit without firing another model and burning more daily quota.
 const RETRY_AFTER_CAP_MS = 6000;
+// Gemini's free tier returns intermittent 503 ("model overloaded") on flash-lite
+// (~1 in 3 calls). A single quick retry recovers the fast primary instead of
+// dropping the whole pass to the slower flash fallback, which also burns the
+// smaller flash daily quota. Also covers transient 500/502.
+const SERVER_ERROR_RETRY_MS = 800;
 // The full analysis JSON runs ~700-1000 completion tokens, and some models add
 // reasoning tokens on top. A low cap truncated the output mid-string →
 // unterminated JSON → parse failure on every cache-miss. Give it headroom.
@@ -91,11 +96,13 @@ function raceModels(
     timers.push(timer);
 
     const run = async (): Promise<RaceWin> => {
-      // Re-try the SAME model at most once after a 429; any other outcome
-      // resolves or rejects immediately. One retry recovers the transient
-      // per-minute limit; looping further just burns the daily quota and makes
-      // a hard rate-limit take the full timeout to surface as a failure.
+      // Re-try the SAME model at most once each after a 429 or a transient 5xx;
+      // any other outcome resolves or rejects immediately. One retry recovers
+      // the transient per-minute limit / model-overload blip; looping further
+      // just burns the daily quota and makes a hard failure take the full
+      // timeout to surface.
       let retried429 = false;
+      let retried5xx = false;
       for (;;) {
         const res = await fetch(pass.baseUrl, {
           method: 'POST',
@@ -122,6 +129,13 @@ function raceModels(
           const waitMs = Math.min((retryAfter > 0 ? retryAfter : 3) * 1000, RETRY_AFTER_CAP_MS);
           if (Date.now() + waitMs >= deadline) throw new Error('HTTP 429');
           await new Promise((r) => setTimeout(r, waitMs));
+          continue;
+        }
+        if (res.status === 503 || res.status === 500 || res.status === 502) {
+          if (retried5xx) throw new Error(`HTTP ${res.status}`);
+          retried5xx = true;
+          if (Date.now() + SERVER_ERROR_RETRY_MS >= deadline) throw new Error(`HTTP ${res.status}`);
+          await new Promise((r) => setTimeout(r, SERVER_ERROR_RETRY_MS));
           continue;
         }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
