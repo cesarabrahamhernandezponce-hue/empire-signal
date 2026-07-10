@@ -5,7 +5,7 @@ import { Language as DbLanguage } from '@prisma/client';
 import { analyzeWord, findCachedByKey, toLookupKey, type AnalyzeRecord } from '@/lib/services/signal';
 import { resolveDictionaryGate } from '@/lib/services/word-classifier';
 import { prisma } from '@/lib/db/prisma';
-import { getClientIp, hashIp, checkAnonymousLimit, checkUserLimit } from '@/lib/rate-limit';
+import { getClientIp, hashIp, checkAnonymousLimit, checkUserLimit, recordAnonymousSearch } from '@/lib/rate-limit';
 import { isOwnerRequest, isOwnerEmail, readJsonBody } from '@/lib/api-guard';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { classifyInput } from '@/lib/validation/input';
@@ -181,6 +181,13 @@ export async function POST(request: Request) {
           console.error('[POST /api/signal/analyze] History write failed:', err);
         }
       })();
+    }
+
+    // Reached only on success (failures returned above). An anonymous search
+    // consumes the daily quota only now — the earlier checkAnonymousLimit was
+    // read-only, so a failed attempt never counts against the user.
+    if (!isOwner && !userId) {
+      recordAnonymousSearch(ipHash);
     }
 
     return NextResponse.json({ record: result.record, cacheHit: result.cacheHit, model: result.model }, { status: 200 });

@@ -18,6 +18,7 @@ vi.mock('@/lib/rate-limit', () => ({
   hashIp: vi.fn(() => 'iphash'),
   checkAnonymousLimit: vi.fn(),
   checkUserLimit: vi.fn(),
+  recordAnonymousSearch: vi.fn(),
 }));
 vi.mock('@/lib/api-guard', () => ({
   isOwnerRequest: vi.fn(() => false),
@@ -34,13 +35,14 @@ vi.mock('@/lib/db/prisma', () => ({
 import { POST } from './route';
 import { analyzeWord, findCachedByKey } from '@/lib/services/signal';
 import { resolveDictionaryGate } from '@/lib/services/word-classifier';
-import { checkAnonymousLimit } from '@/lib/rate-limit';
+import { checkAnonymousLimit, recordAnonymousSearch } from '@/lib/rate-limit';
 import { readJsonBody } from '@/lib/api-guard';
 
 const mockedAnalyze = vi.mocked(analyzeWord);
 const mockedFindCached = vi.mocked(findCachedByKey);
 const mockedGate = vi.mocked(resolveDictionaryGate);
 const mockedAnonLimit = vi.mocked(checkAnonymousLimit);
+const mockedRecordAnon = vi.mocked(recordAnonymousSearch);
 const mockedReadBody = vi.mocked(readJsonBody);
 
 const RECORD = {
@@ -148,5 +150,55 @@ describe('POST /api/signal/analyze — gate ordering', () => {
     expect(res.status).toBe(200);
     expect(mockedGate).not.toHaveBeenCalled();
     expect(mockedAnalyze).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('POST /api/signal/analyze — anonymous quota charged only on success', () => {
+  it('successful analysis → records the anonymous search once', async () => {
+    body('rizz');
+    mockedFindCached.mockResolvedValue(null);
+    mockedGate.mockResolvedValue({ ok: true });
+    mockedAnalyze.mockResolvedValue({ ok: true, record: RECORD as never, cacheHit: false, model: 'gemini:gemini-2.5-flash-lite' });
+
+    const res = await POST(request());
+
+    expect(res.status).toBe(200);
+    expect(mockedRecordAnon).toHaveBeenCalledTimes(1);
+    expect(mockedRecordAnon).toHaveBeenCalledWith('iphash');
+  });
+
+  it('AI failure (503) → does NOT charge the anonymous quota', async () => {
+    body('rizz');
+    mockedFindCached.mockResolvedValue(null);
+    mockedGate.mockResolvedValue({ ok: true });
+    mockedAnalyze.mockResolvedValue({ ok: false, error: 'The AI service is temporarily busy.' });
+
+    const res = await POST(request());
+
+    expect(res.status).toBe(503);
+    expect(mockedRecordAnon).not.toHaveBeenCalled();
+  });
+
+  it('WORD_NOT_FOUND (422) → does NOT charge the anonymous quota', async () => {
+    body('rizz');
+    mockedFindCached.mockResolvedValue(null);
+    mockedGate.mockResolvedValue({ ok: true });
+    mockedAnalyze.mockResolvedValue({ ok: false, error: 'WORD_NOT_FOUND', suggestion: null });
+
+    const res = await POST(request());
+
+    expect(res.status).toBe(422);
+    expect(mockedRecordAnon).not.toHaveBeenCalled();
+  });
+
+  it('cache hit still charges the quota (anonymous limit counts cache hits)', async () => {
+    body('ephemeral');
+    mockedFindCached.mockResolvedValue(RECORD as never);
+    mockedAnalyze.mockResolvedValue({ ok: true, record: RECORD as never, cacheHit: true, model: null });
+
+    const res = await POST(request());
+
+    expect(res.status).toBe(200);
+    expect(mockedRecordAnon).toHaveBeenCalledTimes(1);
   });
 });

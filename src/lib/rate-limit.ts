@@ -36,17 +36,29 @@ function utcMidnightMs(): number {
   return d.getTime() + 86_400_000;
 }
 
-function checkInMemoryLimit(key: string, limit: number): boolean {
-  const now = Date.now();
-  const resetAt = utcMidnightMs();
+// Read-only: is this key still under the limit? Does not mutate the bucket, so
+// it's safe to call before we know whether the request will succeed.
+function peekInMemoryLimit(key: string, limit: number): boolean {
   const bucket = buckets.get(key);
+  if (!bucket || Date.now() >= bucket.resetAt) return true;
+  return bucket.count < limit;
+}
 
+// Commit one consumed unit to the per-instance bucket. Kept separate from the
+// peek so callers can charge the quota only after a request actually succeeds.
+function recordInMemory(key: string): void {
+  const now = Date.now();
+  const bucket = buckets.get(key);
   if (!bucket || now >= bucket.resetAt) {
-    buckets.set(key, { count: 1, resetAt });
-    return true;
+    buckets.set(key, { count: 1, resetAt: utcMidnightMs() });
+  } else {
+    bucket.count++;
   }
-  if (bucket.count >= limit) return false;
-  bucket.count++;
+}
+
+function checkInMemoryLimit(key: string, limit: number): boolean {
+  if (!peekInMemoryLimit(key, limit)) return false;
+  recordInMemory(key);
   return true;
 }
 
@@ -58,8 +70,12 @@ function startOfCurrentMonthUTC(): Date {
 }
 
 export async function checkAnonymousLimit(ipHash: string): Promise<LimitResult> {
-  // Fast path: reject immediately if in-memory bucket is full.
-  if (!checkInMemoryLimit(`analyze:${ipHash}`, ANON_DAILY_LIMIT)) {
+  // Fast path: reject immediately if in-memory bucket is full. Read-only on
+  // purpose — a request only consumes the quota once it SUCCEEDS (the caller
+  // then calls recordAnonymousSearch). Otherwise a failed analysis (AI 503,
+  // word-not-found, parse error) would inflate this bucket and lock the user
+  // out even though no search was ever recorded in the DB.
+  if (!peekInMemoryLimit(`analyze:${ipHash}`, ANON_DAILY_LIMIT)) {
     return { allowed: false, remaining: 0, limit: ANON_DAILY_LIMIT };
   }
   // Authoritative cross-instance count from DB.
@@ -80,6 +96,14 @@ export async function checkAnonymousLimit(ipHash: string): Promise<LimitResult> 
     console.error('[rate-limit] Anonymous DB count failed, relying on in-memory check:', err);
     return { allowed: true, remaining: ANON_DAILY_LIMIT - 1, limit: ANON_DAILY_LIMIT };
   }
+}
+
+// Charge one anonymous search against the per-instance bucket. Called only
+// after analyzeWord succeeds (when a SearchEvent row is also written), so the
+// in-memory fast-path stays consistent with the DB tally: failed attempts,
+// which write no SearchEvent, likewise cost nothing here.
+export function recordAnonymousSearch(ipHash: string): void {
+  recordInMemory(`analyze:${ipHash}`);
 }
 
 // Durable, cross-instance limiter for the AI endpoints (ask/translate/validate).
