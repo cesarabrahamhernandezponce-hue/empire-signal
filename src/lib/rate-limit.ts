@@ -92,9 +92,13 @@ export async function checkAnonymousLimit(ipHash: string): Promise<LimitResult> 
     const remaining = Math.max(0, ANON_DAILY_LIMIT - count);
     return { allowed: count < ANON_DAILY_LIMIT, remaining, limit: ANON_DAILY_LIMIT };
   } catch (err) {
-    // DB unreachable — in-memory check already passed, fail open.
-    console.error('[rate-limit] Anonymous DB count failed, relying on in-memory check:', err);
-    return { allowed: true, remaining: ANON_DAILY_LIMIT - 1, limit: ANON_DAILY_LIMIT };
+    // Fail closed: when the DB is unreachable the cache is too, so every analysis
+    // becomes a real AI call. On a cold serverless instance the in-memory bucket
+    // is empty and can't backstop the count, so allowing the request through would
+    // let anonymous traffic drain the free AI budget uncapped during an outage.
+    // Block instead — matching checkDbLimit's fail-closed stance for metered calls.
+    console.error('[rate-limit] Anonymous DB count failed, failing closed:', err);
+    return { allowed: false, remaining: 0, limit: ANON_DAILY_LIMIT };
   }
 }
 

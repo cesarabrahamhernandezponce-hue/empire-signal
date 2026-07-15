@@ -20,6 +20,9 @@
 # production
 /build
 
+# generated marketing/demo render output
+/output
+
 # misc
 .DS_Store
 *.pem
