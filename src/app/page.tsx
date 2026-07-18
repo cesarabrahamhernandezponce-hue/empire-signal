@@ -11,13 +11,17 @@ import { createClient } from '@/lib/supabase/client';
 import { loadSessionHistory, addSessionHistory, removeSessionHistory, type SessionHistoryEntry } from '@/lib/session-history';
 
 // A 503 from /analyze means every free AI provider was momentarily saturated.
-// That clears in a second or two, so we silently retry once before showing the
+// That clears in a second or two, so we silently retry before showing the
 // error — confirmed to turn most transient failures into a normal result.
 const ANALYZE_RETRY_DELAY_MS = 1500;
-// Per-attempt cap on the analyze fetch. A single AI generation is bounded
-// server-side at 30s; 45s leaves room for that plus the response transfer
-// before we abort and surface a timeout instead of spinning forever.
-const ANALYZE_TIMEOUT_MS = 45000;
+// How many times to re-fire the request after a 503 (all AI providers busy).
+// Each retry only runs after an actual failure, so it costs quota only when the
+// first attempt already came up empty.
+const ANALYZE_MAX_503_RETRIES = 2;
+// Per-attempt cap on the analyze fetch. Cold multi-word analyses on the free
+// model routinely run 30-37s; the server allows up to 60s (route maxDuration),
+// so cap the client just under that to avoid aborting slow-but-valid analyses.
+const ANALYZE_TIMEOUT_MS = 55000;
 // After this long in the loading view, swap the rotating decorative messages
 // for a reassuring "this is taking longer than usual" note.
 const LOADING_SLOW_AFTER_MS = 12000;
@@ -732,10 +736,10 @@ export default function Home() {
       }
 
       if (!res.ok) {
-        // 503 = every AI provider was momentarily busy. This almost always
-        // clears on a second try, so retry once (staying in the loading state)
-        // before surfacing the error.
-        if (res.status === 503 && attempt === 0) {
+        // 503 = every AI provider was momentarily busy. On the free tier this is
+        // a brief blip that clears within a second or two, so retry up to twice
+        // (staying in the loading state) before surfacing the error.
+        if (res.status === 503 && attempt < ANALYZE_MAX_503_RETRIES) {
           await new Promise((r) => setTimeout(r, ANALYZE_RETRY_DELAY_MS));
           return handleAnalyzeWithWord(w, langOverride, force, attempt + 1);
         }
