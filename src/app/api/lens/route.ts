@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { analyzeWithLens } from '@/lib/services/lens';
+import { classifyProse, lensRejectionMessage } from '@/lib/validation/lens-input';
 import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
 import { isOwner, readJsonBody } from '@/lib/api-guard';
 
@@ -67,6 +68,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // LAYER 1 — cheap, pre-AI language-plausibility gate. MUST run before the
+    // quota check below so rejecting gibberish never spends the user's 3/day:
+    // no AI call is made, so nothing is "used". Broken learner prose passes.
+    const prose = classifyProse(text, isES ? 'ES' : 'EN');
+    if (!prose.ok) {
+      return NextResponse.json(
+        { error: prose.message, reason: prose.reason, notAnalyzable: true },
+        { status: 422 },
+      );
+    }
+
     // Owner bypass: unlimited access via secret header or the signed-in owner account.
     if (!(await isOwner(request))) {
       const ipHash = hashIp(getClientIp(request));
@@ -81,6 +93,17 @@ export async function POST(request: Request) {
 
     const result = await analyzeWithLens({ text, language });
     if (!result.ok) {
+      // LAYER 2 — the model judged the input isn't analyzable prose (a case
+      // Layer 1's heuristic let through, e.g. real words in the wrong language).
+      // This DOES count against the daily quota: the AI call already happened
+      // (checkDbLimit ran above), and charging for it also removes any incentive
+      // to probe the model with junk. Returned as a friendly 422, not a 503.
+      if (result.notAnalyzable) {
+        return NextResponse.json(
+          { error: lensRejectionMessage(result.reason, isES ? 'ES' : 'EN'), reason: result.reason, notAnalyzable: true },
+          { status: 422 },
+        );
+      }
       // AI degraded/busy — friendly 503 the client turns into a retry prompt.
       return NextResponse.json({ error: result.error }, { status: 503 });
     }

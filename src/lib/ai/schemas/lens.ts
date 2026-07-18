@@ -65,6 +65,26 @@ export const lensSchema = z.object({
 
 export type LensProfile = z.infer<typeof lensSchema>;
 
+// Model-side refusal outcome. When the pasted text is not coherent prose in the
+// target language, the model returns this instead of fabricating a profile —
+// the complement to Layer 1's pre-AI heuristic gate for cases the heuristic
+// lets through (e.g. real words in the wrong language). Reasons intentionally
+// overlap the Layer 1 reasons so the route can map both to one friendly copy.
+export const LENS_REFUSAL_REASONS = ['NOT_LANGUAGE', 'TOO_SHORT', 'WRONG_LANGUAGE'] as const;
+export type LensRefusalReason = (typeof LENS_REFUSAL_REASONS)[number];
+
+const refusalSchema = z.object({
+  analyzable: z.literal(false),
+  reason: z.enum(LENS_REFUSAL_REASONS),
+});
+
+// A successful parse is EITHER a full profile (analyzable) or an explicit
+// refusal. Callers must branch on `analyzable` before touching profile fields.
+export type ParsedLens =
+  | { ok: true; analyzable: true; profile: LensProfile }
+  | { ok: true; analyzable: false; reason: LensRefusalReason }
+  | { ok: false; error: string };
+
 function stripMarkdown(raw: string): string {
   return raw
     .trim()
@@ -73,9 +93,7 @@ function stripMarkdown(raw: string): string {
     .replace(/\s*```$/, '');
 }
 
-export function parseLens(
-  raw: string,
-): { ok: true; data: LensProfile } | { ok: false; error: string } {
+export function parseLens(raw: string): ParsedLens {
   const cleaned = stripMarkdown(raw);
 
   let parsed: unknown;
@@ -83,6 +101,15 @@ export function parseLens(
     parsed = JSON.parse(cleaned);
   } catch {
     return { ok: false, error: 'The AI response is not valid JSON.' };
+  }
+
+  // Refusal branch first: if the model explicitly declined, honor it rather than
+  // trying to coerce a profile out of a deliberately-empty payload. A malformed
+  // reason still counts as a refusal (default NOT_LANGUAGE) — the model already
+  // told us the input isn't analyzable, which is the signal that matters.
+  if (typeof parsed === 'object' && parsed !== null && (parsed as Record<string, unknown>).analyzable === false) {
+    const refusal = refusalSchema.safeParse(parsed);
+    return { ok: true, analyzable: false, reason: refusal.success ? refusal.data.reason : 'NOT_LANGUAGE' };
   }
 
   const result = lensSchema.safeParse(parsed);
@@ -94,5 +121,5 @@ export function parseLens(
     };
   }
 
-  return { ok: true, data: result.data };
+  return { ok: true, analyzable: true, profile: result.data };
 }

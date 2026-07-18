@@ -38,6 +38,7 @@ const UI = {
     under:           (n: number) => `${n} / ${MAX_WORDS} words — write at least ${MIN_WORDS}.`,
     counter:         (n: number) => `${n} / ${MAX_WORDS} words`,
     errorTitle:      'Something went wrong',
+    notReadableTitle:'That’s not quite readable yet',
     tryAgain:        'Try again',
     rateTitle:       "You've reached today's Lens limit",
     rateSub:         'Lens reads deeply, so it’s limited to 3 texts a day for now. Come back tomorrow — or analyze individual words in Empire Signal anytime.',
@@ -82,6 +83,7 @@ const UI = {
     under:           (n: number) => `${n} / ${MAX_WORDS} palabras — escribe al menos ${MIN_WORDS}.`,
     counter:         (n: number) => `${n} / ${MAX_WORDS} palabras`,
     errorTitle:      'Algo salió mal',
+    notReadableTitle:'Esto todavía no se puede leer',
     tryAgain:        'Intentar de nuevo',
     rateTitle:       'Alcanzaste el límite de Lens de hoy',
     rateSub:         'Lens lee a fondo, así que por ahora se limita a 3 textos al día. Vuelve mañana — o analiza palabras sueltas en Empire Signal cuando quieras.',
@@ -490,7 +492,7 @@ type State =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'result'; profile: LensProfile; text: string }
-  | { status: 'error'; message: string; rateLimited?: boolean };
+  | { status: 'error'; message: string; rateLimited?: boolean; notReadable?: boolean };
 
 export default function LensClient() {
   const [language, setLanguage] = useState<Lang>('en');
@@ -562,6 +564,13 @@ export default function LensClient() {
           continue;
         }
         const data = await res.json().catch(() => null);
+        // 422 + notAnalyzable: the text isn't readable prose (gibberish, wrong
+        // language, too little). Show a friendly, non-technical nudge — the input
+        // form stays visible above so they can edit and resubmit.
+        if (res.status === 422 && data && data.notAnalyzable) {
+          setState({ status: 'error', message: data.error, notReadable: true });
+          return;
+        }
         if (!res.ok) {
           setState({ status: 'error', message: (data && data.error) || t.errorTitle });
           return;
@@ -694,10 +703,10 @@ export default function LensClient() {
         {state.status === 'error' && (
           <div className="mt-8 rounded-[12px] border border-line p-6 text-center" style={{ background: 'var(--surface-error)' }}>
             <p className="text-[0.95rem] font-semibold text-ink mb-2" style={{ fontFamily: 'var(--font-dm-serif)' }}>
-              {state.rateLimited ? t.rateTitle : t.errorTitle}
+              {state.rateLimited ? t.rateTitle : state.notReadable ? t.notReadableTitle : t.errorTitle}
             </p>
             <p className="text-sm text-ink-muted leading-relaxed mb-4">{state.message}</p>
-            {!state.rateLimited && (
+            {!state.rateLimited && !state.notReadable && (
               <button
                 onClick={() => analyze()}
                 className="px-4 py-2 rounded-[8px] text-sm font-medium text-white"
