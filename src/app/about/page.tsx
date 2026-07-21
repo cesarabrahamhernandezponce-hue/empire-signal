@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+
+import BackLink from '@/components/BackLink';
 
 export const metadata: Metadata = {
   title: { absolute: 'About — Empire Signal' },
@@ -11,12 +12,9 @@ export default function AboutPage() {
   return (
     <main className="min-h-screen bg-bg text-ink">
       <div className="mx-auto w-full max-w-2xl px-5 py-6 sm:px-8 sm:py-10">
-        <Link
-          href="/"
-          className="text-xs text-ink-muted hover:text-accent transition-colors"
-        >
+        <BackLink className="text-xs text-ink-muted hover:text-accent transition-colors">
           ← Back to Empire Signal
-        </Link>
+        </BackLink>
 
         <header className="mt-8 mb-8">
           <h1

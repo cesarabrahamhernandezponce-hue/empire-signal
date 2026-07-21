@@ -679,15 +679,18 @@ export default function LensClient() {
               <div className="flex items-center justify-between mt-2 pt-3 border-t border-line">
                 <span
                   className="text-[0.78rem] font-medium tabular-nums"
-                  style={{ color: over || under ? 'var(--warning)' : 'var(--text-faint, var(--text-subtle))' }}
+                  style={{ color: over || under ? 'var(--warning)' : 'var(--text-subtle)' }}
                 >
                   {over ? t.over(words) : under ? t.under(words) : t.counter(words)}
                 </span>
                 <button
                   onClick={() => analyze()}
                   disabled={!canAnalyze}
-                  className="px-5 py-2 rounded-[8px] text-sm font-medium text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ background: canAnalyze ? 'var(--accent)' : 'var(--text-subtle)' }}
+                  className="px-5 py-2 rounded-[8px] text-sm font-medium transition-all disabled:cursor-not-allowed"
+                  style={{
+                    background: canAnalyze ? 'var(--accent)' : 'var(--surface-muted)',
+                    color: canAnalyze ? '#fff' : 'var(--text-subtle)',
+                  }}
                 >
                   {state.status === 'loading' ? t.analyzing : t.analyze}
                 </button>
