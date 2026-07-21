@@ -947,8 +947,8 @@ export default function Home() {
             style={{
               width: '36px',
               height: '20px',
-              background: theme === 'dark' ? '#3A3D8F' : '#F0F0EE',
-              borderColor: theme === 'dark' ? '#3A3D8F' : '#EAEAE6',
+              background: theme === 'dark' ? 'var(--accent)' : 'var(--surface-muted)',
+              borderColor: theme === 'dark' ? 'var(--accent)' : 'var(--border)',
             }}
             aria-label="Toggle theme"
           >
@@ -1127,7 +1127,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => handleDeleteHistory(pendingDelete)}
-                style={{ background: '#dc2626', border: 'none', borderRadius: '10px', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, color: '#fff', cursor: 'pointer' }}
+                style={{ background: 'var(--danger)', border: 'none', borderRadius: '10px', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, color: '#fff', cursor: 'pointer' }}
               >
                 {t.deleteConfirm}
               </button>
@@ -1282,17 +1282,19 @@ export default function Home() {
 
             {/* Input — protagonist */}
             <div className="px-5 sm:px-7 pt-4 pb-3">
-              <input
-                type="text"
-                value={word}
-                onChange={handleWordChange}
-                onKeyDown={(e) => e.key === 'Enter' && canAnalyze && handleAnalyze()}
-                placeholder={isDesktop ? t.placeholder : t.placeholderShort}
-                autoComplete="off"
-                spellCheck={false}
-                maxLength={40}
-                className="w-full bg-transparent text-[1.5rem] font-medium text-ink placeholder:text-ink-faint outline-none border-b-2 border-line focus:border-accent transition-colors duration-200 pb-1"
-              />
+              <form onSubmit={(e) => { e.preventDefault(); if (canAnalyze) handleAnalyze(); }}>
+                <input
+                  type="text"
+                  value={word}
+                  onChange={handleWordChange}
+                  enterKeyHint="go"
+                  placeholder={isDesktop ? t.placeholder : t.placeholderShort}
+                  autoComplete="off"
+                  spellCheck={false}
+                  maxLength={40}
+                  className="w-full bg-transparent text-[1.5rem] font-medium text-ink placeholder:text-ink-faint outline-none border-b-2 border-line focus:border-accent transition-colors duration-200 pb-1"
+                />
+              </form>
               {word.length === 0 && (
                 <button
                   onClick={() => {
@@ -1309,7 +1311,7 @@ export default function Home() {
               {word.length >= 25 && (
                 <p
                   className="text-right text-[10px] mt-0.5"
-                  style={{ color: word.length === 40 ? '#E53935' : undefined }}
+                  style={{ color: word.length === 40 ? 'var(--danger)' : undefined }}
                 >
                   <span className={word.length < 40 ? 'text-ink-faint' : ''}>
                     {word.length}/40

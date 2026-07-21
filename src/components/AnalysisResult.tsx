@@ -340,13 +340,16 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number,
   return lines;
 }
 
+// Mirrors the dark-theme CEFR tokens in globals.css (the card is drawn on a
+// dark canvas). Canvas can't read CSS vars, so these literals must be kept in
+// sync with --cefr-{a,b,c}-{bg,text} so the shared PNG matches the on-screen badge.
 const CEFR_CARD_COLORS: Record<string, { bg: string; text: string }> = {
   A1: { bg: 'rgba(74,222,128,0.15)',  text: '#4ADE80' },
   A2: { bg: 'rgba(74,222,128,0.15)',  text: '#4ADE80' },
-  B1: { bg: 'rgba(96,165,250,0.15)',  text: '#60A5FA' },
-  B2: { bg: 'rgba(96,165,250,0.15)',  text: '#60A5FA' },
-  C1: { bg: 'rgba(192,132,252,0.15)', text: '#C084FC' },
-  C2: { bg: 'rgba(192,132,252,0.15)', text: '#C084FC' },
+  B1: { bg: 'rgba(251,146,60,0.15)',  text: '#FB923C' },
+  B2: { bg: 'rgba(251,146,60,0.15)',  text: '#FB923C' },
+  C1: { bg: 'rgba(123,126,200,0.18)', text: '#A5A8E6' },
+  C2: { bg: 'rgba(123,126,200,0.18)', text: '#A5A8E6' },
 };
 
 // Indigo brand accent, brightened for legibility on the dark card background
