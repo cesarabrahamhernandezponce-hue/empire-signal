@@ -9,8 +9,8 @@ datasource db {
 // ───────────── USUARIOS ─────────────
 
 model User {
-  id          String   @id @default(uuid())
-  email       String   @unique
+  id          String  @id @default(uuid())
+  email       String  @unique
   displayName String?
 
   plan              Plan     @default(FREE)
@@ -26,7 +26,6 @@ model User {
   searchEvents      SearchEvent[]
   bookmarks         Bookmark[]
 
-  @@index([email])
   @@map("users")
 }
 
@@ -53,7 +52,6 @@ model SearchRecord {
   followUpQuestions FollowUpQuestion[]
   searchEvents      SearchEvent[]
   bookmarks         Bookmark[]
-  wordOfTheDay      WordOfTheDay?
 
   @@unique([word, language])
   @@index([word])
@@ -105,14 +103,14 @@ model FollowUpQuestion {
 // ───────────── EVENTOS DE BÚSQUEDA ─────────────
 
 model SearchEvent {
-  id             String   @id @default(uuid())
-  word           String
-  context        String?
-  language       Language
+  id       String   @id @default(uuid())
+  word     String
+  context  String?
+  language Language
 
   userId         String?
   searchRecordId String
-  cacheHit       Boolean  @default(false)
+  cacheHit       Boolean @default(false)
   ipHash         String?
 
   createdAt DateTime @default(now())
@@ -130,7 +128,7 @@ model SearchEvent {
 // ───────────── FAVORITOS ─────────────
 
 model Bookmark {
-  id             String   @id @default(uuid())
+  id             String @id @default(uuid())
   userId         String
   searchRecordId String
 
@@ -146,21 +144,6 @@ model Bookmark {
   @@unique([userId, searchRecordId])
   @@index([userId, folder])
   @@map("bookmarks")
-}
-
-// ───────────── PALABRA DEL DÍA ─────────────
-
-model WordOfTheDay {
-  id             String   @id @default(uuid())
-  searchRecordId String   @unique
-  date           DateTime @unique @db.Date
-  featured       Boolean  @default(true)
-  createdBy      String   @default("system")
-
-  searchRecord SearchRecord @relation(fields: [searchRecordId], references: [id])
-
-  @@index([date])
-  @@map("word_of_the_day")
 }
 
 // ───────────── SUSCRIPCIONES ─────────────
