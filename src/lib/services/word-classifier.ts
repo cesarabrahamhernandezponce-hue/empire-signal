@@ -15,7 +15,7 @@ const FALLBACK_VALID: Classification = { status: 'valid', suggestion: null, cate
 export async function classifyWord(word: string): Promise<Classification> {
   let aiResult;
   try {
-    aiResult = await generateContent(buildClassifyPromptEN(word));
+    aiResult = await generateContent(buildClassifyPromptEN(word), { temperature: 0, maxTokens: 200 });
   } catch {
     return FALLBACK_VALID;
   }

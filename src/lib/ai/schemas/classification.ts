@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { stripJsonFences } from '../json';
 
 // Ephemeral lexical classification used ONLY to route a dictionaryapi 404:
 // decide whether an unknown token is a real word to analyze, an obvious typo,
@@ -15,20 +16,12 @@ export const classificationSchema = z.object({
 
 export type Classification = z.infer<typeof classificationSchema>;
 
-function stripMarkdown(raw: string): string {
-  return raw
-    .trim()
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/, '')
-    .replace(/\s*```$/, '');
-}
-
 export function parseClassification(
   raw: string,
 ): { ok: true; data: Classification } | { ok: false; error: string } {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(stripMarkdown(raw));
+    parsed = JSON.parse(stripJsonFences(raw));
   } catch {
     return { ok: false, error: 'AI classification was not valid JSON.' };
   }

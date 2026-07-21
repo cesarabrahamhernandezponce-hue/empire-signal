@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { stripJsonFences } from '../json';
 
 export const analysisSchema = z.object({
   version: z.literal(1),
@@ -98,11 +99,7 @@ export function resolveWordTypes(essential: Analysis['essential']): WordTypeEntr
 }
 
 export function parseAnalysis(raw: string): { ok: true; data: Analysis } | { ok: false; error: string } {
-  const cleaned = raw
-    .trim()
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/, '')
-    .replace(/\s*```$/, '');
+  const cleaned = stripJsonFences(raw);
 
   let parsed: unknown;
   try {

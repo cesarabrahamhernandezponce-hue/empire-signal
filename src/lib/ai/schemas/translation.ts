@@ -1,22 +1,15 @@
 import { z } from 'zod';
+import { stripJsonFences } from '../json';
 
 const translationSchema = z.record(z.string(), z.string());
 
 export type Translation = z.infer<typeof translationSchema>;
 
-function stripMarkdown(raw: string): string {
-  return raw
-    .trim()
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/, '')
-    .replace(/\s*```$/, '');
-}
-
 export function parseTranslation(
   raw: string,
   expectedKeys: string[] = [],
 ): { ok: true; data: Translation } | { ok: false; error: string } {
-  const cleaned = stripMarkdown(raw);
+  const cleaned = stripJsonFences(raw);
 
   let parsed: unknown;
   try {

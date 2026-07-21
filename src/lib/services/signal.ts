@@ -9,6 +9,8 @@ import { buildAskPromptES } from '../ai/prompts/ask-es';
 import { buildAskPromptEN } from '../ai/prompts/ask-en';
 import { buildTranslatePrompt, SUPPORTED_LANGUAGE_CODES } from '../ai/prompts/translate';
 import { parseTranslation } from '../ai/schemas/translation';
+import { parseContextNote } from '../ai/schemas/context';
+import { stripJsonFences } from '../ai/json';
 import type { Language } from '../ai/prompts/types';
 import { parseAnalysis, type Analysis } from '../ai/schemas/analysis';
 import { prisma } from '../db/prisma';
@@ -96,13 +98,8 @@ async function enrichWithContext(
       : buildContextPromptEN(word, context);
     const result = await generateContent(prompt);
     if (!result.ok) return record;
-    const cleaned = result.text.trim()
-      .replace(/^```json\s*/i, '')
-      .replace(/^```\s*/, '')
-      .replace(/\s*```$/, '');
-    const raw: unknown = JSON.parse(cleaned);
-    const contextNote = (raw as { contextNote?: unknown }).contextNote;
-    if (typeof contextNote !== 'string' || contextNote.length === 0) return record;
+    const contextNote = parseContextNote(result.text);
+    if (!contextNote) return record;
     return {
       ...record,
       analysis: {
@@ -197,8 +194,7 @@ export async function analyzeWord(params: {
   let winningModel: string | null = `${aiResult.provider}:${aiResult.model}`;
 
   // Check for word-not-found sentinel before attempting full parse
-  const rawCleaned = aiResult.text.trim()
-    .replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+  const rawCleaned = stripJsonFences(aiResult.text);
   try {
     const probe = JSON.parse(rawCleaned) as unknown;
     if (typeof probe === 'object' && probe !== null && (probe as Record<string, unknown>).error === 'WORD_NOT_FOUND') {
@@ -315,7 +311,7 @@ export async function askFollowUp(params: {
     ? buildAskPromptES(word, context, question)
     : buildAskPromptEN(word, context, question);
 
-  const aiResult = await generateContent(prompt, 'text/plain');
+  const aiResult = await generateContent(prompt, { mimeType: 'text/plain' });
   if (!aiResult.ok) {
     return { ok: false, error: aiResult.error };
   }

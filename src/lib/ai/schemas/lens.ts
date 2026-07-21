@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { stripJsonFences } from '../json';
 
 // Empire Lens diagnostic — a "writing profile" of a pasted text. This is NOT a
 // corrected text: the primary payload is insight about the writer (register,
@@ -85,16 +86,8 @@ export type ParsedLens =
   | { ok: true; analyzable: false; reason: LensRefusalReason }
   | { ok: false; error: string };
 
-function stripMarkdown(raw: string): string {
-  return raw
-    .trim()
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/, '')
-    .replace(/\s*```$/, '');
-}
-
 export function parseLens(raw: string): ParsedLens {
-  const cleaned = stripMarkdown(raw);
+  const cleaned = stripJsonFences(raw);
 
   let parsed: unknown;
   try {
