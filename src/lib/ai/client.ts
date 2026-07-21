@@ -37,13 +37,13 @@ const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 // (e.g. nemotron-3-nano) spend most of the token budget "thinking" and return a
 // truncated fragment that wins the race but fails to parse.
 const OPENROUTER_MODELS = [
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'qwen/qwen3-next-80b-a3b-instruct:free',
   'openai/gpt-oss-20b:free',
+  'google/gemma-4-31b-it:free',
+  'google/gemma-4-26b-a4b-it:free',
 ];
 const OPENROUTER_RETRY_MODELS = [
-  'google/gemma-4-31b-it:free',
-  'openai/gpt-oss-120b:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'nvidia/nemotron-3-nano-30b-a3b:free',
 ];
 
 type Pass = { provider: string; baseUrl: string; apiKey: string; models: string[] };
