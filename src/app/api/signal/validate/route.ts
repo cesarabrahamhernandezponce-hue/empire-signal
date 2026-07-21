@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { generateContent } from '@/lib/ai/client';
+import { stripJsonFences } from '@/lib/ai/json';
 import { buildValidatePromptEN } from '@/lib/ai/prompts/validate-en';
 import { buildValidatePromptES } from '@/lib/ai/prompts/validate-es';
 import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
@@ -44,7 +45,14 @@ export async function POST(request: Request) {
 
     const { sentence, word, language } = parsed.data;
 
-    const wordInSentence = sentence.toLowerCase().includes(word.toLowerCase());
+    // Require the word at a word boundary rather than a raw substring: a plain
+    // includes() accepts "care" inside "scarecrow" (false positive that wastes an
+    // AI call). A *leading* boundary preceded by start-of-string or a non-letter
+    // still allows legitimate inflections ("run" → "running", "cat" → "cats").
+    // \p{L} keeps it accent-aware for Spanish.
+    const escapedWord = word.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const wordBoundaryRe = new RegExp(`(^|[^\\p{L}])${escapedWord}`, 'iu');
+    const wordInSentence = wordBoundaryRe.test(sentence.toLowerCase());
     if (!wordInSentence) {
       return NextResponse.json(
         { error: language === 'es'
@@ -69,14 +77,17 @@ export async function POST(request: Request) {
       ? buildValidatePromptES(sentence, word)
       : buildValidatePromptEN(sentence, word);
 
-    const aiResult = await generateContent(prompt);
+    // temperature:0 so the same sentence gets the same score on a retry — the
+    // prompt promises determinism, and a wandering score erodes trust. maxTokens
+    // is small: the response is a short verdict object.
+    const aiResult = await generateContent(prompt, { temperature: 0, maxTokens: 800 });
     if (!aiResult.ok) {
       return NextResponse.json({ error: aiResult.error }, { status: 503 });
     }
 
     let raw: unknown;
     try {
-      raw = JSON.parse(aiResult.text);
+      raw = JSON.parse(stripJsonFences(aiResult.text));
     } catch {
       return NextResponse.json({ error: 'Invalid AI response format.' }, { status: 502 });
     }

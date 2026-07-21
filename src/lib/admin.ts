@@ -2,7 +2,10 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
 export async function isAdmin(): Promise<boolean> {
-  const adminEmail = process.env.ADMIN_EMAIL;
+  // Single source of truth for "the owner": the same OWNER_EMAIL that gates the
+  // rate-limit bypass in api-guard.ts. A second variable (ADMIN_EMAIL) would let
+  // the two drift apart in the Vercel env and silently lock the admin panel.
+  const adminEmail = process.env.OWNER_EMAIL;
   if (!adminEmail) return false;
 
   const supabase = await createClient();

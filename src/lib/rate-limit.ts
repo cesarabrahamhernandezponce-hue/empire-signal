@@ -21,6 +21,17 @@ export function getClientIp(request: Request): string {
 
 export type LimitResult = { allowed: boolean; remaining: number; limit: number };
 
+// Postgres raises a serialization failure (SQLSTATE 40001) under Serializable
+// isolation when two transactions conflict; Prisma surfaces it as code P2034.
+function isSerializationFailure(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'code' in err &&
+    (err as { code?: string }).code === 'P2034'
+  );
+}
+
 const ANON_DAILY_LIMIT = 5;
 const USER_MONTHLY_LIMIT = 30;
 
@@ -124,12 +135,31 @@ export async function checkDbLimit(
   if (!checkInMemoryLimit(`${scope}:${ipHash}`, limit)) return false;
   try {
     const since = new Date(Date.now() - windowMs);
-    const count = await prisma.rateLimitEvent.count({
-      where: { scope, ipHash, createdAt: { gte: since } },
-    });
-    if (count >= limit) return false;
-    await prisma.rateLimitEvent.create({ data: { scope, ipHash } });
-    return true;
+    // Insert-then-count inside a Serializable transaction so concurrent requests
+    // from the same IP can't both read "under the limit" and slip through: the
+    // insert makes each tx's count include its own row, and Serializable forces
+    // one of two overlapping counts to abort (P2034) instead of both winning.
+    // A plain count()+create() is a TOCTOU race that lets a burst exceed the cap
+    // and drain the free AI budget. One retry absorbs a benign serialization
+    // conflict; anything past that fails closed (reject) to protect the budget.
+    const runTxn = () =>
+      prisma.$transaction(
+        async (tx) => {
+          await tx.rateLimitEvent.create({ data: { scope, ipHash } });
+          const count = await tx.rateLimitEvent.count({
+            where: { scope, ipHash, createdAt: { gte: since } },
+          });
+          return count <= limit;
+        },
+        { isolationLevel: 'Serializable' },
+      );
+
+    try {
+      return await runTxn();
+    } catch (txErr) {
+      if (isSerializationFailure(txErr)) return await runTxn();
+      throw txErr;
+    }
   } catch (err) {
     // Fail closed: if the DB is unreachable we can't enforce the cross-instance
     // cap, so we block the metered AI call rather than let it through. Protects

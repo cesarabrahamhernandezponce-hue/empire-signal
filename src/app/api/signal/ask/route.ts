@@ -49,21 +49,23 @@ export async function POST(request: Request) {
     const isOwner = isOwnerRequest(request) || isOwnerEmail(user?.email);
 
     let userId: string | null = user?.id ?? null;
-    if (!isOwner) {
-      if (!user) {
-        return NextResponse.json({ error: 'Sign in to ask follow-up questions.' }, { status: 401 });
-      }
-      userId = user.id;
+    if (!isOwner && !user) {
+      return NextResponse.json({ error: 'Sign in to ask follow-up questions.' }, { status: 401 });
+    }
+    if (user) userId = user.id;
 
+    // Validate the target record BEFORE charging quota, so a bad searchRecordId
+    // (404) never consumes a daily unit — the limit only pays for real work.
+    const record = await prisma.searchRecord.findUnique({ where: { id: searchRecordId } });
+    if (!record) {
+      return NextResponse.json({ error: 'Analysis not found.' }, { status: 404 });
+    }
+
+    if (!isOwner) {
       const ipHash = hashIp(getClientIp(request));
       if (!(await checkDbLimit('ask', ipHash, DAILY_LIMIT))) {
         return NextResponse.json({ error: 'Daily limit reached. Come back tomorrow.' }, { status: 429 });
       }
-    }
-
-    const record = await prisma.searchRecord.findUnique({ where: { id: searchRecordId } });
-    if (!record) {
-      return NextResponse.json({ error: 'Analysis not found.' }, { status: 404 });
     }
 
     const result = await askFollowUp({
