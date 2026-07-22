@@ -33,17 +33,22 @@ import { stripJsonFences } from './json';
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-// OpenRouter free models — only non-reasoning instruct models. Reasoning models
-// (e.g. nemotron-3-nano) spend most of the token budget "thinking" and return a
-// truncated fragment that wins the race but fails to parse.
+// OpenRouter free models. raceModels runs a pass's models concurrently and the
+// first to return parseable JSON wins, so the first pass is a basket chosen to
+// maximize P(fast valid win) while guaranteeing a reliable finisher. Slugs and
+// order come from a live 3-sample JSON-mode benchmark (2026-07-22): the two
+// nemotrons hit 3/3 valid JSON in ~4-9s; gemma-4-26b is fastest (~1s) but only
+// ~1/3 available (free-tier 429s); gpt-oss-20b is a reliable-but-slow (~10-16s)
+// backstop. Dropped google/gemma-4-31b-it:free — it 429'd 3/3 (dead weight).
+// The JSON.parse guard means a truncated/reasoning fragment just loses the race.
 const OPENROUTER_MODELS = [
-  'openai/gpt-oss-20b:free',
-  'google/gemma-4-31b-it:free',
+  'nvidia/nemotron-3-nano-30b-a3b:free',
   'google/gemma-4-26b-a4b-it:free',
+  'openai/gpt-oss-20b:free',
 ];
 const OPENROUTER_RETRY_MODELS = [
   'nvidia/nemotron-3-super-120b-a12b:free',
-  'nvidia/nemotron-3-nano-30b-a3b:free',
+  'openrouter/free',
 ];
 
 type Pass = { provider: string; baseUrl: string; apiKey: string; models: string[] };
