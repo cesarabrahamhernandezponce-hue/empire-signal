@@ -1274,7 +1274,7 @@ export default function Home() {
                         : 'bg-bg text-ink-muted border-line hover:text-ink hover:border-ink-muted'
                     }`}
                   >
-                    {lang === 'en' ? 'EN' : 'ES'}
+                    {lang === 'en' ? 'English' : 'Español'}
                   </button>
                 ))}
               </div>
