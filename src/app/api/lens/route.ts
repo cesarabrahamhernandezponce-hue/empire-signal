@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { analyzeWithLens } from '@/lib/services/lens';
 import { classifyProse, lensRejectionMessage } from '@/lib/validation/lens-input';
 import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
-import { isOwner, readJsonBody } from '@/lib/api-guard';
+import { isOwner, readJsonBody, serviceUnavailable } from '@/lib/api-guard';
 
 // One Lens call is a heavy ~250-word generation that easily exceeds Vercel's
 // default function limit; raise it so the generation completes instead of being cut off.
@@ -82,7 +82,9 @@ export async function POST(request: Request) {
     // Owner bypass: unlimited access via secret header or the signed-in owner account.
     if (!(await isOwner(request))) {
       const ipHash = hashIp(getClientIp(request));
-      if (!(await checkDbLimit('lens', ipHash, DAILY_LIMIT))) {
+      const gate = await checkDbLimit('lens', ipHash, DAILY_LIMIT);
+      if (gate === 'unavailable') return serviceUnavailable();
+      if (gate === 'limit_reached') {
         // Structured 429 — the client renders a friendly message, never the raw code.
         return NextResponse.json(
           { error: 'limit_reached', limit: DAILY_LIMIT, resetAt: 'daily' },

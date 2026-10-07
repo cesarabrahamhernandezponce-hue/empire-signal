@@ -38,6 +38,7 @@ const UI = {
     under:           (n: number) => `${n} / ${MAX_WORDS} words — write at least ${MIN_WORDS}.`,
     counter:         (n: number) => `${n} / ${MAX_WORDS} words`,
     errorTitle:      'Something went wrong',
+    unavailable:     'The service is temporarily unavailable. Please try again in a moment.',
     notReadableTitle:'That’s not quite readable yet',
     tryAgain:        'Try again',
     rateTitle:       "You've reached today's Lens limit",
@@ -83,6 +84,7 @@ const UI = {
     under:           (n: number) => `${n} / ${MAX_WORDS} palabras — escribe al menos ${MIN_WORDS}.`,
     counter:         (n: number) => `${n} / ${MAX_WORDS} palabras`,
     errorTitle:      'Algo salió mal',
+    unavailable:     'El servicio no está disponible por el momento. Inténtalo de nuevo en un momento.',
     notReadableTitle:'Esto todavía no se puede leer',
     tryAgain:        'Intentar de nuevo',
     rateTitle:       'Alcanzaste el límite de Lens de hoy',
@@ -572,7 +574,12 @@ export default function LensClient() {
           return;
         }
         if (!res.ok) {
-          setState({ status: 'error', message: (data && data.error) || t.errorTitle });
+          // `service_unavailable` is a machine code (fail-closed limiter, DB down),
+          // not a sentence — never render it raw.
+          const message = data?.error === 'service_unavailable'
+            ? t.unavailable
+            : (data && data.error) || t.errorTitle;
+          setState({ status: 'error', message });
           return;
         }
         setState({ status: 'result', profile: data.profile, text });

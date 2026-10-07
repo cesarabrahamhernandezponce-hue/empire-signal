@@ -6,7 +6,7 @@ import { analyzeWord, findCachedByKey, toLookupKey, type AnalyzeRecord } from '@
 import { resolveDictionaryGate } from '@/lib/services/word-classifier';
 import { prisma } from '@/lib/db/prisma';
 import { getClientIp, hashIp, checkAnonymousLimit, checkUserLimit, recordAnonymousSearch } from '@/lib/rate-limit';
-import { isOwnerRequest, isOwnerEmail, readJsonBody } from '@/lib/api-guard';
+import { isOwnerRequest, isOwnerEmail, readJsonBody, serviceUnavailable } from '@/lib/api-guard';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { classifyInput } from '@/lib/validation/input';
 
@@ -121,6 +121,7 @@ export async function POST(request: Request) {
         if (!prefetched) {
           const limitResult = await checkUserLimit(userId);
           if (!limitResult.allowed) {
+            if (limitResult.reason === 'unavailable') return serviceUnavailable();
             return NextResponse.json(
               { error: 'limit_reached', tier: 'registered', limit: limitResult.limit, resetAt: 'monthly' },
               { status: 429 },
@@ -134,6 +135,10 @@ export async function POST(request: Request) {
         // refresh or re-searching a now-cached word cannot bypass it.
         const limitResult = await checkAnonymousLimit(ipHash);
         if (!limitResult.allowed) {
+          // A DB outage also lands here (the limiter fails closed), but telling an
+          // anonymous user they spent a quota they never touched sends them to a
+          // signup page that is equally down. Answer 503 so the truth surfaces.
+          if (limitResult.reason === 'unavailable') return serviceUnavailable();
           return NextResponse.json(
             { error: 'limit_reached', tier: 'anonymous', limit: limitResult.limit, resetAt: 'daily' },
             { status: 429 },

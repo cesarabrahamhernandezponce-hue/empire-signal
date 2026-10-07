@@ -7,7 +7,7 @@ import { prisma } from '@/lib/db/prisma';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import type { Language } from '@/lib/ai/prompts/types';
 import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
-import { isOwnerRequest, isOwnerEmail, readJsonBody } from '@/lib/api-guard';
+import { isOwnerRequest, isOwnerEmail, readJsonBody, serviceUnavailable } from '@/lib/api-guard';
 
 // A cold AI generation can exceed Vercel's default function limit; raise it so
 // slow answers complete instead of being cut off.
@@ -63,7 +63,9 @@ export async function POST(request: Request) {
 
     if (!isOwner) {
       const ipHash = hashIp(getClientIp(request));
-      if (!(await checkDbLimit('ask', ipHash, DAILY_LIMIT))) {
+      const gate = await checkDbLimit('ask', ipHash, DAILY_LIMIT);
+      if (gate === 'unavailable') return serviceUnavailable();
+      if (gate === 'limit_reached') {
         return NextResponse.json({ error: 'Daily limit reached. Come back tomorrow.' }, { status: 429 });
       }
     }

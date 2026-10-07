@@ -76,6 +76,7 @@ const UI = {
     analyzing:           'Analyzing...',
     analyzingSlow:       'This is taking a bit longer than usual — still working on it…',
     timeoutError:        'This took too long. The server may be busy — please try again.',
+    unavailableError:    'The service is temporarily unavailable. Please try again in a moment.',
     errorTitle:          'Something went wrong',
     tryAgain:            '← Try again',
     themeLabel:          'Theme',
@@ -137,6 +138,7 @@ const UI = {
     analyzing:           'Analizando...',
     analyzingSlow:       'Esto está tardando un poco más de lo normal — seguimos trabajando…',
     timeoutError:        'Tardó demasiado. El servidor puede estar ocupado — inténtalo de nuevo.',
+    unavailableError:    'El servicio no está disponible por el momento. Inténtalo de nuevo en un momento.',
     errorTitle:          'Algo salió mal',
     tryAgain:            '← Intentar de nuevo',
     themeLabel:          'Tema',
@@ -743,7 +745,13 @@ export default function Home() {
           await new Promise((r) => setTimeout(r, ANALYZE_RETRY_DELAY_MS));
           return handleAnalyzeWithWord(w, langOverride, force, attempt + 1);
         }
-        const message = (data as { error?: string }).error ?? 'Unknown server error.';
+        const raw = (data as { error?: string }).error;
+        // `service_unavailable` is a machine code the API returns when a
+        // fail-closed check blocked the request because our DB was unreachable.
+        // It's never meant for human eyes — swap in the localized sentence.
+        const message = raw === 'service_unavailable'
+          ? UI[lang].unavailableError
+          : raw ?? 'Unknown server error.';
         setPageState({ status: 'error', message });
         return;
       }

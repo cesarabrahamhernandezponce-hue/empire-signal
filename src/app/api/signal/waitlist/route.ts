@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db/prisma';
 import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
-import { readJsonBody } from '@/lib/api-guard';
+import { readJsonBody, serviceUnavailable } from '@/lib/api-guard';
 
 const bodySchema = z.object({
   email: z.string().trim().email().transform((e) => e.toLowerCase()),
@@ -26,7 +26,9 @@ export async function POST(request: Request) {
 
     // Cap submissions per IP/day so this unauthenticated writer can't be flooded.
     const ipHash = hashIp(getClientIp(request));
-    if (!(await checkDbLimit('waitlist', ipHash, DAILY_LIMIT))) {
+    const gate = await checkDbLimit('waitlist', ipHash, DAILY_LIMIT);
+    if (gate === 'unavailable') return serviceUnavailable();
+    if (gate === 'limit_reached') {
       return NextResponse.json({ error: 'Too many requests. Try again later.' }, { status: 429 });
     }
 

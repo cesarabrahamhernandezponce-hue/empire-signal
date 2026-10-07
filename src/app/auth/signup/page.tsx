@@ -4,6 +4,7 @@ import { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { authErrorMessage } from '@/lib/supabase/auth-errors';
 
 const LANG = {
   en: {
@@ -82,7 +83,7 @@ export default function SignupPage() {
     });
 
     if (authError) {
-      setError(authError.message);
+      setError(authErrorMessage(authError, uiLang));
       setLoading(false);
       return;
     }

@@ -6,7 +6,7 @@ import { stripJsonFences } from '@/lib/ai/json';
 import { buildValidatePromptEN } from '@/lib/ai/prompts/validate-en';
 import { buildValidatePromptES } from '@/lib/ai/prompts/validate-es';
 import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
-import { isOwner, readJsonBody } from '@/lib/api-guard';
+import { isOwner, readJsonBody, serviceUnavailable } from '@/lib/api-guard';
 
 // A cold AI generation can exceed Vercel's default function limit; raise it so
 // slow validations complete instead of being cut off.
@@ -65,7 +65,9 @@ export async function POST(request: Request) {
 
     if (!(await isOwner(request))) {
       const ipHash = hashIp(getClientIp(request));
-      if (!(await checkDbLimit('validate', ipHash, DAILY_LIMIT))) {
+      const gate = await checkDbLimit('validate', ipHash, DAILY_LIMIT);
+      if (gate === 'unavailable') return serviceUnavailable();
+      if (gate === 'limit_reached') {
         return NextResponse.json(
           { error: 'Daily limit reached. Come back tomorrow.' },
           { status: 429 },

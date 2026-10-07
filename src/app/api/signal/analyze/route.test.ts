@@ -24,6 +24,8 @@ vi.mock('@/lib/api-guard', () => ({
   isOwnerRequest: vi.fn(() => false),
   isOwnerEmail: vi.fn(() => false),
   readJsonBody: vi.fn(),
+  serviceUnavailable: () =>
+    new Response(JSON.stringify({ error: 'service_unavailable' }), { status: 503 }),
 }));
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({ auth: { getUser: async () => ({ data: { user: null } }) } })),
@@ -129,7 +131,7 @@ describe('POST /api/signal/analyze — gate ordering', () => {
     body('rizz');
     mockedFindCached.mockResolvedValue(null);
     mockedGate.mockResolvedValue({ ok: true });
-    mockedAnonLimit.mockResolvedValue({ allowed: false, remaining: 0, limit: 5 });
+    mockedAnonLimit.mockResolvedValue({ allowed: false, remaining: 0, limit: 5, reason: 'limit_reached' });
 
     const res = await POST(request());
     const data = await res.json();
@@ -138,6 +140,26 @@ describe('POST /api/signal/analyze — gate ordering', () => {
     expect(data.error).toBe('limit_reached');
     expect(mockedGate).toHaveBeenCalledTimes(1);
     expect(mockedAnalyze).not.toHaveBeenCalled();
+  });
+
+  // The limiter fails closed when the DB is unreachable, so an outage lands on
+  // the same `allowed: false` branch as a real quota. Only `reason` separates
+  // them, and getting this wrong tells users they spent a quota they never
+  // touched — while pointing them at a signup that is equally down.
+  it('anonymous blocked because the DB was unreachable → 503, not a 429 blaming the user', async () => {
+    body('rizz');
+    mockedFindCached.mockResolvedValue(null);
+    mockedGate.mockResolvedValue({ ok: true });
+    mockedAnonLimit.mockResolvedValue({ allowed: false, remaining: 0, limit: 5, reason: 'unavailable' });
+
+    const res = await POST(request());
+    const data = await res.json();
+
+    expect(res.status).toBe(503);
+    expect(data.error).toBe('service_unavailable');
+    expect(mockedAnalyze).not.toHaveBeenCalled();
+    // The request never made it through, so it must not cost the user a search.
+    expect(mockedRecordAnon).not.toHaveBeenCalled();
   });
 
   it('DB error (cache lookup throws) → gate is SKIPPED (uncertain miss), analysis still proceeds', async () => {

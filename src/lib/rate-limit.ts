@@ -19,7 +19,20 @@ export function getClientIp(request: Request): string {
   );
 }
 
-export type LimitResult = { allowed: boolean; remaining: number; limit: number };
+// `reason` explains a rejection. 'limit_reached' means the user genuinely spent
+// their quota; 'unavailable' means the DB couldn't be counted and we failed
+// closed. Both block the request, but only the first is the user's fault — the
+// caller must not tell someone they hit a limit they never reached.
+export type LimitDenial = 'limit_reached' | 'unavailable';
+export type LimitResult = {
+  allowed: boolean;
+  remaining: number;
+  limit: number;
+  reason?: LimitDenial;
+};
+
+// Same distinction for the boolean-style limiter used by the metered AI routes.
+export type DbLimitOutcome = 'allowed' | LimitDenial;
 
 // Postgres raises a serialization failure (SQLSTATE 40001) under Serializable
 // isolation when two transactions conflict; Prisma surfaces it as code P2034.
@@ -87,7 +100,7 @@ export async function checkAnonymousLimit(ipHash: string): Promise<LimitResult> 
   // word-not-found, parse error) would inflate this bucket and lock the user
   // out even though no search was ever recorded in the DB.
   if (!peekInMemoryLimit(`analyze:${ipHash}`, ANON_DAILY_LIMIT)) {
-    return { allowed: false, remaining: 0, limit: ANON_DAILY_LIMIT };
+    return { allowed: false, remaining: 0, limit: ANON_DAILY_LIMIT, reason: 'limit_reached' };
   }
   // Authoritative cross-instance count from DB.
   try {
@@ -101,15 +114,23 @@ export async function checkAnonymousLimit(ipHash: string): Promise<LimitResult> 
       where: { ipHash, userId: null, createdAt: { gte: todayUtc } },
     });
     const remaining = Math.max(0, ANON_DAILY_LIMIT - count);
-    return { allowed: count < ANON_DAILY_LIMIT, remaining, limit: ANON_DAILY_LIMIT };
+    const allowed = count < ANON_DAILY_LIMIT;
+    return {
+      allowed,
+      remaining,
+      limit: ANON_DAILY_LIMIT,
+      ...(allowed ? {} : { reason: 'limit_reached' as const }),
+    };
   } catch (err) {
     // Fail closed: when the DB is unreachable the cache is too, so every analysis
     // becomes a real AI call. On a cold serverless instance the in-memory bucket
     // is empty and can't backstop the count, so allowing the request through would
     // let anonymous traffic drain the free AI budget uncapped during an outage.
     // Block instead — matching checkDbLimit's fail-closed stance for metered calls.
+    // `reason` keeps the outage distinguishable from a real limit so the caller
+    // can answer 503 instead of accusing the user of spending a quota they didn't.
     console.error('[rate-limit] Anonymous DB count failed, failing closed:', err);
-    return { allowed: false, remaining: 0, limit: ANON_DAILY_LIMIT };
+    return { allowed: false, remaining: 0, limit: ANON_DAILY_LIMIT, reason: 'unavailable' };
   }
 }
 
@@ -130,9 +151,9 @@ export async function checkDbLimit(
   ipHash: string,
   limit: number,
   windowMs: number = 86_400_000,
-): Promise<boolean> {
+): Promise<DbLimitOutcome> {
   // Cheap fast path: short-circuit obvious per-instance floods without a DB hit.
-  if (!checkInMemoryLimit(`${scope}:${ipHash}`, limit)) return false;
+  if (!checkInMemoryLimit(`${scope}:${ipHash}`, limit)) return 'limit_reached';
   try {
     const since = new Date(Date.now() - windowMs);
     // Insert-then-count inside a Serializable transaction so concurrent requests
@@ -154,19 +175,23 @@ export async function checkDbLimit(
         { isolationLevel: 'Serializable' },
       );
 
+    const runOnce = async (): Promise<DbLimitOutcome> =>
+      (await runTxn()) ? 'allowed' : 'limit_reached';
+
     try {
-      return await runTxn();
+      return await runOnce();
     } catch (txErr) {
-      if (isSerializationFailure(txErr)) return await runTxn();
+      if (isSerializationFailure(txErr)) return await runOnce();
       throw txErr;
     }
   } catch (err) {
     // Fail closed: if the DB is unreachable we can't enforce the cross-instance
     // cap, so we block the metered AI call rather than let it through. Protects
     // the free Gemini/OpenRouter budget when Supabase blinks, at the cost of
-    // temporarily denying these endpoints during an outage.
+    // temporarily denying these endpoints during an outage. Reported as
+    // 'unavailable', not 'limit_reached' — the user spent nothing.
     console.error(`[rate-limit] DB limit check failed for scope=${scope}, failing closed:`, err);
-    return false;
+    return 'unavailable';
   }
 }
 
@@ -178,7 +203,13 @@ export async function checkUserLimit(userId: string): Promise<LimitResult> {
       where: { userId, cacheHit: false, createdAt: { gte: monthStart } },
     });
     const remaining = Math.max(0, USER_MONTHLY_LIMIT - count);
-    return { allowed: count < USER_MONTHLY_LIMIT, remaining, limit: USER_MONTHLY_LIMIT };
+    const allowed = count < USER_MONTHLY_LIMIT;
+    return {
+      allowed,
+      remaining,
+      limit: USER_MONTHLY_LIMIT,
+      ...(allowed ? {} : { reason: 'limit_reached' as const }),
+    };
   } catch (err) {
     // Never block a user because the rate-limiter couldn't count — fail open.
     console.warn('[rate-limit] User monthly DB count failed, failing open:', err);

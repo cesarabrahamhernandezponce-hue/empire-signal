@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getClientIp, hashIp, checkDbLimit } from '@/lib/rate-limit';
-import { isOwner } from '@/lib/api-guard';
+import { isOwner, serviceUnavailable } from '@/lib/api-guard';
 
 // Generous per-IP cap: audio carries no AI cost, the limit only stops someone
 // scripting this route as a free TTS proxy. Browser caching (immutable response
@@ -36,7 +36,9 @@ export async function GET(request: Request) {
 
     if (!(await isOwner(request))) {
       const ipHash = hashIp(getClientIp(request));
-      if (!(await checkDbLimit('tts', ipHash, DAILY_LIMIT))) {
+      const gate = await checkDbLimit('tts', ipHash, DAILY_LIMIT);
+      if (gate === 'unavailable') return serviceUnavailable();
+      if (gate === 'limit_reached') {
         return NextResponse.json({ error: 'Daily limit reached. Come back tomorrow.' }, { status: 429 });
       }
     }
